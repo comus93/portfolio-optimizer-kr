@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from portfolio_optimizer_kr.config import ConfigValidationError, request_from_config
+from portfolio_optimizer_kr.config import request_from_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.runner import execute_run
 
@@ -102,11 +102,7 @@ def execute_controlled_experiment(
     if not str(effective.get("run_id") or "").strip():
         effective["run_id"] = next_run_id(output)
 
-    try:
-        spec = request_from_config(effective)
-    except ConfigValidationError:
-        raise
-
+    spec = request_from_config(effective)
     output_dir = execute_run(
         spec,
         output,
