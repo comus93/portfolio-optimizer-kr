@@ -13,15 +13,75 @@
   },
   "frontier": {
     "point_count": 100,
-    "return_max": 0.26170115494612056,
-    "return_min": 0.1621771465530739
+    "return_max": 0.2617011507894695,
+    "return_min": 0.16217711445759206
   },
   "golden": {
+    "assets": [
+      "QQQ",
+      "SPMO",
+      "GDX",
+      "GLD",
+      "SLV",
+      "AIA",
+      "XLE",
+      "PTF",
+      "QLD"
+    ],
     "benchmark": "SPY",
+    "bounds": {
+      "AIA": [
+        0.0,
+        0.3
+      ],
+      "GDX": [
+        0.0,
+        0.3
+      ],
+      "GLD": [
+        0.0,
+        0.3
+      ],
+      "PTF": [
+        0.0,
+        0.3
+      ],
+      "QLD": [
+        0.0,
+        0.3
+      ],
+      "QQQ": [
+        0.0,
+        0.5
+      ],
+      "SLV": [
+        0.0,
+        0.3
+      ],
+      "SPMO": [
+        0.0,
+        0.5
+      ],
+      "XLE": [
+        0.0,
+        0.3
+      ]
+    },
     "objective": "target_volatility",
     "period": {
       "end": "2026-07",
       "start": "2016-08"
+    },
+    "provided_weights": {
+      "AIA": 0.15,
+      "GDX": 0.1,
+      "GLD": 0.0,
+      "PTF": 0.1,
+      "QLD": 0.1,
+      "QQQ": 0.2,
+      "SLV": 0.1,
+      "SPMO": 0.1,
+      "XLE": 0.15
     },
     "published_weights": {
       "AIA": 0.0,
@@ -31,42 +91,182 @@
       "QLD": 0.0931,
       "QQQ": 0.1419,
       "SLV": 0.0,
-      "SPMO": 0.443,
-      "XLE": 0.022
+      "SPMO": 0.44299999999999995,
+      "XLE": 0.022000000000000002
     },
     "target_volatility": 0.15
   },
+  "moment_parity": {
+    "correlation_max_abs_delta": 0.012331462119592233,
+    "correlation_mean_abs_delta": 0.0035513721611144878,
+    "per_asset": [
+      {
+        "expected_return_delta": -0.0007060227618316262,
+        "fdr_expected_return": 0.20419397723816834,
+        "fdr_volatility": 0.1900756218032345,
+        "pv_expected_return": 0.20489999999999997,
+        "pv_volatility": 0.18969999999999998,
+        "ticker": "QQQ",
+        "volatility_delta": 0.0003756218032345271
+      },
+      {
+        "expected_return_delta": -0.0006335833921704837,
+        "fdr_expected_return": 0.19506641660782953,
+        "fdr_volatility": 0.17975444265956877,
+        "pv_expected_return": 0.1957,
+        "pv_volatility": 0.1795,
+        "ticker": "SPMO",
+        "volatility_delta": 0.0002544426595687821
+      },
+      {
+        "expected_return_delta": 0.003657249529754103,
+        "fdr_expected_return": 0.1570572495297541,
+        "fdr_volatility": 0.339315721237806,
+        "pv_expected_return": 0.1534,
+        "pv_volatility": 0.3394,
+        "ticker": "GDX",
+        "volatility_delta": -8.42787621939678e-05
+      },
+      {
+        "expected_return_delta": 0.0014767162234199799,
+        "fdr_expected_return": 0.11897671622341997,
+        "fdr_volatility": 0.15103049966266463,
+        "pv_expected_return": 0.1175,
+        "pv_volatility": 0.151,
+        "ticker": "GLD",
+        "volatility_delta": 3.0499662664634775e-05
+      },
+      {
+        "expected_return_delta": 0.0021074665512825774,
+        "fdr_expected_return": 0.1451074665512826,
+        "fdr_volatility": 0.29870735564611284,
+        "pv_expected_return": 0.14300000000000002,
+        "pv_volatility": 0.2989,
+        "ticker": "SLV",
+        "volatility_delta": -0.0001926443538871614
+      },
+      {
+        "expected_return_delta": -0.0017551865512587805,
+        "fdr_expected_return": 0.1477448134487412,
+        "fdr_volatility": 0.21736252131622694,
+        "pv_expected_return": 0.1495,
+        "pv_volatility": 0.2168,
+        "ticker": "AIA",
+        "volatility_delta": 0.0005625213162269438
+      },
+      {
+        "expected_return_delta": -0.0011137782523897022,
+        "fdr_expected_return": 0.1417862217476103,
+        "fdr_volatility": 0.2998445821193466,
+        "pv_expected_return": 0.1429,
+        "pv_volatility": 0.30010000000000003,
+        "ticker": "XLE",
+        "volatility_delta": -0.0002554178806534191
+      },
+      {
+        "expected_return_delta": -0.0008402149358354982,
+        "fdr_expected_return": 0.24225978506416448,
+        "fdr_volatility": 0.28971486156132475,
+        "pv_expected_return": 0.24309999999999998,
+        "pv_volatility": 0.2889,
+        "ticker": "PTF",
+        "volatility_delta": 0.0008148615613247645
+      },
+      {
+        "expected_return_delta": -0.000781238864634215,
+        "fdr_expected_return": 0.35781876113536576,
+        "fdr_volatility": 0.38843539368848434,
+        "pv_expected_return": 0.3586,
+        "pv_volatility": 0.3881,
+        "ticker": "QLD",
+        "volatility_delta": 0.00033539368848434226
+      }
+    ]
+  },
   "note": "FDR market-data diagnostic; public PV moments and weights are rounded.",
   "optimizer": {
-    "expected_return": 0.18845583674354605,
+    "expected_return": 0.18845585339017626,
     "pv_published": {
-      "expected_return": 0.1876,
+      "expected_return": 0.18760000000000002,
       "sharpe": 1.1,
       "volatility": 0.1489
     },
-    "sharpe": 1.0990389372061422,
-    "volatility": 0.14999999650842644,
+    "sharpe": 1.0990390481833934,
+    "volatility": 0.1499999965084655,
     "weight_delta_vs_pv": {
       "AIA": 0.0,
       "GDX": 0.0,
-      "GLD": -4.301852984944787e-09,
+      "GLD": -4.301772493775502e-09,
       "PTF": 0.0,
-      "QLD": 0.00562963400839267,
-      "QQQ": -0.010369093633610021,
+      "QLD": 0.005629970627014758,
+      "QQQ": -0.01037104545695236,
       "SLV": 0.0,
-      "SPMO": 0.006981274898062773,
-      "XLE": -0.00224183357044775
+      "SPMO": 0.006982838193472174,
+      "XLE": -0.0022417816611700406
     },
     "weights": {
       "AIA": 0.0,
       "GDX": 0.0,
-      "GLD": 0.299999995698147,
+      "GLD": 0.2999999956982275,
       "PTF": 0.0,
-      "QLD": 0.09872963400839267,
-      "QQQ": 0.13153090636638998,
+      "QLD": 0.09872997062701476,
+      "QQQ": 0.13152895454304764,
       "SLV": 0.0,
-      "SPMO": 0.4499812748980628,
-      "XLE": 0.01975816642955225
+      "SPMO": 0.4499828381934721,
+      "XLE": 0.01975821833882996
+    }
+  },
+  "performance_diagnostic": {
+    "optimized": {
+      "cagr": {
+        "delta": 0.0008633694753576726,
+        "internal": 0.19256336947535768,
+        "pv": 0.1917
+      },
+      "max_drawdown": {
+        "delta": -0.002259517621622381,
+        "internal": -0.2266595176216224,
+        "pv": -0.22440000000000002
+      }
+    }
+  },
+  "solver_only_parity": {
+    "expected_return": 0.1884030688422318,
+    "internal_weights_from_pv_moments": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": 0.29999999872116306,
+      "PTF": 0.0,
+      "QLD": 0.09769326813233598,
+      "QQQ": 0.13992016240189453,
+      "SLV": 0.0,
+      "SPMO": 0.44271934755905906,
+      "XLE": 0.019667217962095366
+    },
+    "note_on_golden_rounding": "PV displayed moments, correlations, and weights are rounded; no exact-equality assertion is applied.",
+    "published_pv_weights": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": 0.3,
+      "PTF": 0.0,
+      "QLD": 0.0931,
+      "QQQ": 0.1419,
+      "SLV": 0.0,
+      "SPMO": 0.44299999999999995,
+      "XLE": 0.022000000000000002
+    },
+    "sharpe": 1.2560245704163813,
+    "volatility": 0.1499995089903176,
+    "weight_delta_vs_pv": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": -1.278836925244775e-09,
+      "PTF": 0.0,
+      "QLD": 0.004593268132335973,
+      "QQQ": -0.001979837598105466,
+      "SLV": 0.0,
+      "SPMO": -0.00028065244094088726,
+      "XLE": -0.0023327820379046363
     }
   }
 }
