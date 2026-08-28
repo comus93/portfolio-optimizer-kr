@@ -36,6 +36,15 @@
 - 공통/core 코드 변경, 여러 모듈에 영향을 주는 변경, 또는 영향 범위가 불명확한 경우에는 관련 상위 테스트 범위로 확대하고 필요하면 전체 테스트 스위트를 실행한다.
 - solver 결과는 성공 여부뿐 아니라 weight sum, min/max, target volatility 등 constraint residual도 검증한다.
 
+## Run outputs
+
+- 일반 unit/integration test의 임시 출력은 repository에 저장하지 않고 `agent-to-llm.md`에 pass/fail 요약만 남긴다.
+- LLM 또는 사용자가 검토해야 하는 **research / validation run의 실제 산출물은 `runs/<run_id>/` 아래에 저장하고 commit/push한다.**
+- 최소 산출물은 `result.json`이다. 큰 표나 matrix가 필요하면 CSV로 분리할 수 있다.
+- parity 검증을 수행한 run은 비교 결과도 같은 run 디렉터리에 machine-readable 파일로 남긴다. 예: `parity.json`.
+- run 산출물은 재현 가능한 입력/configuration과 실제 data coverage를 포함해야 한다.
+- 완료 회신 시 `agent-to-llm.md`에 run 경로와 commit SHA를 남긴다.
+
 ## Golden reference
 
 PV reference는 다음 위치를 사용한다.
