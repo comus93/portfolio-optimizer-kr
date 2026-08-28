@@ -7,7 +7,8 @@
 1. `docs/specification.md`
 2. `docs/architecture.md`
 3. `docs/input-ui-contract.md`
-4. `ai-share/PROTOCOL.md`
+4. `docs/llm-research-input-contract.md`
+5. `ai-share/PROTOCOL.md`
 
 현재 LLM 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
 
