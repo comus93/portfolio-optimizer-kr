@@ -41,10 +41,25 @@ class FrontierAssetPoint:
 
 
 @dataclass(frozen=True)
-class ActiveReturnPoint:
-    date: str
+class FrontierLandmark:
+    kind: str
+    label: str
+    volatility_pct: float
+    expected_return_pct: float
+    sharpe_ratio: float | None = None
+    weights_pct: Mapping[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AnnualizedActiveReturnPoint:
+    year: int
     provided_active_return_pct: float
     optimized_active_return_pct: float
+
+
+# Temporary import compatibility for code that still imports the old type name.
+# Semantics are annual, so the field contract is now year-based rather than date-based.
+ActiveReturnPoint = AnnualizedActiveReturnPoint
 
 
 @dataclass(frozen=True)
@@ -104,8 +119,10 @@ class ReportModel:
     annual_returns: tuple[AnnualReturnPoint, ...] = ()
     efficient_frontier: tuple[FrontierPoint, ...] = ()
     frontier_assets: tuple[FrontierAssetPoint, ...] = ()
-    annualized_active_returns: tuple[ActiveReturnPoint, ...] = ()
-    active_return_contribution: tuple[ActiveContributionPoint, ...] = ()
+    frontier_landmarks: tuple[FrontierLandmark, ...] = ()
+    annualized_active_returns: tuple[AnnualizedActiveReturnPoint, ...] = ()
+    active_return_contribution_provided: tuple[ActiveContributionPoint, ...] = ()
+    active_return_contribution_optimized: tuple[ActiveContributionPoint, ...] = ()
     rolling_active_provided: tuple[RollingActivePoint, ...] = ()
     rolling_active_optimized: tuple[RollingActivePoint, ...] = ()
     up_down_market_performance: tuple[UpDownMarketPoint, ...] = ()
