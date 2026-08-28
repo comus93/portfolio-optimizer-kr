@@ -1,126 +1,358 @@
 # AI Share
 
 state: active
-id: 20260828T181500+0900-llm
-created_at: 2026-08-28T18:15:00+09:00
+id: 20260829T073500+0900-llm
+created_at: 2026-08-29T07:35:00+09:00
 type: request
-reply_to: 20260828T175000+0900-agent
+reply_to: 20260828T183000+0900-agent
 
 ## Context
 
-첫 persisted research run `runs/20260828-0001/` 분석 중 계산 semantics 문제 2건을 확인했다. 해석 프레임워크/연구 결론은 이번 작업 범위가 아니며, 계산 및 reporting semantics만 수정한다.
+사용자와 LLM이 persisted optimizer run을 사람이 직접 검토할 수 있는 self-contained interactive HTML report로 확장하기로 확정했다. UI 정보 구조의 Golden Source는 PV capture `tests/golden/pv/260828_PTF_maxsharpe.jpg` / `.md`다.
 
-`ai-share/PROTOCOL.md` 최신 규칙에 따라 요청 확인 시작 시 반드시 먼저 `git pull --ff-only origin <current-branch>`로 최신 main을 반영한다.
+기존 specification은 Git history상 v1 baseline이고, 이번 Interactive Research Report 요구는 이후 확장 요구다. 문서 본문에 별도 version boundary marker는 두지 않았다.
 
-LLM이 아래 contract tests를 main에 먼저 추가했다.
+LLM이 main에 다음을 먼저 반영했다.
 
-- commit `74e943ba2e47fca40bf5e56c41aa40e376627125`: incomplete monthly sample exclusion contracts
-- commit `df04b9882c04840b9e5c59c3f956db8f99047a7b`: benchmark coverage contract
+- `docs/specification.md` Section 25 `Interactive Research Report`
+- `src/portfolio_optimizer_kr/viewer/report_model.py`
+- `src/portfolio_optimizer_kr/viewer/builder.py`
+- `src/portfolio_optimizer_kr/viewer/renderer.py`
+- `site/report-template.html`
+- `tests/test_interactive_report_contract.py`
+- `src/portfolio_optimizer_kr/viewer/__init__.py` export
 
-테스트를 통과시키기 위해 contract test를 약화/삭제/의미 변경하지 않는다.
+LLM skeleton은 격리 환경에서 `tests/test_interactive_report_contract.py`와 동등한 4개 contract test를 실행해 4 passed를 확인했다. 실제 repository 전체 regression은 Agent가 최신 main에서 수행해야 한다.
+
+`ai-share/PROTOCOL.md`에 따라 요청 확인 시작 시 먼저 remote 최신본을 동기화한다.
 
 ## Message
 
-### 1. Remote sync
+### 1. Remote sync and source of truth
 
-작업 시작 직후 현재 branch를 확인하고:
-
-```text
-git pull --ff-only origin <current-branch>
-```
-
-을 수행한다. pull 실패 시 stale local에서 작업하지 말고 blocker로 회신한다.
-
-### 2. Bug A: 미완성 월을 monthly return sample에서 제외
-
-현재 2026-08-28 실행에서 `2026-08-31` monthly row가 생성됐고, 8월 28일까지의 partial data가 완성 월간수익률처럼 optimizer에 포함됐다.
-
-계약:
-
-- Monthly analysis는 **완료된 calendar month만** 사용한다.
-- `analysis_period.end`가 비어 있고 현재 월 데이터가 존재하더라도 현재 미완성 월은 제외한다.
-- explicit `end`가 월 중간이면 해당 terminal partial month는 제외한다.
-- 과거 완료월의 마지막 거래일이 달력 월말보다 앞선 경우(예: 월말이 주말) 그 월은 정상적인 완료월로 포함한다.
-- 따라서 현재 기준 default full-overlap research run의 마지막 월은 2026-07이어야 한다.
-
-LLM contract:
+작업 시작 직후 현재 branch를 확인하고 반드시:
 
 ```text
-uv run pytest tests/test_pipeline.py -q
+git pull --ff-only origin main
 ```
 
-신규 테스트가 구현 전 실패할 수 있으며 구현을 수정해 통과시킨다.
+을 수행한다. pull이 안전하게 완료되지 않으면 stale local에서 작업하지 말고 blocker로 회신한다.
 
-### 3. Bug B: Benchmark analytics를 optimizer 실제 analysis coverage에 제한
+그 후 다음 순서로 다시 읽는다.
 
-현재 portfolio optimization coverage는 2015-11 이후인데 SPY benchmark performance/drawdown/annual/monthly output에는 1993~2014 및 2000/2008 drawdown까지 포함됐다.
+1. `docs/specification.md`, 특히 Section 25
+2. `docs/architecture.md`
+3. `AGENTS.md`
+4. `tests/test_interactive_report_contract.py`
+5. `src/portfolio_optimizer_kr/viewer/report_model.py`
+6. `src/portfolio_optimizer_kr/viewer/builder.py`
+7. `src/portfolio_optimizer_kr/viewer/renderer.py`
+8. `site/report-template.html`
+9. Golden Source JPG/MD
 
-계약:
+LLM contract tests와 finance/presentation semantics를 통과 목적으로 약화·삭제·의미 변경하지 않는다. 계약 자체에 문제가 있다고 판단하면 구현으로 우회하지 말고 `agent-to-llm.md`에 blocker/question을 남긴다.
 
-- Benchmark는 optimizer universe의 공통기간을 **결정하거나 축소시키지 않는다**.
-- 그러나 benchmark를 비교/표시하는 performance, annual returns, monthly return series, rolling returns, drawdowns, active analytics는 optimizer의 실제 monthly analysis coverage 밖 데이터를 사용하지 않는다.
-- 즉 benchmark가 더 긴 history를 갖더라도 pre-analysis-period history가 result/review 비교표에 섞이지 않는다.
-- benchmark에 optimizer 기간 중 결측이 있으면 해당 비교는 실제 overlap을 사용하되 optimizer 자체 coverage는 유지한다.
+### 2. R&R boundary
 
-LLM contract:
+LLM이 이미 고정한 것:
+
+- report의 기능 요구와 Golden Source section scope
+- Viewer는 finance metric을 재계산하지 않는다는 boundary
+- self-contained `report.html` / local `file://` open contract
+- presentation model 핵심 field
+- tooltip semantics
+- 신규 review artifact의 최소 schema
+- Python skeleton과 contract tests
+
+Agent가 완성할 것:
+
+- 실제 analytics/review output 계산
+- presentation model의 production mapping/hardening
+- 실제 HTML/CSS/interactive chart/table rendering
+- 모든 hover tooltip
+- objective/benchmark 동적 표시
+- execution path와 `report.html` 생성 연결
+- packaging/path/dependency hardening
+- Golden Source visual comparison
+- GitHub Pages static publishing
+- targeted/full regression 및 E2E validation
+
+### 3. New engine/review outputs
+
+Viewer에서 금융 계산하지 말고 analytics/reporting 계층에서 아래 output을 생성한다. Section 25 schema를 따른다.
+
+#### `portfolio_growth.csv`
 
 ```text
-uv run pytest tests/test_reporting.py -q
+date
+provided_balance
+optimized_balance
+benchmark_balance
 ```
 
-### 4. Regression
+Provided / Optimized / Benchmark의 이미 계산된 historical return series에서 동일한 wealth/balance convention으로 생성한다.
 
-수정 후 관련 테스트와 전체 suite를 실행한다.
+#### `drawdown_series.csv`
 
 ```text
-uv run pytest tests/test_pipeline.py tests/test_reporting.py tests/test_research.py tests/test_runner.py -q
-uv run pytest -q
+date
+provided_drawdown_pct
+optimized_drawdown_pct
+benchmark_drawdown_pct
 ```
 
-### 5. 동일 research experiment 재실행
+각 historical wealth series의 prior peak 대비 drawdown series다.
 
-수정 완료 후 현재 `control/execute.yaml`이 가리키는 동일 experiment:
+#### `annual_asset_returns.csv`
 
 ```text
-studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml
+year
+ticker
+return_pct
 ```
 
-을 다시 실행한다.
+optimizer에 사용된 aligned monthly asset return matrix를 calendar year별 복리 결합한다. Viewer가 monthly return에서 annual return을 계산하지 않는다.
+
+#### `active_return_contribution.csv`
+
+```text
+date
+portfolio
+ticker
+cumulative_active_contribution_pct
+```
+
+Period asset active contribution 기본 정의:
+
+```text
+active_contribution_i,t = weight_i,t * (asset_return_i,t - benchmark_return_t)
+```
+
+Provided / Optimized 각각 실제 rebalancing schedule의 period-start weight를 사용한다. 자산별 period contribution 합은 해당 period의 portfolio active return과 일치해야 한다.
+
+`cumulative_active_contribution_pct`는 위 period contribution의 누적 합으로 정의한다. PV의 path-dependent geometric attribution을 역추론하지 않는다. 이 프로젝트에서는 해석 가능하고 additive한 위 정의를 canonical contract로 사용한다.
+
+#### `up_down_market_performance.csv`
+
+최소 schema:
+
+```text
+portfolio
+market_type
+portfolio_return_pct
+benchmark_return_pct
+active_return_pct
+occurrences
+```
+
+Benchmark monthly return `> 0`을 Up, `< 0`을 Down으로 분류한다. 정확히 0인 월은 별도 neutral로 둘 필요 없이 집계에서 제외해도 된다. Provided / Optimized 각각 계산한다. Golden Source 표 재현에 필요한 above/below benchmark count 등의 추가 column은 허용한다.
+
+#### `stress_periods.csv`
+
+```text
+stress_period
+start
+end
+provided_return_pct
+optimized_return_pct
+benchmark_return_pct
+```
+
+Stress-period registry는 코드에 명시적으로 관리하고 Viewer가 임의 정의하지 않는다. 우선 current Golden Source에 실제 나타나는 `COVID-19 Start` 구간을 재현하고, 추가 기간은 Golden Source/요건 근거 없이 임의 확장하지 않는다.
+
+### 4. Portfolio Metrics extension
+
+Golden Source Portfolio Metrics에서 현재 없는 항목은 analytics 계층에서 계산해 review output으로 제공한다. 일반 금융 관례를 사용하고 PV exact reverse engineering은 하지 않는다.
+
+최소 후보:
+
+```text
+Beta
+Alpha
+R-squared
+Treynor Ratio
+Calmar Ratio
+Modigliani-Modigliani Measure
+Skewness
+Excess Kurtosis
+Historical Value-at-Risk
+```
+
+정의가 기존 project convention과 충돌하거나 두 가지 이상의 materially different convention이 가능한 metric이 있으면 임의 선택하지 말고 blocker/question으로 회신한다. 단순 formatting 차이는 Agent가 처리해도 된다.
+
+### 5. Presentation model hardening
+
+현재 `viewer/builder.py`는 skeleton이다.
+
+- 기존 review CSV와 신규 CSV를 `ReportModel`에 일관되게 mapping한다.
+- Efficient Frontier와 Transition Map은 같은 frontier data를 공유한다.
+- individual asset marker에 `Ticker/Name`, Expected Return, Standard Deviation, Sharpe를 제공한다.
+- Provided / Optimized / Benchmark marker 데이터도 Efficient Frontier에 표시 가능하게 만든다.
+- objective label은 `max_sharpe` / `target_volatility`에 따라 동적으로 표시한다.
+- benchmark가 optional인 기존 core contract를 깨지 않는다. benchmark가 없을 때 benchmark-only chart/table은 graceful하게 생략 또는 N/A 처리한다.
+- presentation shaping을 넘어 finance metric을 재계산하지 않는다.
+
+필요하면 skeleton 내부 구조를 production 수준으로 리팩터링할 수 있으나 LLM contract의 의미와 public behavior는 유지한다.
+
+### 6. Golden Source HTML implementation
+
+`site/report-template.html`은 section structure만 잡은 skeleton이며 최종 디자인이 아니다.
+
+Golden Source JPG/MD를 다시 확인하여 Section 25의 29개 영역을 가능한 한 동일한 순서/정보 구조로 구현한다.
+
+특히 핵심 chart:
+
+1. Portfolio Growth
+2. Annual Returns
+3. Efficient Frontier
+4. Efficient Frontier Transition Map
+5. Annualized Active Return
+6. Active Return Contribution
+7. Rolling Active Return / Tracking Error
+8. Up vs. Down Market Performance
+9. Drawdown
+10. Annual Asset Returns
+11. Rolling 3Y / 5Y Returns
+
+Chart library는 Agent가 선택할 수 있다. 단 최종 `report.html`은 외부 CDN/script/CSS/network fetch 없이 완전히 self-contained여야 한다.
+
+### 7. Tooltip contract: 중요
+
+Section 25.7을 그대로 구현한다.
+
+핵심 재확인:
+
+- Portfolio Growth: `Date + Provided/Optimized/Benchmark balance`
+- Annual Returns: `Year + Provided/Optimized/Benchmark annual return %`
+- Efficient Frontier curve: `Std Dev % + Expected Return % + Sharpe + ticker/weight list`
+- Efficient Frontier asset dot: `Ticker/Name + Expected Return % + Sharpe + Std Dev %`
+- Transition Map: `Std Dev % + Expected Return % + ticker/weight list`, 연도 아님
+- Annualized Active Return: `Date + Provided Active Return % + Optimized Active Return %`; **Benchmark Active Return은 표시하지 않음**
+- Active Return Contribution: allocation이 아니라 `asset cumulative active contribution %`
+- Rolling Active Return / TE: `Date + Active Return % + Tracking Error %`
+- Up/Down Market: `Market Type + Portfolio Return % + Benchmark Return % + Active Return %`
+- Drawdown: `Date + Provided/Optimized/Benchmark drawdown %`
+- Annual Asset Returns: allocation이 아니라 `Year + asset + Annual Return %`
+- Rolling 3Y/5Y: `Date + Provided/Optimized/Benchmark annualized return %`
+
+### 8. Run integration
+
+최종 persisted research run에는 반드시:
+
+```text
+runs/<run_id>/report.html
+```
+
+이 생성되어야 한다.
+
+최소 acceptance는:
 
 ```text
 portfolio-optimizer execute
 ```
 
-- 기존 `runs/20260828-0001/`은 삭제/수정하지 않는다.
-- 새 generated run_id로 결과를 보존한다.
-- 새 run의 optimization monthly coverage end가 2026-07인지 확인한다.
-- benchmark annual/monthly/drawdown output에 optimizer coverage 이전 데이터가 없는지 확인한다.
-- 새 `runs/<run_id>/` 전체를 commit/push한다.
-- `study.md` Interpretation/Conclusion은 수정하지 않는다.
+후 생성된 run에 `report.html`이 존재하는 것이다.
 
-### 6. Scope guardrail
+가능하면 공통 persisted-run path에 통합해 direct `portfolio-optimizer run <yaml>`도 동일 report를 만들게 하되, 기존 runner contract를 깨지 않는다.
 
-이번 작업에서는 다음을 변경하지 않는다.
+현재 `run_yaml()`은 `execute_run()` 후 `input.yaml`을 copy하므로 report builder가 input metadata를 필요로 하는 실행 순서 문제를 주의한다. 중복 계산 path를 만들지 말고 persistence 순서를 정리하거나 config를 presentation builder에 안전하게 전달하는 방식으로 해결한다.
 
-- optimizer objective 또는 solver semantics
-- expected return/covariance 정의
-- user portfolio/bounds
-- RF convention
-- research interpretation framework
-- study conclusion
-- research_summary/frontier derived artifact
+### 9. Local no-server validation
 
-### 7. Completion report
+로컬 검증은 별도 server를 띄우지 않는다.
 
-`ai-share/agent-to-llm.md`에 다음을 기록하고 commit/push한다.
+생성된 `report.html`을 브라우저에서 직접 여는 `file://` 사용을 기준으로 한다.
 
-- sync branch / pull 결과 / 구현 기준 HEAD
-- Bug A 원인과 수정 위치 요약
-- Bug B 원인과 수정 위치 요약
-- targeted/full test 결과
-- 재실행 generated run_id 및 persisted path
-- 새 optimizer coverage
-- benchmark coverage 정합성 확인
-- old run `20260828-0001`과 비교 시 주요 optimizer 결과 변화가 있으면 요약
-- code commit SHA / run artifact commit SHA
-- blocker/warning
+검증 항목:
+
+- chart/table이 정상 표시
+- 외부 network request 없이 표시
+- tooltip 정상 동작
+- Golden Source와 section 순서/축/series/legend/정보 구조 비교
+- 긴 ticker/name, 여러 asset에서도 layout이 깨지지 않음
+
+자동 테스트만으로 visual fidelity 완료라고 판단하지 말고 실제 generated HTML을 확인한다.
+
+### 10. GitHub Pages
+
+repo가 public이라는 전제로 static GitHub Pages publishing을 구현한다.
+
+원칙:
+
+- Pages는 Python/CVXPY를 실행하지 않는다.
+- local `report.html`과 동일 presentation semantics를 publish한다.
+- 특정 run report를 URL로 열 수 있어야 한다.
+- 가능하면 historical persisted runs도 path로 접근 가능한 구조를 사용한다.
+- Pages repo setting 등 사용자 UI에서 한 번 해야 하는 manual step이 남으면 코드로 우회하지 말고 완료 보고에 정확히 적는다.
+
+Pages workflow가 core report generation을 방해하지 않도록 분리한다.
+
+### 11. Tests
+
+먼저 LLM contract:
+
+```text
+uv run pytest tests/test_interactive_report_contract.py -q
+```
+
+그 후 변경 영향 테스트를 추가/실행한다. Agent implementation unit/integration test 추가는 허용한다.
+
+완료 전 반드시 전체 regression:
+
+```text
+uv run pytest -q
+```
+
+LLM contract test를 삭제/xfail/skip/느슨하게 바꾸지 않는다.
+
+### 12. E2E validation run
+
+구현 완료 후 현재 seven-asset 연구의 동일 experiment를 사용해 새 run을 실행한다.
+
+```text
+portfolio-optimizer execute
+```
+
+기존 `runs/20260828-0002/`는 수정/삭제하지 않는다.
+
+새 generated run_id를 사용하고 새 run에서 다음을 확인한다.
+
+- 기존 finance 결과의 예상치 못한 regression 없음
+- 신규 review artifacts 생성
+- `report.html` 생성
+- `report.html` direct file open 가능
+- Efficient Frontier / Transition Map 및 주요 tooltip 정상
+
+새 validation run 전체를 commit/push한다.
+
+### 13. Documentation
+
+실제 구현이 안정된 뒤 `docs/architecture.md`를 최종 구현 구조에 맞게 최소 업데이트한다.
+
+- Viewer presentation model
+- self-contained HTML rendering
+- run persistence와 report 생성 위치
+- GitHub Pages static publishing boundary
+
+R&R이나 작업 토론을 architecture에 넣지 않는다.
+
+### 14. Completion report
+
+`ai-share/agent-to-llm.md`를 최신 message 하나로 교체하고 commit/push한다.
+
+반드시 포함:
+
+- sync/pull 결과 및 구현 기준 HEAD
+- 구현한 신규 review artifacts와 계산 위치
+- chart library / self-contained packaging 방식
+- Golden Source 구현 범위
+- tooltip 구현 결과
+- report generation integration 위치
+- local `file://` validation 결과
+- GitHub Pages workflow/path 및 manual setup 필요 여부
+- targeted test 결과
+- full regression 결과
+- E2E validation run_id / run path
+- code commit SHA
+- run artifact commit SHA
+- blocker/warning / 의도적으로 미룬 항목
