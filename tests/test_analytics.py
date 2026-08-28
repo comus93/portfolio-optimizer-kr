@@ -43,13 +43,13 @@ def test_sortino_uses_mar_downside_deviation():
 
 def test_trailing_table_drawdown_and_compounded_active_conventions():
     idx = pd.date_range("2024-01-31", periods=3, freq="ME")
-    portfolio = pd.Series([.1, -.2, .15], index=idx)
+    portfolio = pd.Series([.1, -.2, .3], index=idx)
     benchmark = pd.Series([0., -.1, .1], index=idx)
-    assert trailing_returns(portfolio)["3m"] == pytest.approx((1.1 * .8 * 1.15) - 1)
+    assert trailing_returns(portfolio)["3m"] == pytest.approx((1.1 * .8 * 1.3) - 1)
     assert trailing_returns(portfolio)["5y"] is None
     table = monthly_returns_table(portfolio)
     assert {"year", "Jan", "Feb", "Mar", "ytd"}.issubset(table.columns)
     episode = drawdown_episodes(portfolio).iloc[0]
     assert episode["start"] == idx[1] and episode["bottom"] == idx[1] and episode["recovery"] == idx[2]
     active = active_analytics(portfolio, benchmark, window=2)
-    assert active.iloc[-1]["cumulative_active_return"] == pytest.approx((1.1 * .8 * 1.15) - (1 * .9 * 1.1))
+    assert active.iloc[-1]["cumulative_active_return"] == pytest.approx((1.1 * .8 * 1.3) - (1 * .9 * 1.1))
