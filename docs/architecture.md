@@ -2,137 +2,311 @@
 
 ## 1. Purpose
 
-`portfolio-optimizer-kr`는 계산 엔진과 연구 관리 인터랙션을 분리한다.
+`portfolio-optimizer-kr`는 국내외 투자 자산을 동일한 mean-variance framework에서 분석하는 Python 기반 portfolio research system이다.
 
-계산 엔진의 책임은 재현 가능한 portfolio optimization과 analytics를 수행하는 것이다. 연구 관리 레이어의 책임은 사용자가 GPT와 자연어로 연구를 이어가면서 어떤 실험을 실행할지 선택하고, 실행 결과와 당시 해석을 지속 가능한 GitHub artifact로 연결하는 것이다.
+시스템은 다음 두 영역을 분리한다.
 
-핵심 원칙은 다음과 같다.
+1. **Optimization / Analytics Runtime**
+   - 재현 가능한 YAML 입력을 받아 market data, optimization, performance analytics를 계산하고 run artifact를 생성한다.
+2. **Research Interaction Layer**
+   - GPT와 사용자가 연구 질문, experiment, 실행 결과, 해석을 GitHub artifact로 연결해 연구를 이어갈 수 있게 한다.
 
-> Research interaction은 기존 YAML runner 위에 얇게 올라가며 optimizer core의 계산 의미론을 변경하지 않는다.
+Research Interaction Layer는 기존 optimizer runtime 위에 얇게 올라가며 계산 의미론을 변경하지 않는다.
 
-개발 시 LLM과 Agent의 역할 분담은 `AGENTS.md`를 source of truth로 따른다.
+---
 
-## 2. System Boundary
+## 2. Technology Baseline
 
-전체 실행 경계는 다음과 같다.
+현재 기술 구성은 다음과 같다.
 
 ```text
-User ↔ GPT
-       │
-       ▼
-   GitHub Study
-       │
-       ├─ experiment YAML
-       └─ control/execute.yaml
-                 │
-                 ▼
-       Control-aware Executor
-                 │
-                 ▼
-          Existing YAML Runner
-                 │
-                 ▼
-          OptimizationRequest
-                 │
-                 ▼
-            Optimizer Core
-                 │
-                 ▼
-             Run Outputs
-                 │
-                 ├─ canonical result
-                 ├─ review/raw tables
-                 └─ context.yaml
-                 │
-                 ▼
-User ↔ GPT updates study.md with findings / conclusion / follow-up
+Runtime           Python 3.11+
+Data processing   pandas / NumPy
+Market data       FinanceDataReader
+Optimization      CVXPY
+QP solver         OSQP
+SOCP solver       CLARABEL
+Configuration     YAML / PyYAML
+CLI               argparse + project script
+UI                Streamlit
+Persistence       Repository filesystem + GitHub
+Testing           pytest
+Packaging         pyproject.toml / hatchling
 ```
 
-Streamlit과 direct CLI도 같은 YAML runner를 사용한다.
+실제 optimization 계산은 로컬 Python runtime에서 수행한다.
+
+GitHub는 계산 runtime이 아니라 다음 artifact의 지속 저장소이자 GPT/Agent와 로컬 runtime 사이의 bridge다.
+
+```text
+Study
+Experiment YAML
+Execution pointer
+Run outputs
+Research interpretation
+```
+
+---
+
+## 3. Logical Architecture
+
+```text
+                         ┌─────────────────────┐
+                         │     User / GPT      │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ Research Artifacts  │
+                         │ studies/            │
+                         │ control/execute.yaml│
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+┌─────────────┐          ┌─────────────────────┐
+│ Streamlit UI│─────────▶│ Execution / Runner  │◀─────────┐
+└─────────────┘          └──────────┬──────────┘          │
+                                    │                     │
+┌─────────────┐                     │              ┌──────┴──────┐
+│ Direct CLI  │─────────────────────┘              │ YAML Config │
+└─────────────┘                                    └─────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ OptimizationRequest │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │  Analysis Pipeline  │
+                         │ data / stats / opt  │
+                         │ portfolio / analytics│
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   Run Persistence   │
+                         │ runs/<run_id>/      │
+                         └─────────────────────┘
+```
+
+모든 실행 surface는 최종적으로 동일한 YAML contract와 runner로 수렴한다.
 
 ```text
 Streamlit ─┐
-CLI YAML ──┼─> YAML Runner -> Optimizer Core -> Runs
-GPT flow ──┘
+CLI run ───┼─> YAML Runner -> OptimizationRequest -> Analysis Pipeline -> Run
+GPT execute┘
 ```
 
-GPT 전용 optimization API나 별도 계산 경로를 만들지 않는다.
+GPT 전용 financial API나 별도 optimization path를 만들지 않는다.
 
-## 3. Sources of Truth
+---
 
-각 artifact의 책임을 명확히 분리한다.
+## 4. Runtime Layers
 
-### Experiment YAML
+### 4.1 Input / Presentation Layer
 
-재현 가능한 실행 입력의 source of truth다.
+사용자가 optimizer를 호출하는 surface다.
+
+#### Direct CLI
+
+기존 실행 방식:
 
 ```text
-studies/<study-id>/experiments/<experiment>.yaml
+portfolio-optimizer run <config.yaml>
 ```
 
-Experiment는 별도의 registry object가 아니라 실행 가능한 기존 YAML contract 자체다.
+직접 YAML을 지정해 정밀하게 실행하는 개발자/Agent용 entrypoint다.
 
-### Canonical Result
+#### Streamlit UI
 
-계산 결과의 source of truth는 다음이다.
+UI는 사용자 입력을 YAML contract로 변환한 뒤 동일 runner를 호출한다.
 
-```text
-runs/<run_id>/result.json
-```
+UI가 `OptimizationRequest`나 optimizer core를 직접 조립하는 별도 실행 경로를 만들지 않는다.
 
-`review/`는 사람/GPT가 읽기 쉬운 표현이고 `raw/`는 full-precision machine-oriented data다.
+#### GPT Research Flow
 
-### Study Document
+GPT는 GitHub의 study와 experiment를 의미 기반으로 관리한다.
 
-연구 의미와 해석의 source of truth는 다음이다.
-
-```text
-studies/<study-id>/study.md
-```
-
-`study.md`는 별도 analysis/report 파일로 분리하지 않는다. 한 문서 안에 최소한 다음 내용을 함께 관리한다.
-
-- 연구 질문과 목적
-- 필요한 배경/가설
-- 실행한 experiment와 run 연결
-- 계산 결과에서 확인한 사실
-- GPT + 사용자 해석
-- 합의된 결론
-- follow-up 질문 또는 다음 experiment
-
-이 구조는 사람이 한눈에 연구 상태를 파악하게 하고 GPT/Agent의 GitHub read 횟수를 줄인다.
-
-### Execution Pointer
-
-현재 사용자가 실행하려는 target의 source of truth는 다음이다.
+연구 실행 대상은 command argument가 아니라 다음 tracked pointer에 기록한다.
 
 ```text
 control/execute.yaml
 ```
 
-v0 schema는 single experiment 실행만 지원한다.
+v0:
 
 ```yaml
 target: studies/gld-cap-sensitivity/experiments/003-gld-max30-r01.yaml
 ```
 
-연구를 전환할 때 command-line argument를 계속 바꾸지 않는다. GPT 또는 사용자가 `control/execute.yaml`의 target을 변경하고 로컬에서는 동일한 command를 실행한다.
+로컬 실행 명령은 연구가 바뀌어도 동일하다.
 
 ```text
 portfolio-optimizer execute
 ```
 
-Batch execution은 single-study research loop가 검증된 뒤 별도 확장한다.
+`execute`는 새 optimization engine이 아니라 control pointer를 해석해 기존 YAML runner를 호출하는 orchestration entrypoint다.
 
-### Run Context
+---
 
-연구 관리 레이어와 계산 결과를 연결하는 provenance artifact는 다음이다.
+### 4.2 Configuration Layer
+
+실행 가능한 experiment의 canonical format은 기존 YAML contract다.
+
+```text
+YAML
+ ↓
+load_run_config
+ ↓
+RunConfig
+ ↓
+OptimizationRequest
+```
+
+Experiment를 별도의 DB object나 중복 manifest로 관리하지 않는다.
+
+```text
+Experiment = executable YAML
+```
+
+YAML schema와 UI contract의 세부 사항은 `docs/input-ui-contract.md`를 따른다.
+
+---
+
+### 4.3 Data Layer
+
+Market data source는 v1에서 FinanceDataReader다.
+
+개념 흐름:
+
+```text
+FDR
+ ↓
+asset / benchmark price series
+ ↓
+optional FX alignment
+ ↓
+canonical adjusted prices
+ ↓
+common analysis coverage
+ ↓
+monthly return matrix
+```
+
+Runner가 external data loading과 warm-up loading을 담당하고, 이후 계산 계층에는 정규화된 data를 전달한다.
+
+---
+
+### 4.4 Domain / Analysis Pipeline
+
+현재 source package의 주요 논리 영역은 다음과 같다.
+
+```text
+config/       YAML parsing and validation
+models.py     canonical domain request/spec models
+data/         market data loading and normalization
+stats/        return/statistical calculations
+optimize/     optimization models and solver integration
+portfolio/    portfolio return/rebalancing logic
+analytics/    performance/risk/benchmark analytics
+pipeline.py   analysis orchestration
+report/       canonical/review/raw persistence
+viewer/       persisted result presentation support
+runner.py     YAML-to-run orchestration
+cli.py        command-line entrypoint
+```
+
+의존 방향은 외부 orchestration에서 계산 core 쪽으로 흐른다.
+
+```text
+CLI / UI / Research Control
+          ↓
+        Runner
+          ↓
+   Configuration Model
+          ↓
+    Analysis Pipeline
+          ↓
+Data -> Statistics -> Optimization
+                    -> Portfolio
+                    -> Analytics
+          ↓
+       Reporting
+```
+
+Optimizer core와 analytics는 Study, GPT interpretation, GitHub control state를 알지 않는다.
+
+---
+
+## 5. Research Interaction Layer
+
+### 5.1 Study
+
+연구의 의미 단위다.
+
+```text
+studies/<study-id>/study.md
+```
+
+`study.md` 하나에 다음 연구 상태를 함께 둔다.
+
+```text
+Research question / purpose
+Hypothesis / background
+Executed experiment + run references
+Observed result facts
+Interpretation
+Conclusion
+Follow-up
+```
+
+별도 `analysis.md`를 두지 않는다.
+
+이 구조는 연구 질문과 결과 해석을 한 화면에서 볼 수 있게 하고 GPT/Agent가 연구를 복원할 때 필요한 GitHub read 횟수를 줄인다.
+
+### 5.2 Experiment
+
+```text
+studies/<study-id>/experiments/<experiment>.yaml
+```
+
+기존 YAML 실행 contract를 그대로 사용한다.
+
+Revision이 필요하면 파일 단위로 관리한다.
+
+```text
+003-gld-max30-r01.yaml
+003-gld-max30-r02.yaml
+```
+
+Git history가 파일 변경 이력을 담당한다.
+
+### 5.3 Execution Pointer
+
+```text
+control/execute.yaml
+```
+
+현재 실행 대상 experiment를 가리킨다.
+
+Research Interaction v0에서는 single experiment만 지원한다.
+
+```yaml
+target: studies/<study-id>/experiments/<experiment>.yaml
+```
+
+Batch execution은 single research loop 검증 이후 확장한다.
+
+### 5.4 Run Context
+
+각 research run은 계산 결과 외에 연구 provenance를 보존한다.
 
 ```text
 runs/<run_id>/context.yaml
 ```
 
-최소 형태:
+v0 최소 구조:
 
 ```yaml
 run_id: 20260828-0007
@@ -140,210 +314,220 @@ study: studies/gld-cap-sensitivity/study.md
 experiment: studies/gld-cap-sensitivity/experiments/003-gld-max30-r01.yaml
 ```
 
-`context.yaml`에는 분석 내용이나 계산 결과를 복제하지 않는다.
-
-역할은 오직 다음 연결을 유지하는 것이다.
+역할은 다음 linkage 유지다.
 
 ```text
 Study <-> Experiment <-> Run
 ```
 
-분석과 결론은 `study.md`, exact executed input은 `runs/<run_id>/input.yaml`, 계산 결과는 `result.json`이 담당한다.
+`context.yaml`에 계산 결과나 interpretation을 복제하지 않는다.
 
-## 4. Repository Layout
-
-Research Interaction v0의 최소 구조는 다음과 같다.
+각 정보의 source of truth는 다음처럼 분리한다.
 
 ```text
-studies/
-└─ <study-id>/
-   ├─ study.md
-   └─ experiments/
-      ├─ 001-base-r01.yaml
-      ├─ 002-...-r01.yaml
-      └─ ...
+Research meaning / interpretation   study.md
+Executable experiment              experiment YAML
+Exact executed input               runs/<run_id>/input.yaml
+Calculated canonical result        runs/<run_id>/result.json
+Research provenance                runs/<run_id>/context.yaml
+Human/LLM-readable tables          runs/<run_id>/review/
+Full-precision tables              runs/<run_id>/raw/
+```
 
-control/
-└─ execute.yaml
+---
 
-runs/
-└─ <run_id>/
+## 6. Execution Architecture
+
+### 6.1 Existing Direct YAML Flow
+
+현재 runner의 실행 흐름은 다음과 같다.
+
+```text
+config.yaml
+   ↓
+load_run_config()
+   ↓
+RunConfig / OptimizationRequest
+   ↓
+runner.execute_run()
+   ↓
+FDR data loading
+   ↓
+pipeline.analyze_prices()
+   ↓
+report.write_analysis_run()
+   ↓
+runs/<run_id>/
    ├─ input.yaml
    ├─ result.json
-   ├─ context.yaml
    ├─ review/
    └─ raw/
 ```
 
-초기 버전에서는 별도 study registry DB, state machine, report version subsystem을 만들지 않는다. Git history가 변경 이력을 담당한다.
+### 6.2 Research Control Flow
 
-Experiment revision은 필요할 때 새 YAML 파일로 관리한다.
-
-```text
-003-gld-max30-r01.yaml
-003-gld-max30-r02.yaml
-```
-
-## 5. Component Responsibilities
-
-### GPT / Research Front-end
-
-GPT는 repository path를 사용자에게 직접 관리시키는 UI가 아니라 의미 기반 research front-end 역할을 한다.
-
-책임:
-
-- 기존 study 탐색과 과거 결론 복원
-- 사용자와 연구 질문/가설 논의
-- experiment YAML 생성 또는 revision
-- 실행할 experiment 선택
-- `control/execute.yaml` target 갱신
-- run output 해석
-- 사용자와 합의한 결과를 `study.md`에 반영
-- 필요한 follow-up experiment 제안/생성
-
-### Control-aware Executor
-
-`portfolio-optimizer execute`의 책임:
-
-1. `control/execute.yaml`을 읽는다.
-2. target experiment YAML path를 검증한다.
-3. existing YAML runner에 해당 YAML을 전달한다.
-4. 생성된 run과 study/experiment를 연결하는 `context.yaml`을 저장한다.
-
-이 계층은 orchestration 역할만 하며 금융 계산을 수행하지 않는다.
-
-### Existing YAML Runner
-
-기존 contract를 유지한다.
-
-책임:
-
-- YAML parsing / validation
-- market data와 필요한 warm-up/FX data loading
-- `OptimizationRequest` 생성
-- optimizer core 호출
-- persisted run 생성
-- exact input을 `runs/<run_id>/input.yaml`에 보존
-
-### Optimizer Core
-
-연구 관리 개념을 알지 않는다.
-
-Optimizer Core에는 다음 개념이 들어가지 않는다.
+Research Interaction v0는 이 경로 앞에 target resolution만 추가한다.
 
 ```text
-Study
 control/execute.yaml
-study.md
-GPT interpretation
-follow-up
-```
-
-Core는 `OptimizationRequest`를 받아 계산 결과를 반환한다.
-
-### Viewer / Streamlit
-
-Viewer는 기존 run output만으로 동작할 수 있어야 한다. 연구 관리 metadata가 없어도 과거 run을 표시할 수 있어야 한다.
-
-Streamlit에서 실행하는 경우에도 YAML을 생성하고 existing runner를 호출한다. Streamlit이 별도 optimization path를 만들지 않는다.
-
-## 6. Development R&R
-
-구체적인 LLM/Agent 역할 분담과 테스트 규율의 source of truth는 `AGENTS.md`다. Research Interaction Layer도 동일한 R&R을 그대로 적용한다.
-
-이 레이어에서의 적용 방식은 다음과 같다.
-
-```text
-User + LLM
-  ↓
-interaction requirement / schema / acceptance scenario 확정
-  ↓
-LLM
-  - control/execute.yaml contract 정의
-  - context.yaml contract 정의
-  - pytest contract test 작성
-  - 초기 skeleton code 직접 개발
-  ↓
-Agent
-  - LLM skeleton을 repository 실제 구조에 맞게 구현 보강
-  - dependency / CLI wiring
-  - 실제 실행 및 디버깅
-  - integration / UI hardening
-  - full regression test
-```
-
-LLM의 역할은 분석 설계에서 끝나지 않는다. 확정한 계약을 코드로 고정하기 위해 테스트 코드와 초기 동작 가능한 뼈대 코드를 직접 작성한다.
-
-Agent는 구현 편의를 위해 LLM이 확정한 schema, contract test, 초기 실행 의미론을 임의로 약화하거나 변경하지 않는다. 계약 자체에 문제가 있으면 `ai-share/agent-to-llm.md`로 blocker를 제기한다.
-
-Agent는 LLM이 작성한 초기 코드를 실제 dependency와 repository 환경에서 완성하고, end-to-end 실행과 regression을 통해 production-quality 수준으로 hardening한다.
-
-## 7. Single Research Loop v0
-
-첫 번째 구현 목표는 하나의 연구가 끝까지 한 바퀴 도는 것이다.
-
-```text
-1. User + GPT가 연구 질문을 정의한다.
-2. GPT가 studies/<study-id>/study.md를 생성 또는 갱신한다.
-3. GPT가 실행 가능한 experiment YAML을 생성한다.
-4. GPT가 control/execute.yaml의 target을 해당 experiment로 설정한다.
-5. 사용자가 로컬에서 `portfolio-optimizer execute`를 실행한다.
-6. Executor가 existing YAML runner를 호출한다.
-7. run output과 context.yaml이 생성된다.
-8. GPT가 study.md와 linked run output을 읽고 결과를 해석한다.
-9. User + GPT가 결론과 후속 질문을 논의한다.
-10. GPT가 study.md에 findings / conclusion / follow-up을 반영한다.
-11. 후속 experiment가 필요하면 3번부터 반복한다.
-```
-
-이 루프가 안정적으로 동작하는 것이 Batch보다 우선한다.
-
-## 8. Dependency Direction
-
-의존 방향은 다음을 유지한다.
-
-```text
-Research Interaction
         ↓
+resolve target experiment
+        ↓
+studies/.../experiment.yaml
+        ↓
+existing run_yaml()
+        ↓
+runs/<run_id>/
+        ↓
+write context.yaml
+```
+
+즉 새 기능의 핵심 경계는 다음이다.
+
+```text
 Control-aware Executor
-        ↓
-Existing YAML Runner
-        ↓
-OptimizationRequest
-        ↓
-Optimizer Core
+      = target resolution + provenance persistence
 ```
 
-반대 방향 의존을 만들지 않는다.
+금융 계산, data loading, solver, analytics를 다시 구현하지 않는다.
 
-특히 Optimizer Core가 study file이나 GitHub 상태를 읽지 않는다.
+---
+
+## 7. Persistence Architecture
+
+Repository 안의 persistent artifact는 세 범주다.
+
+### Definition
+
+```text
+studies/<study-id>/study.md
+studies/<study-id>/experiments/*.yaml
+control/execute.yaml
+```
+
+### Execution Result
+
+```text
+runs/<run_id>/
+├─ input.yaml
+├─ result.json
+├─ context.yaml
+├─ review/
+└─ raw/
+```
+
+### System Documents
+
+```text
+specification.md
+docs/architecture.md
+docs/input-ui-contract.md
+AGENTS.md
+ai-share/
+```
+
+GitHub는 이 파일들의 durable history와 GPT/Agent 간 접근 지점을 제공한다.
+
+로컬 runtime은 GitHub API를 통해 optimization을 수행하지 않는다. 계산은 checkout된 repository와 Python runtime에서 수행한다.
+
+---
+
+## 8. Repository Structure
+
+Research Interaction v0가 추가된 목표 구조:
+
+```text
+portfolio-optimizer-kr/
+├─ control/
+│  └─ execute.yaml
+├─ studies/
+│  └─ <study-id>/
+│     ├─ study.md
+│     └─ experiments/
+│        └─ *.yaml
+├─ runs/
+│  └─ <run_id>/
+│     ├─ input.yaml
+│     ├─ result.json
+│     ├─ context.yaml
+│     ├─ review/
+│     └─ raw/
+├─ src/portfolio_optimizer_kr/
+│  ├─ analytics/
+│  ├─ config/
+│  ├─ data/
+│  ├─ optimize/
+│  ├─ portfolio/
+│  ├─ report/
+│  ├─ stats/
+│  ├─ viewer/
+│  ├─ cli.py
+│  ├─ models.py
+│  ├─ pipeline.py
+│  └─ runner.py
+├─ ui/
+│  └─ app.py
+├─ tests/
+└─ docs/
+```
+
+Research artifact와 executable source code를 분리한다.
+
+---
 
 ## 9. Failure Boundaries
 
-### Invalid control target
+### Control resolution failure
 
-`control/execute.yaml`이 없거나 target이 존재하지 않거나 실행 가능한 YAML이 아니면 optimizer core 호출 전에 명시적으로 실패한다.
+다음은 optimizer core 호출 전에 실패한다.
 
-### Invalid experiment YAML
+```text
+control/execute.yaml missing
+invalid YAML
+missing target
+nonexistent target
+non-experiment target
+```
 
-기존 YAML validation error를 그대로 사용한다. Research layer가 계산 contract를 우회하지 않는다.
+### Experiment validation failure
 
-### Run persistence failure
+Target resolution 후에는 기존 YAML validation contract를 사용한다.
 
-계산이 성공했더라도 required run artifacts 저장에 실패하면 완료된 research run으로 취급하지 않는다.
+Research layer가 invalid experiment를 보정해서 실행하지 않는다.
 
-### Study update failure
+### Calculation failure
 
-계산된 run 자체는 유효할 수 있다. 다만 `study.md`에 해석/결론을 아직 반영하지 못한 상태는 research loop가 끝난 것으로 간주하지 않는다. 별도 복잡한 status machine은 만들지 않는다.
+Market data, solver, analytics failure는 기존 runtime error boundary를 유지한다.
 
-## 10. Deferred Extensions
+### Persistence failure
 
-다음은 v0 single research loop가 검증된 후 필요에 따라 확장한다.
+Required run artifact 저장이 완료되지 않으면 persisted run 완료로 취급하지 않는다.
 
-- Batch experiment execution
-- study navigation index
-- richer run aggregation/comparison artifact
-- automatic notification / remote execution
-- study search optimization
+`context.yaml` 생성 실패 역시 research execution 기준으로는 완료가 아니다.
 
-Batch를 추가할 때도 existing YAML runner와 optimizer core contract는 유지하고 orchestration layer만 확장하는 것을 기본 원칙으로 한다.
+---
+
+## 10. Extension Boundary
+
+Research Interaction v0의 목표는 single experiment research loop다.
+
+후속 확장 후보:
+
+```text
+Batch experiment execution
+Study navigation index
+Run comparison aggregation
+Remote execution / notification
+Study search optimization
+```
+
+이 확장들은 Research Interaction / orchestration layer에서 해결한다.
+
+기본 원칙은 다음과 같다.
+
+```text
+YAML contract 유지
+Existing runner 재사용
+Optimizer core 계산 의미론 유지
+Run canonical result 유지
+```
