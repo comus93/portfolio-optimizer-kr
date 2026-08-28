@@ -98,14 +98,16 @@ FDR을 통해 한국 ETF/주식과 지원되는 미국 ticker를 조회한다.
 
 사용자가 요청한 기간과 실제 데이터 coverage의 교집합을 사용한다.
 
-여러 자산이 있을 경우 모든 자산이 동시에 존재하는 공통 구간을 사용한다.
+Optimization universe의 여러 자산이 있을 경우 모든 자산이 동시에 존재하는 공통 구간을 사용한다.
 
 ```text
 common_start = max(asset_start_dates)
 common_end   = min(asset_end_dates)
 ```
 
-Benchmark가 historical comparison에 포함되는 경우 benchmark도 해당 비교 계산의 공통 coverage에 포함한다.
+Benchmark의 짧은 history 때문에 optimization 자체의 기간을 줄이지 않는다.
+
+Benchmark analytics는 optimization portfolio series와 benchmark가 동시에 존재하는 별도 overlap period를 사용하고, 실제 비교 coverage를 결과에 명시한다.
 
 임의 backfill로 상장 이전 데이터를 만들지 않는다.
 
@@ -201,23 +203,11 @@ risk_free_mode = us_3m_tbill # default
 risk_free_mode = fixed
 ```
 
-고정값이 지정되면 해당 값을 사용한다.
+Historical T-Bill을 사용할 경우 analysis period에 맞는 monthly risk-free return series를 구성하고, ex-ante Sharpe와 ex-post Sharpe에서 동일한 source convention을 일관되게 사용한다.
 
-Historical T-Bill rate를 사용할 경우 analysis period에 맞는 risk-free series를 monthly 수준으로 정규화한다.
+특정 Treasury series의 yield-to-return 변환 방식은 실제 provider와 series 정의를 확인한 뒤 구현 시 명시하고 테스트한다. PV 내부 구현과 정확히 같게 만들기 위해 불필요하게 역추론하지 않는다.
 
-연율 rate `y_t`를 monthly equivalent return으로 바꿀 때 기본식은 다음과 같다.
-
-```text
-rf_monthly_t = (1 + y_t)^(1/12) - 1
-```
-
-Ex-ante optimization에 사용하는 annual risk-free rate는 aligned monthly risk-free return의 arithmetic mean을 annualize한다.
-
-```text
-rf_annual = mean(rf_monthly) * 12
-```
-
-정확한 PV 내부 구현과 다를 수 있으며, PV golden test에서는 그 차이를 별도로 기록한다.
+고정 annual risk-free rate가 지정되면 historical source 대신 해당 값을 사용한다.
 
 ## 9. Portfolio Constraints
 
