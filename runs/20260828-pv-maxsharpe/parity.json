@@ -1,0 +1,112 @@
+{
+  "code_revision": "c70b3cc15055b6fad980b0994f52b20ac8952473",
+  "diagnostic": "FDR vs PV data-source differences and CVXPY vs PV optimizer differences are not assigned a numeric pass/fail tolerance.",
+  "fdr_coverage": {
+    "benchmark_overlap": {
+      "end": "2026-07-31",
+      "observations": 120,
+      "start": "2016-08-31"
+    },
+    "optimization_monthly_returns": {
+      "end": "2026-07-31",
+      "observations": 120,
+      "start": "2016-08-31"
+    }
+  },
+  "frontier": {
+    "point_count": 100,
+    "return_max": 0.30003929077619523,
+    "return_min": 0.16217712257809044,
+    "shape_sanity": "ordered target-return minimum-variance frontier"
+  },
+  "golden": {
+    "analysis_period": {
+      "end": "2026-07",
+      "start": "2016-08"
+    },
+    "assets": [
+      "QQQ",
+      "SPMO",
+      "GDX",
+      "GLD",
+      "SLV",
+      "AIA",
+      "XLE",
+      "PTF",
+      "QLD"
+    ],
+    "benchmark": "SPY",
+    "bounds": {
+      "AIA": 0.3,
+      "GDX": 0.3,
+      "GLD": 0.3,
+      "PTF": 0.5,
+      "QLD": 0.5,
+      "QQQ": 0.5,
+      "SLV": 0.3,
+      "SPMO": 0.5,
+      "XLE": 0.3
+    },
+    "provided_weights": {
+      "AIA": 0.15,
+      "GDX": 0.1,
+      "GLD": 0.0,
+      "PTF": 0.1,
+      "QLD": 0.1,
+      "QQQ": 0.2,
+      "SLV": 0.1,
+      "SPMO": 0.1,
+      "XLE": 0.15
+    }
+  },
+  "implied_risk_free": {
+    "max": 0.023749200000000026,
+    "mean": 0.023597499999999993,
+    "median_effective_annual_rate": 0.02355950000000001,
+    "min": 0.023460199999999987,
+    "per_asset": {
+      "AIA": 0.02353920000000001,
+      "GDX": 0.023749200000000026,
+      "GLD": 0.023578,
+      "PTF": 0.023535999999999974,
+      "QLD": 0.023669699999999905,
+      "QQQ": 0.023546800000000007,
+      "SLV": 0.023738900000000007,
+      "SPMO": 0.02355950000000001,
+      "XLE": 0.023460199999999987
+    },
+    "spread": 0.0002890000000000392
+  },
+  "optimizer": {
+    "expected_return": 0.17205219291653626,
+    "pv": {
+      "expected_return": 0.1721,
+      "sharpe": 1.13,
+      "volatility": 0.131
+    },
+    "sharpe": 1.1333140748542865,
+    "volatility": 0.13102519081978964,
+    "weight_delta_vs_pv": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": -5.551115123125783e-17,
+      "PTF": 0.0,
+      "QLD": 0.0,
+      "QQQ": -0.0022547477289600326,
+      "SLV": 0.0,
+      "SPMO": 0.0036651759401676864,
+      "XLE": -0.0013104282112074914
+    },
+    "weights": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": 0.29999999999999993,
+      "PTF": 0.0,
+      "QLD": 0.0,
+      "QQQ": 0.24384525227103998,
+      "SLV": 0.0,
+      "SPMO": 0.4108651759401677,
+      "XLE": 0.04528957178879251
+    }
+  }
+}
