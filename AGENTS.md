@@ -5,14 +5,17 @@
 개발 전 다음 문서를 우선 확인한다.
 
 1. `specification.md`
-2. `ai-share/PROTOCOL.md`
+2. `docs/input-ui-contract.md`
+3. `ai-share/PROTOCOL.md`
 
 현재 LLM 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
 
 ## Role split
 
-- LLM은 요구사항 분석, 금융 계산 정의, 테스트 시나리오, 초기 뼈대 코드를 담당한다.
-- Agent는 개발자로서 구현 보강, 의존성 정리, 실제 실행, 디버깅, 테스트를 담당한다.
+- LLM은 요구사항 분석, 금융 계산 정의, 테스트 시나리오와 **pytest 계약 코드**, 초기 뼈대 코드를 담당한다.
+- Agent는 개발자로서 LLM이 만든 계약/테스트를 기준으로 구현 보강, 의존성 정리, 실제 실행, 디버깅, UI hardening, 회귀 테스트를 담당한다.
+- Agent는 테스트를 통과시키기 위해 LLM이 만든 contract test를 임의로 약화·삭제·의미 변경하지 않는다. 계약 자체에 문제가 있다고 판단하면 먼저 `agent-to-llm.md`로 blocker를 남긴다.
+- YAML/UI/Viewer 작업에서도 동일 R&R을 유지한다. LLM이 YAML schema, execution boundary, viewer boundary와 테스트를 고정하고 Agent가 실제 환경에서 end-to-end로 완성한다.
 - 금융 계산 정의나 scope를 바꿔야 하면 임의로 변경하지 말고 `agent-to-llm.md`로 질문 또는 blocker를 남긴다.
 
 ## Development principles
