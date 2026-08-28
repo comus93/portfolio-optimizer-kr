@@ -1,5 +1,5 @@
 {
-  "code_revision": "020b094534c24430b417cc92d9396459f0822bb0",
+  "code_revision": "6a5a7f4c8a24b2d4ccd1042136f3af30ac3f29da",
   "diagnostic": "FDR vs PV data-source differences and CVXPY vs PV optimizer differences are not assigned a numeric pass/fail tolerance.",
   "fdr_coverage": {
     "benchmark_overlap": {
@@ -15,8 +15,8 @@
   },
   "frontier": {
     "point_count": 100,
-    "return_max": 0.3000392955578066,
-    "return_min": 0.16217715174203146,
+    "return_max": 0.3000392868447436,
+    "return_min": 0.16217714269373013,
     "shape_sanity": "ordered target-return minimum-variance frontier"
   },
   "golden": {
@@ -78,35 +78,35 @@
     "spread": 0.0002890000000000392
   },
   "moment_parity": {
-    "correlation_max_abs_delta": 0.01233144712181173,
-    "correlation_mean_abs_delta": 0.0035513062014657965,
+    "correlation_max_abs_delta": 0.012331408191169207,
+    "correlation_mean_abs_delta": 0.003551314422032754,
     "per_asset": [
       {
         "asset": "QQQ",
-        "expected_return_delta": -0.0007060144036021287,
-        "fdr_expected_return": 0.20419398559639784,
-        "fdr_volatility": 0.1900755869739326,
+        "expected_return_delta": -0.0007060298908099782,
+        "fdr_expected_return": 0.20419397010919,
+        "fdr_volatility": 0.19007558518425208,
         "pv_expected_return": 0.20489999999999997,
         "pv_volatility": 0.18969999999999998,
-        "volatility_delta": 0.0003755869739326123
+        "volatility_delta": 0.0003755851842520974
       },
       {
         "asset": "SPMO",
-        "expected_return_delta": -0.0006335452822554266,
-        "fdr_expected_return": 0.1950664547177446,
-        "fdr_volatility": 0.1797545155623962,
+        "expected_return_delta": -0.0006335551636324765,
+        "fdr_expected_return": 0.19506644483636754,
+        "fdr_volatility": 0.17975450522548359,
         "pv_expected_return": 0.1957,
         "pv_volatility": 0.1795,
-        "volatility_delta": 0.0002545155623961959
+        "volatility_delta": 0.0002545052254835922
       },
       {
         "asset": "GDX",
-        "expected_return_delta": 0.0036572417437955584,
-        "fdr_expected_return": 0.15705724174379557,
-        "fdr_volatility": 0.33931569870549844,
+        "expected_return_delta": 0.003657245417737237,
+        "fdr_expected_return": 0.15705724541773725,
+        "fdr_volatility": 0.3393157304558578,
         "pv_expected_return": 0.1534,
         "pv_volatility": 0.3394,
-        "volatility_delta": -8.430129450154311e-05
+        "volatility_delta": -8.426954414220145e-05
       },
       {
         "asset": "GLD",
@@ -128,72 +128,72 @@
       },
       {
         "asset": "AIA",
-        "expected_return_delta": -0.0017551685998769828,
-        "fdr_expected_return": 0.147744831400123,
-        "fdr_volatility": 0.21736255932587262,
+        "expected_return_delta": -0.0017551780376632575,
+        "fdr_expected_return": 0.14774482196233674,
+        "fdr_volatility": 0.21736256610551288,
         "pv_expected_return": 0.1495,
         "pv_volatility": 0.2168,
-        "volatility_delta": 0.0005625593258726247
+        "volatility_delta": 0.0005625661055128905
       },
       {
         "asset": "XLE",
-        "expected_return_delta": -0.0011137719395165613,
-        "fdr_expected_return": 0.14178622806048344,
-        "fdr_volatility": 0.29984454708118763,
+        "expected_return_delta": -0.0011137988776581675,
+        "fdr_expected_return": 0.14178620112234183,
+        "fdr_volatility": 0.2998445286150711,
         "pv_expected_return": 0.1429,
         "pv_volatility": 0.30010000000000003,
-        "volatility_delta": -0.0002554529188124044
+        "volatility_delta": -0.0002554713849289292
       },
       {
         "asset": "PTF",
-        "expected_return_delta": -0.0008402119712753731,
-        "fdr_expected_return": 0.2422597880287246,
-        "fdr_volatility": 0.2897148730047863,
+        "expected_return_delta": -0.0008402158728926801,
+        "fdr_expected_return": 0.2422597841271073,
+        "fdr_volatility": 0.28971486208318814,
         "pv_expected_return": 0.24309999999999998,
         "pv_volatility": 0.2889,
-        "volatility_delta": 0.0008148730047863317
+        "volatility_delta": 0.0008148620831881503
       },
       {
         "asset": "QLD",
-        "expected_return_delta": -0.0007812198500924405,
-        "fdr_expected_return": 0.35781878014990753,
-        "fdr_volatility": 0.38843543917626827,
+        "expected_return_delta": -0.0007812333761870738,
+        "fdr_expected_return": 0.3578187666238129,
+        "fdr_volatility": 0.3884353787357969,
         "pv_expected_return": 0.3586,
         "pv_volatility": 0.3881,
-        "volatility_delta": 0.0003354391762682707
+        "volatility_delta": 0.0003353787357969207
       }
     ]
   },
   "optimizer": {
-    "expected_return": 0.17205221888089695,
+    "expected_return": 0.17205220406580085,
     "pv": {
       "expected_return": 0.1721,
       "sharpe": 1.13,
       "volatility": 0.131
     },
-    "sharpe": 1.1333143206642073,
-    "volatility": 0.13102518531122861,
+    "sharpe": 1.1333142718099858,
+    "volatility": 0.13102517788701903,
     "weight_delta_vs_pv": {
       "AIA": 0.0,
       "GDX": 0.0,
-      "GLD": 0.0,
+      "GLD": -5.551115123125783e-17,
       "PTF": 0.0,
       "QLD": 0.0,
-      "QQQ": -0.0022543508094916287,
+      "QQQ": -0.0022544991040299722,
       "SLV": 0.0,
-      "SPMO": 0.0036650731064467035,
-      "XLE": -0.0013107222969550442
+      "SPMO": 0.0036651387226091514,
+      "XLE": -0.0013106396185790306
     },
     "weights": {
       "AIA": 0.0,
       "GDX": 0.0,
-      "GLD": 0.3,
+      "GLD": 0.29999999999999993,
       "PTF": 0.0,
       "QLD": 0.0,
-      "QQQ": 0.24384564919050838,
+      "QQQ": 0.24384550089597004,
       "SLV": 0.0,
-      "SPMO": 0.4108650731064467,
-      "XLE": 0.04528927770304496
+      "SPMO": 0.41086513872260916,
+      "XLE": 0.04528936038142097
     }
   },
   "solver_only_parity": {

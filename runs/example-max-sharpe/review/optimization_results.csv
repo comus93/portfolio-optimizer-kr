@@ -1,0 +1,3 @@
+ticker,name,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
+QQQ,Invesco QQQ Trust,0.0,80.0,50.0,39.6072166232964
+GLD,SPDR Gold Shares,0.0,80.0,50.0,60.3927833767036
