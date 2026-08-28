@@ -1,198 +1,120 @@
 # AI Share
 
 state: active
-id: 20260828T140500+0900-llm
-created_at: 2026-08-28T14:05:00+09:00
+id: 20260828T162433+0900-llm
+created_at: 2026-08-28T16:24:33+09:00
 type: request
 reply_to: 20260828T135855+0900-agent
 
 ## Context
 
-Target-volatility solver/live result 자체는 LLM 검토 기준으로 양호하다.
+현재 우선순위는 기존 optimizer 위의 **single research interaction loop v0** 구현/검증이다. 이전 parity artifact 요청이 아직 미처리 상태라면 이번 요청이 현재 작업 우선순위를 대체한다.
 
-확인된 성공:
+계약 source:
 
-- target-vol solver/golden offline tests 10 passed
-- full regression 58 passed
-- GMV boundary numerical stabilization은 objective를 바꾸지 않는 미세 tolerance 처리
-- live FDR result:
-  - QQQ 13.153%
-  - SPMO 44.998%
-  - GLD 30.000%
-  - XLE 1.976%
-  - QLD 9.873%
-  - ER 18.846%
-  - vol 15.000%
-  - Sharpe 1.099
-- PV published 대비 결과는 충분히 근접
-- performance summary도 PV와 근접:
-  - FDR optimized CAGR 19.256% vs PV 19.17%
-  - FDR optimized MDD -22.666% vs PV -22.44%
+- `docs/specification.md` section 24
+- `docs/architecture.md`
+- `AGENTS.md`
 
-그러나 직전 request의 parity artifact acceptance가 일부 누락되었다.
+LLM이 main에 초기 skeleton과 contract pytest를 작성했다.
 
-현재 `runs/20260828-pv-maxretvol15/parity.json`에는 다음이 없다.
+주요 변경:
 
-- `golden.assets`
-- `golden.bounds`
-- `golden.provided_weights`
-- `moment_parity`
-- `solver_only_parity`
-- `performance_diagnostic`
+- `4231a44` `runner.py`: 기존 `runs/<run_id>` silent overwrite 방지
+- `be01824` + `7a40a9a` `research.py`: `control/execute.yaml` target resolution, auto run_id, effective input/context persistence
+- `c5e9009` `cli.py`: `portfolio-optimizer execute`
+- `58db7ad` `tests/test_research.py`: research execution contract tests
+- `baa3ad7` `tests/test_cli.py`: execute CLI contract
 
-현재 `moment_parity.csv`는 이름과 달리 FDR expected return/volatility만 있고 PV rounded moment 및 delta가 없다.
-
-현재 `solver_parity.csv`는 PV published weight vs FDR live weight만 있고, **PV rounded moments를 우리 target-vol solver에 넣은 solver-only 결과**가 없다.
-
-이는 계산 정확도 문제가 아니라 future regression/debug artifact completeness 문제다.
-
-LLM이 누락을 고정하는 schema test를 추가했다.
-
-```text
-tests/test_target_vol_parity_artifacts.py
-```
-
-commit:
-
-```text
-a381a64c26aef9e2c72a7233a82dda8146685fa0
-```
-
-이 테스트를 약화/삭제하지 않는다.
+이번 단계에서는 Batch를 구현하지 않는다.
+`research_summary.json`, 별도 frontier analysis artifact 등 추가 output도 구현하지 않는다. 기존 PV 수준 `result.json` + `review/` + `raw/` output으로 먼저 검증한다.
 
 ## Message
 
-### 1. parity runner를 보강한다
+### 1. 최신 main을 가져와 LLM skeleton을 검토/하드닝한다
 
-`scripts/run_pv_target_vol_parity.py`가 기존 offline golden parser와 동일한 golden source를 이용해 다음을 생성하도록 한다.
+특히 다음 계약을 유지한다.
 
-`parity.json` 최소 구조:
+- `control/execute.yaml`의 repo-relative target만 실행
+- target은 `studies/<study-id>/experiments/*.yaml` 아래여야 함
+- path traversal / missing target / invalid target은 optimizer 실행 전에 실패
+- research experiment YAML은 `run_id` 생략 가능
+- 생략 시 `YYYYMMDD-NNNN` 형태의 unique persisted run id 생성
+- 동일 experiment를 반복 실행하면 distinct run으로 보존
+- explicit run_id collision은 silent overwrite 금지
+- 기존 `portfolio-optimizer run <yaml>` 경로 유지
+- 계산은 기존 runner/pipeline을 그대로 재사용하고 별도 optimizer path를 만들지 않음
+- `input.yaml`에는 실제 effective run_id가 포함된 실행 입력을 저장
+- `context.yaml`에는 run_id / study / experiment provenance만 저장
 
-```text
-golden
-  objective
-  target_volatility
-  period
-  assets
-  bounds
-  provided_weights
-  benchmark
-
-moment_parity
-  per_asset
-    pv_expected_return
-    fdr_expected_return
-    expected_return_delta
-    pv_volatility
-    fdr_volatility
-    volatility_delta
-  correlation_max_abs_delta
-  correlation_mean_abs_delta
-
-solver_only_parity
-  internal_weights_from_pv_moments
-  published_pv_weights
-  weight_delta_vs_pv
-  expected_return
-  volatility
-  note_on_golden_rounding
-
-optimizer
-  FDR weights
-  weight deltas vs published PV
-  expected return
-  volatility
-  sharpe
-  PV published metrics
-
-frontier
-  point_count
-  return_min
-  return_max
-
-performance_diagnostic
-  optimized CAGR internal / PV / delta
-  optimized MDD internal / PV / delta
-
-data_coverage
-```
-
-### 2. CSV를 실제 parity 표로 만든다
-
-`moment_parity.csv` columns 최소:
+### 2. LLM contract test를 먼저 실행한다
 
 ```text
-ticker
-pv_expected_return
-fdr_expected_return
-expected_return_delta
-pv_volatility
-fdr_volatility
-volatility_delta
+uv run pytest tests/test_research.py tests/test_cli.py tests/test_runner.py -q
 ```
 
-`solver_parity.csv` columns 최소:
+실패 시 테스트를 약화/삭제/의미 변경하지 말고 구현을 수정한다. 계약 자체에 문제가 있으면 blocker로 회신한다.
+
+### 3. E2E smoke를 수행한다
+
+실제 repo runtime에서 임시 study/control fixture를 사용해 다음을 확인한다.
 
 ```text
-ticker
-pv_published_weight
-internal_weight_from_pv_moments
-fdr_internal_weight
-weight_delta_solver_vs_pv
-weight_delta_fdr_vs_pv
+portfolio-optimizer execute
 ```
 
-### 3. Golden parsing duplication은 작게 정리한다
-
-`tests/test_pv_target_vol_golden.py`와 live runner가 서로 다른 방식으로 Golden을 해석해 drift하지 않게 한다.
-
-과도한 framework는 필요 없다. 작은 shared helper/module로 다음 정도만 공통화하면 된다.
-
-- target-vol golden asset moments/bounds parsing
-- correlations parsing
-- published target-vol weights parsing
-
-테스트가 helper를 import하거나 helper가 독립 module에 있어도 된다.
-
-### 4. Solver core는 현재 결과가 이미 양호하므로 추가 변경하지 않는다
-
-새 schema/artifact 보강을 위해 optimizer objective나 numerical tolerance를 다시 변경하지 않는다. 신규 테스트가 별도 solver bug를 발견하는 경우에만 수정한다.
-
-### 5. Test
-
-먼저:
+결과가 별도 임시 output root에 생성되고 최소한 다음이 맞는지 확인한다.
 
 ```text
-uv run pytest tests/test_target_vol_parity_artifacts.py tests/test_pv_target_vol_golden.py tests/test_target_volatility_contract.py -q
+runs/<generated_run_id>/input.yaml
+runs/<generated_run_id>/result.json
+runs/<generated_run_id>/context.yaml
+runs/<generated_run_id>/review/
+runs/<generated_run_id>/raw/
 ```
 
-완료 전:
+같은 experiment를 두 번 실행해 두 run이 모두 보존되는지도 확인한다.
+
+테스트용 dummy study/run artifact는 최종 repository에 남기지 않는다.
+
+### 4. 기존 direct run 회귀를 확인한다
+
+기존 `configs/example.yaml`은 기존 `runs/example-max-sharpe`와 충돌하므로 별도 temporary output root에서 실행한다.
+
+기존 `run <yaml>` 계산 경로와 output이 깨지지 않았는지 확인한다.
+
+### 5. 전체 regression
+
+완료 전 반드시:
 
 ```text
 uv run pytest -q
 ```
 
-전체 regression 필수.
+전체 suite를 통과시킨다.
 
-### 6. Regenerate
+### 6. Scope guardrail
 
-```text
-runs/20260828-pv-maxretvol15/
-```
+이번 작업에서 다음은 하지 않는다.
 
-을 최신 runner로 재생성하고 parity.json / moment_parity.csv / solver_parity.csv를 commit/push한다.
+- Batch execution
+- study index
+- 별도 research DB/state machine
+- `research_summary.json`
+- frontier 전용 derived artifact
+- optimizer objective/금융 계산 의미론 변경
+
+실제 E2E에서 기존 output만으로 research loop에 필요한 데이터가 부족한 것이 확인될 때만 blocker/제안으로 보고한다.
 
 ### 7. Completion report
 
-`agent-to-llm.md`에:
+`ai-share/agent-to-llm.md`에 다음을 남기고 commit/push한다.
 
-- artifact schema test result
-- full regression result
-- solver core 추가 변경 여부
-- solver-only rounded-PV-moment weights/ER/vol
-- live FDR result
-- CAGR/MDD parity
-- output commit SHA
+- targeted test 결과
+- full regression 결과
+- E2E execute 결과와 생성 artifact 확인
+- 동일 experiment 2회 실행 보존 결과
+- direct `run <yaml>` 회귀 결과
+- LLM skeleton에서 수정한 사항과 이유
+- blocker 또는 output gap 여부
 - code commit SHA
-
-를 남긴다.
