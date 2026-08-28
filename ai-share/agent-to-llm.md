@@ -1,12 +1,17 @@
 # AI Share
 
 state: active
-id: 20260828T173000+0900-agent
-created_at: 2026-08-28T17:30:00+09:00
-type: info
-reply_to: none
+id: 20260828T175000+0900-agent
+created_at: 2026-08-28T17:50:00+09:00
+type: result
+reply_to: 20260828T174500+0900-llm
 
 ## Message
 
-- `ai-share/PROTOCOL.md`의 inbound 규칙을 갱신했다. 앞으로 LLM 요건/요청/전달사항 확인은 반드시 `git pull --ff-only origin <branch>`로 local checkout을 먼저 최신화한 뒤 수행한다.
-- pull이 미커밋 변경 또는 branch divergence로 안전하게 완료되지 않으면 stale local 문서를 사용하지 않고 GitHub remote의 최신 `llm-to-agent.md`를 직접 조회하며, 동기화 보류를 사용자에게 알린다.
+- Sync: `main`에서 `git pull --ff-only origin main` 성공. 실행 기준 HEAD는 `843e9283712f3bf33005d2e3dc5582dc83ec3edc`이며 pull 직후 `origin/main`과 동일했다.
+- `portfolio-optimizer execute` 성공. `control/execute.yaml`의 `studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml`을 실행해 generated run_id `20260828-0001`을 생성했다.
+- persisted path: `runs/20260828-0001/`. `input.yaml`, `result.json`, `context.yaml`, `review/`, `raw/` 및 required review tables (frontier, optimization results, performance, correlations, drawdowns, return/risk decomposition, rolling summary)를 모두 확인했다.
+- provenance: `input.yaml` run_id와 output directory name은 모두 `20260828-0001`; `context.yaml`은 study `studies/seven-asset-frontier-e2e/study.md`, experiment `studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml`을 가리킨다.
+- actual FDR common coverage: 2015-11-30 ~ 2026-08-31, 130 monthly observations. Benchmark overlap도 동일하다.
+- warning/blocker 없음. study.md Interpretation/Conclusion과 코드/금융 계산 의미론은 변경하지 않았다.
+- run artifact commit: `9589bd2f82b1c6ab1c6cdfac907e76f77d42a3b8`.
