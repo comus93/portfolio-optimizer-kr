@@ -49,6 +49,8 @@ def _json_default(value: Any) -> Any:
 def _normalise(value: Any) -> Any:
     if value is None or isinstance(value, (str, bool, int)):
         return value
+    if value is pd.NaT:
+        return None
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     if isinstance(value, (pd.Timestamp,)):

@@ -6,7 +6,7 @@ import pandas as pd
 
 from portfolio_optimizer_kr.analytics import (
     active_analytics, active_return_metrics, annual_returns, drawdown_episodes,
-    performance_summary, return_decomposition,
+    monthly_returns_table, performance_summary, return_decomposition,
     risk_contribution, rolling_returns, trailing_returns,
 )
 from portfolio_optimizer_kr.data import (
@@ -47,7 +47,12 @@ def prepare_monthly_returns(request: OptimizationRequest, prices: Mapping[str, p
         if asset.symbol not in prices:
             raise DataValidationError(f"missing price series: {asset.symbol}")
         converted[asset.symbol] = _asset_price(request, asset.symbol, prices[asset.symbol], asset.currency, usdkrw)
-    return to_monthly_returns(month_end_prices(align_common_prices(converted, request.start, request.end)))
+    # Keep the prior month-end as a warm-up price; the requested period denotes return rows.
+    aligned = align_common_prices(converted, end=request.end)
+    returns = to_monthly_returns(month_end_prices(aligned))
+    if request.start is not None:
+        returns = returns.loc[pd.Timestamp(request.start):]
+    return returns
 
 
 def _benchmark_returns(request: OptimizationRequest, prices: Mapping[str, pd.Series], usdkrw: pd.Series | None) -> pd.Series | None:
@@ -57,8 +62,11 @@ def _benchmark_returns(request: OptimizationRequest, prices: Mapping[str, pd.Ser
     if benchmark.symbol not in prices:
         raise DataValidationError(f"missing benchmark price series: {benchmark.symbol}")
     price = _asset_price(request, benchmark.symbol, prices[benchmark.symbol], benchmark.currency, usdkrw)
-    frame = align_common_prices({benchmark.symbol: price}, request.start, request.end)
-    return to_monthly_returns(month_end_prices(frame)).iloc[:, 0].rename(benchmark.symbol)
+    frame = align_common_prices({benchmark.symbol: price}, end=request.end)
+    returns = to_monthly_returns(month_end_prices(frame))
+    if request.start is not None:
+        returns = returns.loc[pd.Timestamp(request.start):]
+    return returns.iloc[:, 0].rename(benchmark.symbol)
 
 
 def _performance_table(paths: dict[str, object], rf: float, expected: dict[str, float]) -> tuple[dict, pd.DataFrame]:
@@ -118,6 +126,10 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     ])
     annual_table = pd.DataFrame({name: annual_returns(path.returns) for name, path in paths.items()}).rename_axis("year").reset_index()
     monthly_table = pd.concat([monthly_returns.add_prefix("asset_"), *[path.returns.rename(name) for name, path in paths.items()]], axis=1).reset_index(names="date")
+    monthly_review = pd.concat([
+        monthly_returns_table(path.returns).assign(portfolio=name)
+        for name, path in paths.items()
+    ], ignore_index=True)
     drawdown_rows = []
     for name, path in paths.items():
         table = drawdown_episodes(path.returns).copy()
@@ -128,8 +140,8 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     risk_decomp = {name: risk_contribution(pd.Series(path.weights.iloc[0], index=monthly_returns.columns), stats.covariance).to_dict() for name, path in paths.items() if name != "benchmark"}
     correlation = _correlations(monthly_returns, paths, benchmark_returns)
     canonical = CanonicalResult(
-        configuration={"assets": [a.symbol for a in request.assets], "benchmark": request.benchmark.symbol if request.benchmark else None, "objective": request.objective, "rebalancing": request.rebalancing, "risk_free_mode": request.risk_free.mode, "annual_risk_free_rate": rf, "frontier_points": request.frontier_points},
-        data_coverage={"start": str(monthly_returns.index.min().date()), "end": str(monthly_returns.index.max().date()), "observations": len(monthly_returns)},
+        configuration={"run_id": request.run_id, "market_data_source": "FinanceDataReader", "analysis_period": {"start": str(request.start) if request.start else None, "end": str(request.end) if request.end else None}, "assets": [{"symbol": a.symbol, "name": a.name, "currency": a.currency, "min_weight": a.min_weight, "max_weight": a.max_weight} for a in request.assets], "provided_weights": dict(request.provided_weights) if request.provided_weights else None, "benchmark": ({"symbol": request.benchmark.symbol, "name": request.benchmark.name, "currency": request.benchmark.currency} if request.benchmark else None), "objective": request.objective, "target_volatility": request.target_volatility, "rebalancing_period": request.rebalancing, "risk_free": {"requested_mode": request.risk_free.mode, "effective_annual_rate": rf}, "frontier_points": request.frontier_points, "solver_routing": {"qp": "OSQP", "socp": "CLARABEL"}},
+        data_coverage={"optimization_monthly_returns": {"start": str(monthly_returns.index.min().date()), "end": str(monthly_returns.index.max().date()), "observations": len(monthly_returns)}, "benchmark_overlap": benchmark_summary.get("coverage")},
         asset_statistics={"expected_returns": stats.expected_returns.to_dict(), "volatility": stats.volatility.to_dict(), "correlation": stats.correlation.to_dict(), "asset_performance": asset_performance},
         optimization_result={"weights": optimized.weights.to_dict(), "expected_return": optimized.expected_return, "volatility": optimized.volatility, "sharpe": optimized.sharpe, "solver": optimized.solver, "status": optimized.status},
         efficient_frontier=frontier.to_dict(orient="records"),
@@ -138,5 +150,5 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
         correlations=correlation.to_dict(), return_decomposition=return_decomp, risk_decomposition=risk_decomp,
     )
     result = canonical.to_dict()
-    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": pd.DataFrame(benchmark_summary).T if benchmark_summary else pd.DataFrame(), "rolling_returns": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame()}
+    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": pd.DataFrame(benchmark_summary).T if benchmark_summary else pd.DataFrame(), "rolling_returns": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame()}
     return result

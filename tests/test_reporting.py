@@ -28,4 +28,4 @@ def test_benchmark_and_canonical_run_outputs(tmp_path):
     write_analysis_run(result, tmp_path)
     assert (tmp_path / "result.json").is_file()
     assert (tmp_path / "active_returns.csv").is_file()
-    assert json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))["configuration"]["benchmark"] == "BM"
+    assert json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))["configuration"]["benchmark"]["symbol"] == "BM"

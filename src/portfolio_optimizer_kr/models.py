@@ -40,6 +40,7 @@ class RiskFreeConfig:
 @dataclass(frozen=True)
 class OptimizationRequest:
     assets: tuple[AssetSpec, ...]
+    run_id: str | None = None
     start: str | pd.Timestamp | None = None
     end: str | pd.Timestamp | None = None
     provided_weights: Mapping[str, float] | None = None

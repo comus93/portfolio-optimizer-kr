@@ -23,6 +23,14 @@ def test_prepare_monthly_returns_is_source_agnostic():
     assert len(returns) >= 10
 
 
+def test_analysis_start_keeps_prior_month_end_as_return_baseline():
+    index = pd.to_datetime(["2024-07-31", "2024-08-30", "2024-09-30"])
+    request = OptimizationRequest(assets=(AssetSpec("A"),), start="2024-08-01", end="2024-09-30")
+    returns = prepare_monthly_returns(request, {"A": pd.Series([100.0, 110.0, 121.0], index=index)})
+    assert returns.index.tolist() == list(pd.to_datetime(["2024-08-31", "2024-09-30"]))
+    assert returns["A"].tolist() == [0.1, 0.1]
+
+
 def test_end_to_end_synthetic_pipeline():
     request = OptimizationRequest(
         assets=(AssetSpec("A"), AssetSpec("B")),
