@@ -153,6 +153,7 @@ def _write_review_summaries(result: dict[str, Any], tables: dict[str, pd.DataFra
     for source,target,prefix,unit in (("risk_decomposition","risk_decomposition","risk_contribution","pct"),("return_decomposition","return_decomposition","contribution","monetary_initial_value_1")):
         frame=tables.get(source,pd.DataFrame()).rename(columns={"asset":"ticker"})
         if not frame.empty:
+            frame["ticker"] = frame["ticker"].astype(str).str.removeprefix("contribution_")
             cols={"ticker":frame["ticker"]}
             for name in ("provided","optimized"):
                 if name in frame: cols[f"{name}_{prefix}_pct" if unit=="pct" else f"{name}_{prefix}"]=frame[name]*(100 if unit=="pct" else 1)
@@ -161,8 +162,20 @@ def _write_review_summaries(result: dict[str, Any], tables: dict[str, pd.DataFra
             out.to_csv(directory/f"{target}.csv",index=False)
     bench=tables.get("benchmark_analytics",pd.DataFrame())
     if not bench.empty:
+        bench = bench[bench.get("portfolio", pd.Series(dtype=str)).ne("coverage")].copy()
         cols=[c for c in ["portfolio","active_return","tracking_error","information_ratio"] if c in bench]
         out=bench[cols].rename(columns={"active_return":"active_return_pct","tracking_error":"tracking_error_pct"})
         for c in ("active_return_pct","tracking_error_pct"):
             if c in out: out[c]*=100
+        overlap=result.get("data_coverage",{}).get("benchmark_overlap",{})
+        if overlap:
+            out["overlap_start"]=overlap.get("start"); out["overlap_end"]=overlap.get("end"); out["observations"]=overlap.get("observations")
         out.to_csv(directory/"benchmark_summary.csv",index=False)
+    for source, mapping in (("active_returns", {"portfolio_return":"portfolio_return_pct","benchmark_return":"benchmark_return_pct","active_return":"active_return_pct","cumulative_active_return":"cumulative_active_return_pct","annual_active_return":"annual_active_return_pct","rolling_active_return":"rolling_active_return_pct","rolling_tracking_error":"rolling_tracking_error_pct"}), ("monthly_return_series", {})):
+        frame=tables.get(source,pd.DataFrame()).copy()
+        if frame.empty: continue
+        if source == "monthly_return_series":
+            mapping={c:(f"{c}_return_pct" if not c.startswith("asset_") else f"{c}_return_pct") for c in frame.columns if c != "date"}
+        frame=frame.rename(columns=mapping)
+        for col in mapping.values(): frame[col]*=100
+        frame.to_csv(directory/f"{source}.csv",index=False)
