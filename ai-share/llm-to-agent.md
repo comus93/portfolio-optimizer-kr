@@ -1,18 +1,36 @@
 # AI Share
 
 state: active
-id: 20260828T173500+0900-llm
-created_at: 2026-08-28T17:35:00+09:00
+id: 20260828T174500+0900-llm
+created_at: 2026-08-28T17:45:00+09:00
 type: request
 reply_to: 20260828T173000+0900-agent
 
 ## Context
 
-직전 E2E 검증은 local checkout과 GitHub remote 간 source 불일치 때문에 신뢰할 수 있는 상태로 수행되지 못했다.
+이전 infrastructure smoke 요청은 superseded한다. 사용자 연구 입력이 이제 확정되어 첫 정식 persisted research E2E run을 수행한다.
 
-`ai-share/PROTOCOL.md`가 갱신되어 이제 LLM 요청/요건 확인을 시작할 때 Agent는 반드시 먼저 `git pull --ff-only origin <branch>`로 local checkout을 최신화해야 한다. pull이 안전하게 완료되지 않으면 stale local 문서를 사용하지 않고 remote 최신본을 직접 확인해야 한다.
+`ai-share/PROTOCOL.md` 최신 규칙에 따라 LLM 요청 확인 시작 시 반드시 먼저 `git pull --ff-only origin <current-branch>`로 local checkout을 최신화해야 한다.
 
-현재 `studies/seven-asset-frontier-e2e/`는 사용자 연구 입력이 아직 확정되지 않은 초안이다. 이번 작업은 research run이 아니라 **Research Interaction Layer vertical slice의 infrastructure E2E 재검증**이다. 따라서 해당 7자산 study/control을 실제 연구 run으로 실행하거나 수정하지 않는다.
+확정 experiment:
+
+- `studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml`
+- `control/execute.yaml`은 위 파일을 가리킨다.
+
+사용자 확정 조건:
+
+- Provided portfolio: QQQ 40%, SPMO 10%, GDX 10%, GLD 0%, SLV 10%, AIA 15%, XLE 15%
+- Min weight: 전 자산 0%
+- Max weight: QQQ/SPMO 50%, 나머지 30%
+- Optimization objective: Maximum Sharpe
+- Rebalancing: Monthly
+- Analysis period: 7개 자산 모두의 실제 데이터가 존재하는 공통 교집합 전체 기간
+
+기본/연결 조건:
+
+- Benchmark: SPY
+- Efficient Frontier: 100 points
+- Risk-free: fixed 2.35595% (기존 PV parity 진단과 연결)
 
 ## Message
 
@@ -24,87 +42,82 @@ reply_to: 20260828T173000+0900-agent
 git pull --ff-only origin <current-branch>
 ```
 
-- pull 성공 후에만 `llm-to-agent.md`와 source/tests를 기준으로 작업한다.
+- pull 성공 후에만 최신 `llm-to-agent.md`, experiment, control을 기준으로 진행한다.
 - pull 후 local HEAD와 `origin/<current-branch>`가 동일한지 확인한다.
-- 사용한 branch와 HEAD commit SHA를 completion report에 남긴다.
-- pull이 실패하면 stale local 상태에서 테스트를 진행하지 말고 blocker로 회신한다.
+- pull이 실패하면 stale local 상태에서 실행하지 말고 blocker로 회신한다.
 
-### 2. targeted contract tests를 실행한다
+### 2. 코드 변경 없이 정식 research run을 실행한다
 
-```text
-uv run pytest tests/test_research.py tests/test_cli.py tests/test_runner.py -q
-```
-
-테스트를 약화/삭제/의미 변경하지 않는다.
-
-### 3. temporary E2E smoke를 다시 수행한다
-
-실제 repo runtime에서 **임시 study / experiment / control fixture와 별도 temporary output root**를 사용한다.
-
-실행 경로는 반드시 현재 public CLI와 동일하게 한다.
+현재 `control/execute.yaml` 대상으로 실제 명령을 실행한다.
 
 ```text
 portfolio-optimizer execute
 ```
 
-확인 사항:
+이번 run은 temporary smoke가 아니다. 생성된 `runs/<generated_run_id>/` 전체를 보존한다.
 
-- 실제 FDR data path를 사용해 성공하는가
-- generated run_id가 생성되는가
-- 최소 다음 artifact가 생성되는가
+### 3. 생성 artifact를 검증한다
 
-```text
-<temporary-output>/<generated_run_id>/input.yaml
-<temporary-output>/<generated_run_id>/result.json
-<temporary-output>/<generated_run_id>/context.yaml
-<temporary-output>/<generated_run_id>/review/
-<temporary-output>/<generated_run_id>/raw/
-```
-
-- `input.yaml`의 effective run_id와 directory name이 일치하는가
-- `context.yaml`의 run_id / study / experiment provenance가 실제 fixture와 일치하는가
-- 같은 experiment를 두 번 실행했을 때 서로 다른 run_id로 두 output이 모두 보존되는가
-- 실제 data coverage를 확인한다
-
-이번 smoke artifact는 연구 결과가 아니므로 검증 후 repository에 남기지 않는다.
-
-### 4. 기존 direct run 경로 회귀를 확인한다
-
-기존 `portfolio-optimizer run <yaml>` 경로도 별도 temporary output root에서 한 번 실행해 기존 runner path가 깨지지 않았는지 확인한다.
-
-### 5. full regression을 실행한다
-
-완료 전 반드시:
+최소 다음을 확인한다.
 
 ```text
-uv run pytest -q
+runs/<generated_run_id>/input.yaml
+runs/<generated_run_id>/result.json
+runs/<generated_run_id>/context.yaml
+runs/<generated_run_id>/review/
+runs/<generated_run_id>/raw/
 ```
 
-전체 suite를 통과시킨다.
+특히 다음 review artifact의 존재를 확인한다.
 
-### 6. Scope guardrail
+```text
+review/efficient_frontier.csv
+review/optimization_results.csv
+review/performance_summary.csv
+review/correlations.csv
+review/drawdowns.csv
+review/return_decomposition.csv
+review/risk_decomposition.csv
+review/rolling_returns_summary.csv
+```
 
-이번 검증에서는 코드나 금융 계산 의미론을 변경하지 않는다. E2E가 실패할 경우 원인을 진단해 blocker로 보고하되 임의로 objective, period, rebalancing, RF, optimizer semantics를 변경하지 않는다.
+또한:
 
-특히 다음은 실행하지 않는다.
+- `input.yaml`의 effective run_id와 output directory name이 일치하는지 확인
+- `context.yaml`의 run_id / study / experiment provenance가 실제 실행과 일치하는지 확인
+- `analysis_period`가 비어 있는 입력에서 실제 FDR 공통 overlap 전체 기간이 사용됐는지 data coverage로 확인
+- 실제 coverage start/end/observation count를 보고
 
-- `studies/seven-asset-frontier-e2e/`의 정식 research run
-- `control/execute.yaml`을 이용한 사용자 연구 run
-- research_summary/frontier derived artifact 추가
-- batch/state machine 추가
+### 4. 결과를 GitHub에 영구 보존한다
 
-### 7. Completion report
+- 생성된 `runs/<generated_run_id>/` 전체를 Git에 commit/push한다.
+- 삭제하지 않는다.
+- `study.md`의 Interpretation/Conclusion은 수정하지 않는다. 이후 GPT + user가 결과를 읽고 갱신한다.
 
-`ai-share/agent-to-llm.md`에 다음을 남기고 commit/push한다.
+### 5. Scope guardrail
 
-- sync에 사용한 branch와 pull 성공 여부
-- 검증 기준 HEAD commit SHA
-- targeted test 결과
-- temporary E2E 2회 실행 결과와 generated run IDs
-- artifact 생성 확인
-- 실제 data coverage
-- direct run 회귀 결과
-- full regression 결과
-- warning/blocker 여부
+이번 요청은 실행/검증 작업이다. 코드나 금융 계산 의미론을 임의로 변경하지 않는다.
 
-이번 작업의 핵심 목적은 **GitHub remote와 동기화된 동일 source에서 vertical slice가 실제로 재현되는지 확인하는 것**이다.
+실패하면 objective, period, rebalance, RF, constraints 등을 바꾸지 말고 원인을 blocker로 보고한다.
+
+다음은 추가하지 않는다.
+
+- research_summary/frontier derived artifact
+- batch/state machine
+- 별도 research DB
+
+### 6. Completion report
+
+`ai-share/agent-to-llm.md`에 다음을 기록하고 commit/push한다.
+
+- sync branch / pull 성공 여부
+- 실행 기준 HEAD commit SHA
+- generated run_id
+- persisted GitHub path
+- `portfolio-optimizer execute` 성공/실패
+- 실제 data coverage start/end/observations
+- 핵심 artifact 존재 확인
+- warning/blocker
+- run artifact commit SHA
+
+이번 작업의 목적은 **사용자 입력 → experiment/control → 실제 FDR/optimizer 실행 → persisted run artifact → GPT 분석**의 첫 정식 E2E research loop를 완성하는 것이다.
