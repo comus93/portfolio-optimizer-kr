@@ -37,21 +37,33 @@ Golden Source:
 | Maximum Sharpe Portfolio | 표 | `optimization_results.csv` | ✅ | objective 이름에 맞춰 동적 제목 |
 | Optimized Allocation | Pie | `optimization_results.csv` | ✅ | 그대로 |
 | Performance Summary | 표 | `performance_summary.csv` + `benchmark_analytics.csv` | 🟡 | 주요 지표는 이미 있음. PV의 ex-ante Sharpe 등 일부 보강 필요 |
-| Portfolio Growth | Line | 현재 직접 series 없음 | 🔴 | Provided / Optimized / Benchmark 누적 balance series 추가 필요 |
+| Portfolio Growth | Line | 현재 직접 series 없음 | 🔴 | Provided / Optimized / Benchmark 누적 balance series 추가 필요 | 
+    [Comment] Line에 Mouse Over시 popup으로 날짜, Provided Portfolio : xxx%, Maximum Sharpe Ratio (혹은 Maximu Return 즉 최적화 전략에 따라) : xxx%, Benchmart Ticker : xxx%표시
 | Annual Returns | Bar | `annual_returns.csv` | ✅ | 그대로 |
+    [Comment] Bar에 Mouse Over시 popup으로 년도, Provided Portfolio : xxx$, Maximum Sharpe Ratio (혹은 Maximu Return 즉 최적화 전략에 따라) : xxx$, Benchmart Ticker : xxx$표시
 | Trailing Returns | 표 | `trailing_returns.csv` | ✅ | 전용 output 존재 |
 | Efficient Frontier Assets | 표 | `asset_statistics.csv` + input bounds | 🟡 | ER/Vol 등은 있음. ex-ante Sharpe와 min/max를 PV형 한 표로 조합 |
 | Asset Correlations | 표/heatmap | `correlations.csv` | ✅ | asset subset 표시 가능 |
 | Efficient Frontier | Scatter | `efficient_frontier.csv` + performance/asset stats | ✅ | Frontier + Provided + Optimized + Benchmark + 개별 asset 표시 가능 |
+    [Comment] (중요) Goldern Source에 존재하는 Chart 형태로 구현 Goldern Source의 Efficient Frontier 차트 재 확인 할것 (중요)(
+	                세로축은 Expected Return %, 가로축은 Standard Deviation % 
+	                 곡선으로 최적 Port 표시. 최적 Port Mouse Over시 popup으로 해당 조건에서의 구성종목 % 표시
+			         Dot 으로 Port 구성종목의 Exp Return와 표준 편차에 표기하고 마우스 오버시 종목명,  Expected Return, Sharpe Ratio, Standard Deviation 팝업
 | Efficient Frontier Transition Map | stacked area/line | `efficient_frontier.csv` | ✅ | 각 frontier point의 Vol/weights가 있어 바로 구현 가능 |
+    [Comment] Curve에 Mouse Over시 popup으로 년도, 구성 종목명과 구성 비율 % List 팝업
 | Efficient Frontier Portfolios | 표 | `efficient_frontier.csv` | ✅ | 전체 point 표시 가능 |
 | Annualized Active Return | Line | `active_returns.csv` | ✅ | `annual_active_return_pct` 존재 |
+    [Comment] Line에 Mouse Over시 popup으로 날짜, Provided Portfolio : xxx%, Maximum Sharpe Ratio (혹은 Maximu Return 즉 최적화 전략에 따라) : xxx%, Benchmart Ticker : xxx%표시
 | Active Return Contribution | Line + 표 | 현재 없음 | 🔴 | 자산별 cumulative active contribution series 필요 |
+	[Comment] Bar에 Mouse Over시 popup으로 년도, 구성 종목명과 구성 비율 % List 팝업   
 | Rolling Active Return / Tracking Error | Line | `active_returns.csv` | ✅ | rolling active return / tracking error 이미 존재 |
+    [Comment] Line에 Mouse Over시 Active Return %, Tracking Error %  표시
 | Up vs Down Market Performance | 표 | 현재 없음 | 🔴 | benchmark up/down별 outperform/underperform 집계 필요 |
+    [Comment] Bar에 Mouse Over시 Return vs Benchmark: Proviced Portfolio : %, Benchmark Portfolio : % 표시
 | Portfolio Metrics | 표 | `performance_summary.csv` + `benchmark_analytics.csv` | 🟡 | Sharpe/Sortino/MDD/Active Return/TE/IR 등은 있음. Beta, Alpha, R², Treynor, Calmar, M², Skewness, Excess Kurtosis, Historical VaR 등은 추가 필요 |
 | Monthly Returns | 표 | `monthly_return_series.csv` 또는 `monthly_returns_calendar.csv` | ✅ | portfolio + benchmark + asset 월별 수익률 표시 가능 |
 | Drawdown Chart | Area/Line | 현재 point-in-time series 없음 | 🔴 | Provided / Optimized / Benchmark의 월별 underwater/drawdown series 필요 |
+    [Comment] Line에 Mouse Over시 popup으로 날짜, Provided Portfolio : xxx%, Maximum Sharpe Ratio (혹은 Maximu Return 즉 최적화 전략에 따라) : xxx%, Benchmart Ticker : xxx%표시
 | Historical Market Stress Periods | 표 | 현재 없음 | 🔴 | 사전 정의 stress period와 구간별 성과 output 필요 |
 | Worst Drawdowns | 표 | `drawdowns.csv` | 🟡 | start/bottom/recovery/MDD는 있음. Golden Source의 Length / Recovery Time / Underwater Period 포맷으로 정리 필요 |
 | Portfolio Asset Performance | 표 | `asset_statistics.csv` | ✅ | 현재 output이 충분히 풍부함 |
@@ -59,9 +71,12 @@ Golden Source:
 | Return Decomposition | 표 | `return_decomposition.csv` | ✅ | 그대로 |
 | Risk Decomposition | 표 | `risk_decomposition.csv` | ✅ | 그대로 |
 | Annual Asset Returns | Chart | 현재 직접 output 없음 | 🔴 | 각 asset의 연도별 수익률 series 추가 필요 |
+    [Comment] Curve에 Mouse Over시 popup으로 년도, 구성 종목명과 구성 비율 % List 팝업
 | Rolling Returns Summary | 표 | `rolling_returns_summary.csv` | ✅ | 그대로 |
 | Rolling 3Y Returns | Line | `rolling_returns_3y.csv` | ✅ | 그대로 |
 | Rolling 5Y Returns | Line | `rolling_returns_5y.csv` | ✅ | 그대로 |
+    [Comment] Line에 Mouse Over시 popup으로 날짜, Provided Portfolio : xxx%, Maximum Sharpe Ratio (혹은 Maximu Return 즉 최적화 전략에 따라) : xxx%, Benchmart Ticker : xxx%표시
+
 
 ## 현재 엔진에 이미 존재하는 주요 review artifacts
 
