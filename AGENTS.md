@@ -4,7 +4,7 @@
 
 개발 전 다음 문서를 우선 확인한다.
 
-1. `specification.md`
+1. `docs/specification.md`
 2. `docs/architecture.md`
 3. `docs/input-ui-contract.md`
 4. `ai-share/PROTOCOL.md`
@@ -32,7 +32,7 @@
 
 ## Testing discipline
 
-- 구현은 `specification.md`의 계산 정의와 acceptance checks를 기준으로 검증한다.
+- 구현은 `docs/specification.md`의 계산 정의와 acceptance checks를 기준으로 검증한다.
 - 핵심 수식은 synthetic fixture로 독립 검증한다.
 - PV golden reference는 parity / sanity check에 사용하되, market-data 차이로 인한 수치 차이와 optimizer 로직 차이를 구분한다.
 - **초기 구현 및 최초 검증에서는 전체 테스트 스위트를 실행하고 모든 테스트 결과를 확인한다.**
