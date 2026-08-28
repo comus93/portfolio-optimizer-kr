@@ -87,7 +87,12 @@ Research interpretation
                          ┌─────────────────────┐
                          │   Run Persistence   │
                          │ runs/<run_id>/      │
-                         └─────────────────────┘
+                         └──────────┬──────────┘
+                                    │
+                    ┌───────────────┴────────────────┐
+                    │ canonical + compact review view│
+                    │ result.json / research_summary│
+                    └────────────────────────────────┘
 ```
 
 모든 실행 surface는 최종적으로 동일한 YAML contract와 runner로 수렴한다.
@@ -328,7 +333,33 @@ Study <-> Experiment <-> Run
 
 `context.yaml`에 계산 결과나 interpretation을 복제하지 않는다.
 
-각 정보의 source of truth는 다음처럼 분리한다.
+### 5.5 Research Summary View
+
+Research run에는 LLM과 사람이 적은 read 횟수로 첫 분석을 시작할 수 있는 compact derived view를 둔다.
+
+```text
+runs/<run_id>/review/research_summary.json
+```
+
+`research_summary.json`은 새로운 금융 계산 계층이 아니다. `result.json`과 기존 review/raw artifact에서 이미 계산된 값을 선택·정리하고 상세 artifact 위치를 제공한다.
+
+Canonical source of truth는 계속 `result.json`이다.
+
+기본 연구 복원 경로는 다음과 같다.
+
+```text
+study.md
+   ↓
+context.yaml
+   ↓
+review/research_summary.json
+   ↓
+필요한 상세 review/raw artifact만 추가 조회
+```
+
+이 구조는 모든 CSV를 매번 읽지 않고도 연구 질문, 실행 provenance, 핵심 계산 결과를 연결하게 한다.
+
+각 정보의 source of truth와 view는 다음처럼 분리한다.
 
 ```text
 Research meaning / interpretation   study.md
@@ -336,7 +367,8 @@ Executable experiment              experiment YAML
 Exact effective input              runs/<run_id>/input.yaml
 Calculated canonical result        runs/<run_id>/result.json
 Research provenance                runs/<run_id>/context.yaml
-Human/LLM-readable tables          runs/<run_id>/review/
+Compact research view              runs/<run_id>/review/research_summary.json
+Human/LLM-readable detail tables   runs/<run_id>/review/
 Full-precision tables              runs/<run_id>/raw/
 ```
 
@@ -370,6 +402,7 @@ runs/<run_id>/
    ├─ input.yaml
    ├─ result.json
    ├─ review/
+   │  └─ research_summary.json
    └─ raw/
 ```
 
@@ -391,6 +424,9 @@ studies/.../experiment.yaml
 existing YAML execution path
         ↓
 runs/<run_id>/
+        ├─ result.json
+        ├─ review/research_summary.json
+        └─ ...
         ↓
 write context.yaml
 ```
@@ -426,7 +462,10 @@ runs/<run_id>/
 ├─ result.json
 ├─ context.yaml
 ├─ review/
+│  ├─ research_summary.json
+│  └─ *.csv
 └─ raw/
+   └─ *.csv
 ```
 
 `run_id`는 실행 시점의 persisted instance identity다. Experiment file identity와 분리한다.
@@ -434,7 +473,7 @@ runs/<run_id>/
 ### System Documents
 
 ```text
-specification.md
+docs/specification.md
 docs/architecture.md
 docs/input-ui-contract.md
 AGENTS.md
@@ -466,7 +505,10 @@ portfolio-optimizer-kr/
 │     ├─ result.json
 │     ├─ context.yaml
 │     ├─ review/
+│     │  ├─ research_summary.json
+│     │  └─ *.csv
 │     └─ raw/
+│        └─ *.csv
 ├─ src/portfolio_optimizer_kr/
 │  ├─ analytics/
 │  ├─ config/
@@ -484,6 +526,9 @@ portfolio-optimizer-kr/
 │  └─ app.py
 ├─ tests/
 └─ docs/
+   ├─ specification.md
+   ├─ architecture.md
+   └─ input-ui-contract.md
 ```
 
 Research artifact와 executable source code를 분리한다.
@@ -523,6 +568,7 @@ Market data, solver, analytics failure는 기존 runtime error boundary를 유�
 run_id collision
 required run artifact write failure
 context.yaml write failure
+research_summary.json write failure
 ```
 
 기존 run directory를 덮어써서 이전 연구 결과를 훼손하지 않는다.
