@@ -82,8 +82,35 @@ def write_validation_run(
 
 
 def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
-    """Write the dict returned by the pipeline without leaking in-memory tables into JSON."""
+    """Write canonical JSON plus lossless raw and human review CSV layers."""
     tables = result.get("_tables", {})
     clean = {key: value for key, value in result.items() if key != "_tables"}
     canonical = CanonicalResult(**clean)
-    write_validation_run(canonical, output_dir, {name: table for name, table in tables.items() if not table.empty})
+    directory = Path(output_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    canonical.write_json(directory / "result.json")
+    raw_dir, review_dir = directory / "raw", directory / "review"
+    raw_dir.mkdir(exist_ok=True); review_dir.mkdir(exist_ok=True)
+    for name, table in sorted(tables.items()):
+        if table.empty:
+            continue
+        table.to_csv(raw_dir / f"{name}.csv", index=False, encoding="utf-8")
+        # Temporary compatibility path for earlier callers; raw/ is authoritative.
+        table.to_csv(directory / f"{name}.csv", index=False, encoding="utf-8")
+        _review_table(table).to_csv(review_dir / f"{name}.csv", index=False, encoding="utf-8")
+    configuration = result.get("configuration", {})
+    (directory / "README.md").write_text(
+        f"# Optimization run\n\nRun ID: `{configuration.get('run_id', directory.name)}`. "
+        "`result.json` is canonical full precision; `raw/` preserves decimal tables; "
+        "`review/` presents percentage-point columns suffixed `_pct` while ratios remain unitless.\n",
+        encoding="utf-8",
+    )
+
+
+def _review_table(table: pd.DataFrame) -> pd.DataFrame:
+    out = table.copy()
+    for column in list(out.columns):
+        lower = str(column).lower()
+        if any(token in lower for token in ("expected_return", "volatility", "weight_", "drawdown", "cagr", "tracking_error", "contribution")):
+            out[f"{column}_pct"] = out.pop(column) * 100.0
+    return out
