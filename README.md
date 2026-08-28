@@ -9,7 +9,7 @@ uv sync --extra dev
 uv run pytest
 ```
 
-The financial conventions and acceptance criteria are defined in `specification.md`. Agent workflow rules are in `AGENTS.md`.
+The financial conventions, research interpretation contract, and acceptance criteria are defined in `docs/specification.md`. Agent workflow rules are in `AGENTS.md`.
 
 ## Current skeleton
 
