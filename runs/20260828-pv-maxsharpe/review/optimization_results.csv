@@ -1,0 +1,10 @@
+symbol,name,currency,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
+QQQ,,USD,0.0,50.0,20.0,24.38456491905084
+SPMO,,USD,0.0,50.0,10.0,41.08650731064467
+GDX,,USD,0.0,30.0,10.0,0.0
+GLD,,USD,0.0,30.0,0.0,30.0
+SLV,,USD,0.0,30.0,10.0,0.0
+AIA,,USD,0.0,30.0,15.0,0.0
+XLE,,USD,0.0,30.0,15.0,4.528927770304496
+PTF,,USD,0.0,50.0,10.0,0.0
+QLD,,USD,0.0,50.0,10.0,0.0
