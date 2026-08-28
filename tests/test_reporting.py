@@ -12,6 +12,11 @@ def _price(start: float, slope: float) -> pd.Series:
     return pd.Series(start + slope * pd.RangeIndex(len(index)), index=index)
 
 
+def _price_range(start_date: str, end_date: str, start: float, slope: float) -> pd.Series:
+    index = pd.date_range(start_date, end_date, freq="D")
+    return pd.Series(start + slope * pd.RangeIndex(len(index)), index=index)
+
+
 def test_benchmark_and_canonical_run_outputs(tmp_path):
     request = OptimizationRequest(
         assets=(AssetSpec("A"), AssetSpec("B")),
@@ -29,3 +34,37 @@ def test_benchmark_and_canonical_run_outputs(tmp_path):
     assert (tmp_path / "result.json").is_file()
     assert (tmp_path / "active_returns.csv").is_file()
     assert json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))["configuration"]["benchmark"]["symbol"] == "BM"
+
+
+def test_benchmark_performance_is_limited_to_optimizer_analysis_coverage():
+    request = OptimizationRequest(
+        assets=(AssetSpec("A"), AssetSpec("B")),
+        benchmark=AssetSpec("BM"),
+        provided_weights={"A": 0.5, "B": 0.5},
+        risk_free=RiskFreeConfig(mode=RiskFreeMode.FIXED, annual_rate=0.02),
+        frontier_points=3,
+    )
+    prices = {
+        "A": _price_range("2021-01-01", "2022-12-31", 100, 0.12),
+        "B": _price_range("2021-01-01", "2022-12-31", 100, 0.07),
+        "BM": _price_range("2019-01-01", "2022-12-31", 100, 0.09),
+    }
+
+    result = analyze_prices(request, prices)
+    coverage_start = pd.Timestamp(result["data_coverage"]["optimization_monthly_returns"]["start"])
+    coverage_end = pd.Timestamp(result["data_coverage"]["optimization_monthly_returns"]["end"])
+
+    monthly = result["_tables"]["monthly_return_series"]
+    benchmark_months = monthly.loc[monthly["benchmark"].notna(), "date"]
+    assert benchmark_months.min() >= coverage_start
+    assert benchmark_months.max() <= coverage_end
+
+    drawdowns = result["_tables"]["drawdowns"]
+    benchmark_drawdowns = drawdowns.loc[drawdowns["portfolio"] == "benchmark"]
+    if not benchmark_drawdowns.empty:
+        assert pd.to_datetime(benchmark_drawdowns["start"]).min() >= coverage_start
+
+    annual = result["_tables"]["annual_returns"]
+    benchmark_years = annual.loc[annual["benchmark"].notna(), "year"]
+    assert benchmark_years.min() >= coverage_start.year
+    assert benchmark_years.max() <= coverage_end.year
