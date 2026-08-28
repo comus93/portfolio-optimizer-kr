@@ -10,6 +10,8 @@
 
 > Research interaction은 기존 YAML runner 위에 얇게 올라가며 optimizer core의 계산 의미론을 변경하지 않는다.
 
+개발 시 LLM과 Agent의 역할 분담은 `AGENTS.md`를 source of truth로 따른다.
+
 ## 2. System Boundary
 
 전체 실행 경계는 다음과 같다.
@@ -245,7 +247,35 @@ Viewer는 기존 run output만으로 동작할 수 있어야 한다. 연구 관�
 
 Streamlit에서 실행하는 경우에도 YAML을 생성하고 existing runner를 호출한다. Streamlit이 별도 optimization path를 만들지 않는다.
 
-## 6. Single Research Loop v0
+## 6. Development R&R
+
+구체적인 LLM/Agent 역할 분담과 테스트 규율의 source of truth는 `AGENTS.md`다. Research Interaction Layer도 동일한 R&R을 그대로 적용한다.
+
+이 레이어에서의 적용 방식은 다음과 같다.
+
+```text
+User + LLM
+  ↓
+interaction requirement / schema / acceptance scenario 확정
+  ↓
+LLM
+  - control/execute.yaml contract
+  - context.yaml contract
+  - single research loop contract test
+  - 필요한 최소 skeleton
+  ↓
+Agent
+  - repository 실제 구조에 맞춘 구현 보강
+  - dependency / CLI wiring
+  - end-to-end 실행 및 디버깅
+  - regression test
+```
+
+Agent는 구현 편의를 위해 LLM이 확정한 schema나 contract test를 임의로 약화하거나 다른 실행 의미론을 만들지 않는다. 계약에 문제가 있으면 `ai-share/agent-to-llm.md`로 blocker를 제기한다.
+
+LLM 역시 optimizer core 구현 세부를 불필요하게 선점하지 않는다. 계약과 최소 skeleton을 넘은 실제 환경 hardening은 Agent 책임으로 둔다.
+
+## 7. Single Research Loop v0
 
 첫 번째 구현 목표는 하나의 연구가 끝까지 한 바퀴 도는 것이다.
 
@@ -265,7 +295,7 @@ Streamlit에서 실행하는 경우에도 YAML을 생성하고 existing runner�
 
 이 루프가 안정적으로 동작하는 것이 Batch보다 우선한다.
 
-## 7. Dependency Direction
+## 8. Dependency Direction
 
 의존 방향은 다음을 유지한다.
 
@@ -285,7 +315,7 @@ Optimizer Core
 
 특히 Optimizer Core가 study file이나 GitHub 상태를 읽지 않는다.
 
-## 8. Failure Boundaries
+## 9. Failure Boundaries
 
 ### Invalid control target
 
@@ -303,7 +333,7 @@ Optimizer Core
 
 계산된 run 자체는 유효할 수 있다. 다만 `study.md`에 해석/결론을 아직 반영하지 못한 상태는 research loop가 끝난 것으로 간주하지 않는다. 별도 복잡한 status machine은 만들지 않는다.
 
-## 9. Deferred Extensions
+## 10. Deferred Extensions
 
 다음은 v0 single research loop가 검증된 후 필요에 따라 확장한다.
 
