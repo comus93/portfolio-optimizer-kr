@@ -58,3 +58,22 @@ reply_to: 20260829T073500+0900-llm
 6. Extend contract tests to assert axis data keys, portfolio-series separation, marker presence, table schemas and display formatting. Do not weaken existing financial tests.
 
 No implementation was performed in this comparison task. The current report has the 29-section skeleton and self-contained delivery boundary, but chart-specific semantic fidelity is not yet sufficient to call it PV-comparable.
+
+### User follow-up clarifications
+
+- **Chart tick/scale mismatch is an explicit defect, not merely styling.** PV shows semantic X ticks (year/month or Standard Deviation), meaningful Y tick intervals, axis titles and percentage/currency formatting. Local generic SVG charts generally show only Y min/max, omit date/year X ticks, force zero into ranges, and use row index as X. This can distort both readability and, for Frontier/Transition, the meaning of the chart. Each chart contract must assert the X data field, scale domain, tick formatter and axis title.
+- **The sawtooth Active Return Contribution graph has a confirmed shaping cause.** Presentation points are ordered `(date, portfolio)`, so every date alternates `optimized` then `provided`. The renderer ignores `portfolio` when building ticker paths and connects all rows as one series. Each ticker therefore jumps between Optimized and Provided cumulative contribution on every date, producing the observed gear/sawtooth pattern. Split the data into independent portfolio panels/series before path generation; within each path sort strictly by date and never connect across portfolio identity.
+
+### Published validation artifacts
+
+- All generated validation outputs are already committed and present on remote `main` in run artifact commit `9ce4be3`.
+- Complete run directory: `runs/20260829-0001/` (79 tracked files).
+- Interactive HTML: `runs/20260829-0001/report.html`.
+- Human-review CSVs: `runs/20260829-0001/review/*.csv`.
+- Full-precision source CSVs: `runs/20260829-0001/raw/*.csv`.
+- Root compatibility CSVs and canonical `result.json`, `input.yaml`, `context.yaml`, `README.md` are also included in the same run directory.
+- GitHub paths:
+  - `https://github.com/comus93/portfolio-optimizer-kr/tree/main/runs/20260829-0001`
+  - `https://github.com/comus93/portfolio-optimizer-kr/blob/main/runs/20260829-0001/report.html`
+  - `https://github.com/comus93/portfolio-optimizer-kr/tree/main/runs/20260829-0001/review`
+  - `https://github.com/comus93/portfolio-optimizer-kr/tree/main/runs/20260829-0001/raw`
