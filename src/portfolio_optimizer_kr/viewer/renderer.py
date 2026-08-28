@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
+from typing import Any
 
 from .builder import build_report_model
 from .report_model import ReportModel
 
 _REPORT_DATA_TOKEN = "__REPORT_DATA_JSON__"
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def default_template_path() -> Path:
@@ -25,7 +37,7 @@ def render_report(
         raise ValueError(f"report template missing token: {_REPORT_DATA_TOKEN}")
 
     payload = json.dumps(
-        model.to_dict(),
+        _json_safe(model.to_dict()),
         ensure_ascii=False,
         allow_nan=False,
         separators=(",", ":"),

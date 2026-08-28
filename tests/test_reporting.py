@@ -68,3 +68,33 @@ def test_benchmark_performance_is_limited_to_optimizer_analysis_coverage():
     benchmark_years = annual.loc[annual["benchmark"].notna(), "year"]
     assert benchmark_years.min() >= coverage_start.year
     assert benchmark_years.max() <= coverage_end.year
+
+
+def test_interactive_report_source_tables_are_persisted_by_analytics(tmp_path):
+    request = OptimizationRequest(
+        assets=(AssetSpec("A"), AssetSpec("B")),
+        benchmark=AssetSpec("BM"),
+        provided_weights={"A": 0.5, "B": 0.5},
+        risk_free=RiskFreeConfig(mode=RiskFreeMode.FIXED, annual_rate=0.02),
+        frontier_points=3,
+    )
+    prices = {
+        "A": _price_range("2019-01-01", "2022-12-31", 100, 0.12),
+        "B": _price_range("2019-01-01", "2022-12-31", 100, 0.07),
+        "BM": _price_range("2019-01-01", "2022-12-31", 100, 0.09),
+    }
+    result = analyze_prices(request, prices)
+    write_analysis_run(result, tmp_path)
+
+    review = tmp_path / "review"
+    expected = {
+        "portfolio_growth.csv": {"date", "provided_balance", "optimized_balance", "benchmark_balance"},
+        "drawdown_series.csv": {"date", "provided_drawdown_pct", "optimized_drawdown_pct", "benchmark_drawdown_pct"},
+        "annual_asset_returns.csv": {"year", "ticker", "return_pct"},
+        "active_return_contribution.csv": {"date", "portfolio", "ticker", "cumulative_active_contribution_pct"},
+        "up_down_market_performance.csv": {"portfolio", "market_type", "portfolio_return_pct", "benchmark_return_pct", "active_return_pct", "occurrences"},
+        "stress_periods.csv": {"stress_period", "start", "end", "provided_return_pct", "optimized_return_pct", "benchmark_return_pct"},
+        "portfolio_metrics.csv": {"metric", "provided", "optimized"},
+    }
+    for name, columns in expected.items():
+        assert columns <= set(pd.read_csv(review / name).columns)

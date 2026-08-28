@@ -125,4 +125,8 @@ def execute_controlled_experiment(
         yaml.safe_dump(context, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
+    if (output_dir / "result.json").is_file():
+        from portfolio_optimizer_kr.viewer import generate_report
+
+        generate_report(output_dir)
     return output_dir

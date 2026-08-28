@@ -7,10 +7,13 @@ from .metrics import (
     drawdown_episodes,
     max_drawdown,
     monthly_returns_table,
+    portfolio_metrics,
     performance_summary,
     rolling_returns,
     rolling_return_summary,
     trailing_returns,
+    drawdown_series,
+    wealth_series,
 )
 
 __all__ = [
@@ -21,6 +24,9 @@ __all__ = [
     "annual_returns",
     "cagr",
     "max_drawdown",
+    "wealth_series",
+    "drawdown_series",
+    "portfolio_metrics",
     "drawdown_episodes",
     "monthly_returns_table",
     "performance_summary",

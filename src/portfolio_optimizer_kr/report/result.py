@@ -179,3 +179,35 @@ def _write_review_summaries(result: dict[str, Any], tables: dict[str, pd.DataFra
         frame=frame.rename(columns=mapping)
         for col in mapping.values(): frame[col]*=100
         frame.to_csv(directory/f"{source}.csv",index=False)
+    annual_assets = tables.get("annual_asset_returns", pd.DataFrame()).rename(
+        columns={"return": "return_pct"}
+    )
+    if not annual_assets.empty:
+        annual_assets["return_pct"] *= 100
+        annual_assets.to_csv(directory / "annual_asset_returns.csv", index=False)
+    for source, target, percentage_columns in (
+        ("active_return_contribution", "active_return_contribution", ["cumulative_active_contribution"]),
+        ("up_down_market_performance", "up_down_market_performance", ["portfolio_return", "benchmark_return", "active_return"]),
+        ("stress_periods", "stress_periods", ["provided_return", "optimized_return", "benchmark_return"]),
+    ):
+        frame = tables.get(source, pd.DataFrame()).copy()
+        if frame.empty:
+            continue
+        rename = {column: f"{column}_pct" for column in percentage_columns if column in frame}
+        frame = frame.rename(columns=rename)
+        for column in rename.values():
+            frame[column] *= 100
+        frame.to_csv(directory / f"{target}.csv", index=False)
+    metrics = tables.get("portfolio_metrics", pd.DataFrame()).copy()
+    if not metrics.empty:
+        percentage_metrics = {"alpha", "modigliani_modigliani", "historical_var_95"}
+        metrics.insert(
+            1,
+            "unit",
+            metrics["metric"].map(
+                lambda metric: "percent" if metric in percentage_metrics else "ratio"
+            ),
+        )
+        is_percentage = metrics["metric"].isin(percentage_metrics)
+        metrics.loc[is_percentage, ["provided", "optimized"]] *= 100
+        metrics.to_csv(directory / "portfolio_metrics.csv", index=False)

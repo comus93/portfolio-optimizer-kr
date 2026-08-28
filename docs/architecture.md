@@ -79,9 +79,10 @@ Research interpretation
                                     │
                                     ▼
                          ┌─────────────────────┐
-                         │   Run Persistence   │
-                         │ runs/<run_id>/      │
-                         │ result/review/raw   │
+│   Run Persistence   │
+│ runs/<run_id>/      │
+│ result/review/raw   │
+│ report.html         │
                          └─────────────────────┘
 ```
 
@@ -94,6 +95,10 @@ GPT execute┘
 ```
 
 GPT 전용 financial API나 별도 optimization path를 만들지 않는다.
+
+`report.html`은 run artifact를 읽어 Python에서 완성한 presentation model을 inline JSON으로
+삽입하는 self-contained 정적 research viewer다. 브라우저는 금융 수식을 재계산하지 않으며,
+GitHub Pages는 같은 run artifact를 정적으로 publish하는 delivery surface만 담당한다.
 
 ---
 

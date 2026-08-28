@@ -27,6 +27,57 @@ def max_drawdown(monthly_returns: pd.Series) -> float:
     return float(drawdown.min())
 
 
+def wealth_series(monthly_returns: pd.Series, initial_balance: float = 1.0) -> pd.Series:
+    """Return the same monthly wealth convention used by performance metrics."""
+    return (1.0 + monthly_returns).cumprod().mul(float(initial_balance))
+
+
+def drawdown_series(monthly_returns: pd.Series) -> pd.Series:
+    wealth = wealth_series(monthly_returns)
+    return wealth.div(wealth.cummax()).sub(1.0)
+
+
+def portfolio_metrics(
+    monthly_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    annual_rf: float,
+) -> dict[str, float]:
+    """Benchmark-relative and distribution metrics using monthly observations."""
+    joined = pd.concat(
+        [monthly_returns.rename("portfolio"), benchmark_returns.rename("benchmark")],
+        axis=1,
+        join="inner",
+    ).dropna()
+    if len(joined) < 2:
+        return {}
+    portfolio = joined["portfolio"]
+    benchmark = joined["benchmark"]
+    variance = float(benchmark.var(ddof=1))
+    beta = float(portfolio.cov(benchmark) / variance) if variance > 0 else float("nan")
+    r_squared = float(portfolio.corr(benchmark) ** 2) if variance > 0 else float("nan")
+    monthly_rf = (1.0 + annual_rf) ** (1.0 / 12.0) - 1.0
+    alpha = float(((portfolio - monthly_rf).mean() - beta * (benchmark - monthly_rf).mean()) * 12.0)
+    annualized_return = float(portfolio.mean() * 12.0)
+    annualized_volatility = float(portfolio.std(ddof=1) * np.sqrt(12.0))
+    benchmark_volatility = float(benchmark.std(ddof=1) * np.sqrt(12.0))
+    sharpe = (annualized_return - annual_rf) / annualized_volatility if annualized_volatility > 0 else float("nan")
+    treynor = (annualized_return - annual_rf) / beta if beta != 0 else float("nan")
+    window = portfolio.iloc[-36:]
+    calmar = cagr(window) / abs(max_drawdown(window)) if max_drawdown(window) < 0 else float("nan")
+    historical_var = float(-portfolio.quantile(0.05))
+    return {
+        "beta": beta,
+        "alpha": alpha,
+        "r_squared": r_squared,
+        "treynor_ratio": float(treynor),
+        "calmar_ratio": float(calmar),
+        "modigliani_modigliani": float(annual_rf + sharpe * benchmark_volatility),
+        "skewness": float(portfolio.skew()),
+        "excess_kurtosis": float(portfolio.kurt()),
+        "historical_var_95": historical_var,
+    }
+
+
 def performance_summary(monthly_returns: pd.Series, annual_rf: float = 0.0) -> dict[str, float]:
     ann_returns = annual_returns(monthly_returns)
     annualized_mean = float(monthly_returns.mean() * 12.0)

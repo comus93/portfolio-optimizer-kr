@@ -1,0 +1,41 @@
+name: Publish research reports
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "runs/**"
+      - ".github/workflows/publish-reports.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Assemble static report site
+        run: |
+          mkdir -p _site/runs
+          cp -R runs/. _site/runs/
+          touch _site/.nojekyll
+          cat > _site/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><title>Portfolio research reports</title><h1>Portfolio research reports</h1><p>Open a persisted run at <code>runs/&lt;run-id&gt;/report.html</code>.</p>
+          EOF
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

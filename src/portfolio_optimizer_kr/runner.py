@@ -93,4 +93,8 @@ def run_yaml(
         writer=writer,
     )
     shutil.copyfile(source, output_dir / "input.yaml")
+    if (output_dir / "result.json").is_file():
+        from portfolio_optimizer_kr.viewer import generate_report
+
+        generate_report(output_dir)
     return output_dir

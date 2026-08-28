@@ -6,8 +6,9 @@ import pandas as pd
 
 from portfolio_optimizer_kr.analytics import (
     active_analytics, active_return_metrics, annual_returns, drawdown_episodes,
-    monthly_returns_table, performance_summary, return_decomposition,
-    risk_contribution, rolling_return_summary, rolling_returns, trailing_returns,
+    drawdown_series, monthly_returns_table, performance_summary, portfolio_metrics,
+    return_decomposition, risk_contribution, rolling_return_summary, rolling_returns,
+    trailing_returns, wealth_series,
 )
 from portfolio_optimizer_kr.data import (
     align_common_prices, convert_usd_price_to_krw, month_end_prices, to_monthly_returns,
@@ -105,6 +106,111 @@ def _correlations(asset_returns: pd.DataFrame, paths: dict[str, object], benchma
     return pd.concat(inputs, axis=1, join="inner").corr()
 
 
+def _growth_table(paths: dict[str, object]) -> pd.DataFrame:
+    values = {
+        f"{name}_balance": wealth_series(path.returns)
+        for name, path in paths.items()
+    }
+    return pd.DataFrame(values).rename_axis("date").reset_index()
+
+
+def _drawdown_series_table(paths: dict[str, object]) -> pd.DataFrame:
+    values = {
+        f"{name}_drawdown": drawdown_series(path.returns)
+        for name, path in paths.items()
+    }
+    return pd.DataFrame(values).rename_axis("date").reset_index()
+
+
+def _annual_asset_returns(asset_returns: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for ticker in asset_returns:
+        for year, value in annual_returns(asset_returns[ticker]).items():
+            rows.append({"year": int(year), "ticker": ticker, "return": value})
+    return pd.DataFrame(rows, columns=["year", "ticker", "return"])
+
+
+def _active_contribution_table(
+    asset_returns: pd.DataFrame, paths: dict[str, object], benchmark: pd.Series | None
+) -> pd.DataFrame:
+    if benchmark is None:
+        return pd.DataFrame(columns=["date", "portfolio", "ticker", "cumulative_active_contribution"])
+    rows = []
+    for name in ("provided", "optimized"):
+        path = paths.get(name)
+        if path is None:
+            continue
+        joined = pd.concat([asset_returns, benchmark.rename("benchmark")], axis=1, join="inner").dropna()
+        weights = path.weights.loc[joined.index, asset_returns.columns]
+        contribution = weights.mul(joined[asset_returns.columns].sub(joined["benchmark"], axis=0)).cumsum()
+        for ticker in contribution:
+            rows.extend(
+                {
+                    "date": timestamp,
+                    "portfolio": name,
+                    "ticker": ticker,
+                    "cumulative_active_contribution": value,
+                }
+                for timestamp, value in contribution[ticker].items()
+            )
+    return pd.DataFrame(rows, columns=["date", "portfolio", "ticker", "cumulative_active_contribution"])
+
+
+def _up_down_market_table(paths: dict[str, object], benchmark: pd.Series | None) -> pd.DataFrame:
+    if benchmark is None:
+        return pd.DataFrame(columns=["portfolio", "market_type", "portfolio_return", "benchmark_return", "active_return", "occurrences"])
+    rows = []
+    for name in ("provided", "optimized"):
+        path = paths.get(name)
+        if path is None:
+            continue
+        joined = pd.concat([path.returns.rename("portfolio"), benchmark.rename("benchmark")], axis=1, join="inner").dropna()
+        for market_type, selector in (("up", joined["benchmark"] > 0), ("down", joined["benchmark"] < 0)):
+            selected = joined.loc[selector]
+            if selected.empty:
+                continue
+            portfolio_return = float(selected["portfolio"].mean() * 12.0)
+            benchmark_return = float(selected["benchmark"].mean() * 12.0)
+            rows.append({"portfolio": name, "market_type": market_type, "portfolio_return": portfolio_return, "benchmark_return": benchmark_return, "active_return": portfolio_return - benchmark_return, "occurrences": len(selected)})
+    return pd.DataFrame(rows, columns=["portfolio", "market_type", "portfolio_return", "benchmark_return", "active_return", "occurrences"])
+
+
+def _stress_periods_table(paths: dict[str, object]) -> pd.DataFrame:
+    registry = {"COVID-19 Start": ("2020-01-01", "2020-03-31")}
+    rows = []
+    for label, (start, end) in registry.items():
+        row = {"stress_period": label, "start": start, "end": end}
+        has_data = False
+        for name in ("provided", "optimized", "benchmark"):
+            path = paths.get(name)
+            if path is None:
+                continue
+            selected = path.returns.loc[pd.Timestamp(start) : pd.Timestamp(end)]
+            if selected.empty:
+                row[f"{name}_return"] = None
+            else:
+                row[f"{name}_return"] = float((1.0 + selected).prod() - 1.0)
+                has_data = True
+        if has_data:
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def _portfolio_metrics_table(paths: dict[str, object], benchmark: pd.Series | None, rf: float) -> pd.DataFrame:
+    if benchmark is None:
+        return pd.DataFrame(columns=["metric", "provided", "optimized"])
+    by_portfolio = {
+        name: portfolio_metrics(path.returns, benchmark, rf)
+        for name, path in paths.items()
+        if name in {"provided", "optimized"}
+    }
+    metric_names = sorted({metric for values in by_portfolio.values() for metric in values})
+    return pd.DataFrame([
+        {"metric": metric, **{name: values.get(metric) for name, values in by_portfolio.items()}}
+        for metric in metric_names
+    ])
+
+
 def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series], usdkrw: pd.Series | None = None, annual_rf: float | None = None) -> dict:
     monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
     stats = annualized_statistics(monthly_returns)
@@ -159,6 +265,13 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     return_decomp = {name: return_decomposition(monthly_returns, path.weights).iloc[-1].to_dict() for name, path in paths.items() if name != "benchmark"}
     risk_decomp = {name: risk_contribution(pd.Series(path.weights.iloc[0], index=monthly_returns.columns), stats.covariance).to_dict() for name, path in paths.items() if name != "benchmark"}
     correlation = _correlations(monthly_returns, paths, benchmark_returns)
+    growth = _growth_table(paths)
+    drawdown_series_output = _drawdown_series_table(paths)
+    annual_assets = _annual_asset_returns(monthly_returns)
+    active_contribution = _active_contribution_table(monthly_returns, paths, benchmark_returns)
+    up_down_market = _up_down_market_table(paths, benchmark_returns)
+    stress_periods = _stress_periods_table(paths)
+    metrics_table = _portfolio_metrics_table(paths, benchmark_returns, rf)
     canonical = CanonicalResult(
         configuration={"run_id": request.run_id, "market_data_source": "FinanceDataReader", "analysis_period": {"start": str(request.start) if request.start else None, "end": str(request.end) if request.end else None}, "assets": [{"symbol": a.symbol, "name": a.name, "currency": a.currency, "min_weight": a.min_weight, "max_weight": a.max_weight} for a in request.assets], "provided_weights": dict(request.provided_weights) if request.provided_weights else None, "benchmark": ({"symbol": request.benchmark.symbol, "name": request.benchmark.name, "currency": request.benchmark.currency} if request.benchmark else None), "objective": request.objective, "target_volatility": request.target_volatility, "rebalancing_period": request.rebalancing, "risk_free": {"requested_mode": request.risk_free.mode, "effective_annual_rate": rf}, "frontier_points": request.frontier_points, "solver_routing": {"qp": "OSQP", "socp": "CLARABEL"}},
         data_coverage={"optimization_monthly_returns": {"start": str(monthly_returns.index.min().date()), "end": str(monthly_returns.index.max().date()), "observations": len(monthly_returns)}, "benchmark_overlap": benchmark_summary.get("coverage")},
@@ -175,5 +288,5 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     def rolling_review(years: int) -> pd.DataFrame:
         series = [rolling_returns(path.returns, years * 12).rename(f"{name}_annualized_return_pct") * 100 for name, path in paths.items()]
         return pd.concat(series, axis=1).dropna(how="all").reset_index(names="date")
-    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": benchmark_table, "rolling_returns_raw": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "rolling_returns_summary": rolling_summary, "rolling_returns_3y": rolling_review(3), "rolling_returns_5y": rolling_review(5), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame()}
+    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": benchmark_table, "rolling_returns_raw": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "rolling_returns_summary": rolling_summary, "rolling_returns_3y": rolling_review(3), "rolling_returns_5y": rolling_review(5), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame(), "portfolio_growth": growth, "drawdown_series": drawdown_series_output, "annual_asset_returns": annual_assets, "active_return_contribution": active_contribution, "up_down_market_performance": up_down_market, "stress_periods": stress_periods, "portfolio_metrics": metrics_table}
     return result
