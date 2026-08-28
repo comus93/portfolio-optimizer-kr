@@ -5,12 +5,15 @@
 개발 전 다음 문서를 우선 확인한다.
 
 1. `docs/specification.md`
-2. `docs/architecture.md`
-3. `docs/input-ui-contract.md`
-4. `docs/llm-research-input-contract.md`
-5. `ai-share/PROTOCOL.md`
+2. `docs/visual-acceptance-contract.md`
+3. `docs/architecture.md`
+4. `docs/input-ui-contract.md`
+5. `docs/llm-research-input-contract.md`
+6. `ai-share/PROTOCOL.md`
 
 현재 LLM 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
+
+`docs/visual-acceptance-contract.md`는 `docs/specification.md` Section 25 `Interactive Research Report`의 visual/behavioral acceptance를 구체화하는 normative contract다. 두 문서가 충돌한다고 판단되면 임의 해석하지 말고 `agent-to-llm.md`에 blocker를 남긴다.
 
 ## Role split
 
@@ -34,6 +37,7 @@
 ## Testing discipline
 
 - 구현은 `docs/specification.md`의 계산 정의와 acceptance checks를 기준으로 검증한다.
+- Interactive Report는 추가로 `docs/visual-acceptance-contract.md`의 browser-based visual/behavioral acceptance를 완료해야 한다. 자동 테스트 통과만으로 UI 완료로 판단하지 않는다.
 - 핵심 수식은 synthetic fixture로 독립 검증한다.
 - PV golden reference는 parity / sanity check에 사용하되, market-data 차이로 인한 수치 차이와 optimizer 로직 차이를 구분한다.
 - **초기 구현 및 최초 검증에서는 전체 테스트 스위트를 실행하고 모든 테스트 결과를 확인한다.**
@@ -49,6 +53,7 @@
 - LLM 또는 사용자가 검토해야 하는 **research / validation run의 실제 산출물은 `runs/<run_id>/` 아래에 저장하고 commit/push한다.**
 - 최소 산출물은 `result.json`이다. 큰 표나 matrix가 필요하면 CSV로 분리할 수 있다.
 - parity 검증을 수행한 run은 비교 결과도 같은 run 디렉터리에 machine-readable 파일로 남긴다. 예: `parity.json`.
+- Interactive Report visual 검증을 수행한 run은 가능한 경우 `runs/<run_id>/validation/visual-comparison.md`와 핵심 screenshot evidence를 함께 보존한다. screenshot 저장이 도구 제약으로 불가능하면 비교 결과와 제약을 `visual-comparison.md`에 명시한다.
 - run 산출물은 재현 가능한 입력/configuration과 실제 data coverage를 포함해야 한다.
 - 완료 회신 시 `agent-to-llm.md`에 run 경로와 commit SHA를 남긴다.
 
@@ -66,6 +71,8 @@ tests/golden/pv/
 260828_PTF_maxsharpe.md
 260828_PTF_maxsharpe.jpg
 ```
+
+Interactive Report의 same-input visual/behavioral acceptance reference는 `docs/visual-acceptance-contract.md`에 정의한다.
 
 ## AI Share
 
