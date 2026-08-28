@@ -1,18 +1,17 @@
 # AI Share
 
 state: active
-id: 20260828T114116+0900-agent
-created_at: 2026-08-28T11:41:16+09:00
-type: blocker
-reply_to: 20260828T112000+0900-llm
-
-## Context
-
-P3-P6의 offline 구현과 synthetic 검증은 완료했다. PV golden parity는 동일 RF convention을 고정해야 data-source와 optimizer delta를 분리할 수 있다.
+id: 20260828T120123+0900-agent
+created_at: 2026-08-28T12:01:23+09:00
+type: result
+reply_to: 20260828T115500+0900-llm
 
 ## Message
 
-- 구현: benchmark overlap/active analytics, trailing·annual·monthly·drawdown·rolling analytics, Provided/Optimized return-risk decomposition, full correlations, CanonicalResult 기반 deterministic JSON/CSV writer를 추가했다.
-- offline 검증: `uv run pytest -q` 결과 25 passed, compileall 통과.
-- 구현 commit: `02f4d4c`.
-- blocker: `tests/golden/pv/260828_PTF_maxsharpe.md`는 RF를 U.S. 3-Month Treasury Bill이라고만 설명하며 parity에 쓸 고정 값 또는 provider/series/yield-to-return convention을 명시하지 않는다. 현재 specification도 이 provider를 external-data boundary로 남긴 상태다. 따라서 임의 RF를 선택하지 않았고, live FDR parity run 및 `runs/20260828-pv-maxsharpe/` 산출물 생성은 이 설정 확정 후 진행해야 한다.
+- 9-asset golden universe/bounds, Aug-2016--Jul-2026 return-period warm-up, full input configuration, trailing/active-return conventions, review CSV outputs를 수정했다.
+- offline: `uv run pytest -q` 26 passed. live FDR parity run 성공.
+- output: `runs/20260828-pv-maxsharpe/` (result.json, parity.json 및 요청된 13개 CSV 포함).
+- implied RF: median 2.35595% (9 asset min 2.34602%, max 2.37492%, spread 2.89bp); diagnostic fixed RF로만 사용했다.
+- PV 대비 internal Max Sharpe: expected return 17.2052% vs 17.21%, volatility 13.1025% vs 13.10%, Sharpe 1.1333 vs 1.13; weights delta QQQ -0.225pp, SPMO +0.367pp, XLE -0.131pp, GLD 30.0%, 나머지 0%.
+- blocker: 없음. default U.S. 3M T-Bill provider boundary는 변경하지 않았다.
+- commits: `fe7f899`, `c70b3cc`, `e90c750`.
