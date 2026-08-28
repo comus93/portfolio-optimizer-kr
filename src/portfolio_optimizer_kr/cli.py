@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from portfolio_optimizer_kr.config import load_run_config
+from portfolio_optimizer_kr.research import execute_controlled_experiment
 from portfolio_optimizer_kr.runner import run_yaml
 
 
@@ -23,6 +24,19 @@ def _parser() -> argparse.ArgumentParser:
         default=None,
         help="temporary annual risk-free override in percentage points for external RF mode",
     )
+
+    execute = subparsers.add_parser(
+        "execute", help="execute the research experiment selected by control/execute.yaml"
+    )
+    execute.add_argument("--repo-root", type=Path, default=Path("."))
+    execute.add_argument("--control", type=Path, default=Path("control/execute.yaml"))
+    execute.add_argument("--output-root", type=Path, default=Path("runs"))
+    execute.add_argument(
+        "--annual-rf-pct",
+        type=float,
+        default=None,
+        help="temporary annual risk-free override in percentage points for external RF mode",
+    )
     return parser
 
 
@@ -34,7 +48,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     annual_rf = args.annual_rf_pct / 100.0 if args.annual_rf_pct is not None else None
-    output = run_yaml(args.config, args.output_root, annual_rf=annual_rf)
+    if args.command == "execute":
+        output = execute_controlled_experiment(
+            repo_root=args.repo_root,
+            control_path=args.control,
+            output_root=args.output_root,
+            annual_rf=annual_rf,
+        )
+    else:
+        output = run_yaml(args.config, args.output_root, annual_rf=annual_rf)
     print(output)
     return 0
 
