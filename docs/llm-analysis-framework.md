@@ -1,398 +1,398 @@
-# LLM Analysis Framework for Portfolio Optimization Results
+# 포트폴리오 최적화 결과 LLM 분석 프레임워크
 
-## Purpose
+## 목적
 
-This is a standalone handover/reference document for an LLM that receives a Portfolio Visualizer optimization result page or an equivalent optimizer result.
+이 문서는 Portfolio Visualizer 최적화 결과 페이지 또는 이에 준하는 포트폴리오 최적화 결과를 전달받은 LLM이 독립적으로 결과를 해석할 수 있도록 만든 핸드오버/참조 문서다.
 
-The LLM should not treat the historical optimum as a live allocation recommendation. The purpose of the analysis is to answer:
+LLM은 과거 데이터에서 계산된 최적 비중을 현재의 권장 비중으로 그대로 받아들이지 않는다. 분석의 목적은 다음 질문에 답하는 것이다.
 
-> **What marginal utility does each asset add to the portfolio, where on the efficient frontier does that utility appear, and is that role meaningful and robust?**
+> **각 자산이 포트폴리오에 어떤 한계 효용(marginal utility)을 추가하는가, 그 효용은 효율적 프론티어의 어느 구간에서 나타나는가, 그리고 그 역할은 실제로 의미 있고 견고한가?**
 
-The analysis is portfolio-centric. Standalone asset performance is supporting evidence, not the primary decision rule.
+분석의 중심은 개별 자산 성과가 아니라 포트폴리오 수준의 효용이다. 개별 자산 성과는 주된 판정 기준이 아니라 이를 설명하는 보조 근거로 사용한다.
 
-## Expected input
+## 예상 입력
 
-The input may be a Portfolio Visualizer result page, pasted result text, exported tables, screenshots, or equivalent optimizer output containing some or all of the following:
+입력은 Portfolio Visualizer 결과 페이지, 복사된 결과 텍스트, export된 표, 스크린샷 또는 이에 준하는 optimizer 결과일 수 있다. 다음 항목 중 일부 또는 전부가 포함될 수 있다.
 
-- optimization configuration
-- objective portfolio
-- efficient frontier assets
-- efficient frontier portfolios
-- expected return / volatility / Sharpe
-- correlations
-- annual and rolling returns
-- drawdowns
-- active-return contribution
-- return and risk decomposition
+- 최적화 설정
+- 목표 함수 기준 최적 포트폴리오
+- Efficient Frontier Assets
+- Efficient Frontier Portfolios
+- Expected Return / Volatility / Sharpe
+- Correlation
+- Annual / Rolling Returns
+- Drawdowns
+- Active Return Contribution
+- Return / Risk Decomposition
 
-The framework should still be applied when some sections are missing. State which conclusions are weaker because evidence is unavailable.
-
----
-
-## 1. Confirm the experiment before interpreting results
-
-Read the configuration first.
-
-Check:
-
-- analysis period
-- optimization objective
-- benchmark
-- risk-free rate
-- rebalancing frequency
-- asset universe
-- minimum and maximum weight constraints
-- whether one asset shortened the common analysis period
-
-### Constraint rule
-
-A weight exactly on a minimum or maximum constraint is not an unconstrained optimum.
-
-Example:
-
-- GLD maximum weight = 30%
-- optimized GLD weight = 30%
-
-Interpretation:
-
-> The optimizer wanted at least the permitted 30%. The unconstrained optimum may lie beyond the boundary.
-
-Do not interpret a binding constraint as the economically preferred allocation.
+일부 섹션이 없는 경우에도 가능한 범위에서 이 프레임워크를 적용한다. 필요한 근거가 없어 결론의 신뢰도가 낮아지는 부분은 명시한다.
 
 ---
 
-## 2. Use the objective portfolio as an anchor, not the answer
+## 1. 결과를 해석하기 전에 실험 조건부터 확인한다
 
-For a Maximum Sharpe run, first inspect the Maximum Sharpe portfolio.
+가장 먼저 설정을 읽는다.
 
-Record:
+확인 항목:
 
-- selected assets
-- zero-weight assets
-- weights
-- expected return
-- standard deviation
-- Sharpe ratio
-- CAGR, when available
-- maximum drawdown, when available
+- 분석 기간
+- 최적화 목적 함수
+- Benchmark
+- Risk-free rate
+- Rebalancing frequency
+- Asset universe
+- 각 자산의 최소/최대 비중 제약
+- 특정 자산의 짧은 히스토리 때문에 공통 분석 기간이 축소되었는지
 
-First-pass question for each candidate:
+### 제약 조건 해석 규칙
 
-> **Does this asset enter the objective portfolio?**
+최적 비중이 최소 또는 최대 제약과 정확히 일치한다면, 그 비중은 unconstrained optimum이 아니다.
 
-This is only an anchor. A zero weight at the exact optimum does not by itself justify rejection because the asset may still be useful elsewhere on the efficient frontier.
+예:
 
----
+- GLD 최대 비중 = 30%
+- 최적화 결과 GLD 비중 = 30%
 
-## 3. Inspect the entire efficient frontier
+해석:
 
-The efficient-frontier portfolio table is one of the highest-value outputs.
+> Optimizer는 허용된 30%만큼 또는 그 이상을 원했을 수 있다. 실제 unconstrained optimum은 제약 범위 밖에 있을 수 있다.
 
-Read from the low-risk end through the objective region and toward the high-return end. Track each asset's weight trajectory.
-
-### Frontier behavior classes
-
-**A. Zero across nearly the entire frontier**
-
-The asset is dominated by combinations of other available assets.
-
-Initial interpretation: **low marginal utility**.
-
-**B. Appears only on the low-risk edge**
-
-The asset offers some diversification but loses usefulness when higher return is required.
-
-Initial interpretation: **weak or defensive diversifier**.
-
-**C. Persists around the objective region**
-
-This is a strong signal. A meaningful weight across several neighboring frontier portfolios is more credible than one exact optimum.
-
-Initial interpretation: **structural portfolio contributor**.
-
-**D. Appears mainly on the high-return side**
-
-The asset is not primarily a risk-adjusted-return optimizer but helps raise expected return.
-
-Initial interpretation: **return engine**.
-
-### Prefer regions over exact points
-
-Do not over-focus on a weight such as 17.3% or 24.6%.
-
-Look for stable regions or plateaus where neighboring portfolios retain similar quality and composition.
-
-A broad useful region is more important than one mathematically optimal point.
+따라서 제약 경계에 걸린 비중을 경제적으로 선호되는 정확한 비중으로 해석하지 않는다.
 
 ---
 
-## 4. Compare Sharpe sacrificed with return gained
+## 2. 목표 함수 기준 최적 포트폴리오는 출발점으로만 사용한다
 
-Starting at the Maximum Sharpe point, move toward higher-return frontier portfolios.
+Maximum Sharpe 실험이라면 먼저 Maximum Sharpe 포트폴리오를 확인한다.
 
-Compare:
+기록할 항목:
 
-- expected-return increase
-- volatility increase
-- Sharpe decline
-- composition changes
+- 선택된 자산
+- 비중이 0%인 자산
+- 각 자산의 비중
+- Expected Return
+- Standard Deviation
+- Sharpe Ratio
+- 가능하면 CAGR
+- 가능하면 Maximum Drawdown
 
-Core question:
+각 후보 자산에 대한 첫 질문은 다음과 같다.
 
-> **How much additional expected return is gained for the reduction in risk-adjusted efficiency?**
+> **이 자산이 목표 함수 기준 최적 포트폴리오에 포함되는가?**
 
-A small Sharpe decline accompanied by a meaningful return increase can define a more attractive practical region than the exact Maximum Sharpe point.
-
-A large volatility increase or sharp Sharpe decline for little extra return is unattractive.
-
-Identify **Sharpe-return plateaus**, not only the numerical maximum.
-
----
-
-## 5. Track substitution: who enters and who leaves?
-
-When a candidate asset's weight rises, identify which existing asset weights fall.
-
-This often reveals the candidate's true portfolio role.
-
-Examples:
-
-- a higher-beta growth asset replaces QQQ: higher-return version of an existing growth engine
-- one regional equity replaces another: potentially redundant regional exposure
-- a candidate remains at zero while two existing assets dominate: those assets may already provide the same useful characteristics more efficiently
-
-Always ask:
-
-> **What existing asset does this candidate replace, and what genuinely new behavior does it add?**
-
-An asset can be attractive in isolation yet redundant in the portfolio.
+단, 이것은 출발점일 뿐 최종 판정이 아니다. 정확한 최적점에서 비중이 0%라고 해도 효율적 프론티어의 다른 구간에서 유용할 수 있으므로 그것만으로 탈락시키지 않는다.
 
 ---
 
-## 6. Read correlation together with return and volatility
+## 3. Efficient Frontier 전체를 확인한다
 
-Correlation is diagnostic evidence, not a standalone selection rule.
+Efficient Frontier Portfolios 표는 결과 페이지에서 가장 정보량이 높은 출력 중 하나다.
 
-Do not conclude:
+저위험 구간부터 목표 함수 최적점 주변을 지나 고수익 구간까지 순서대로 읽으면서 각 자산의 비중 변화 궤적을 추적한다.
 
-> low correlation = good portfolio asset
+### Frontier에서의 자산 행동 유형
 
-Evaluate together:
+**A. 거의 모든 프론티어에서 0%**
 
-- correlation with major portfolio assets
-- expected return
-- standard deviation
-- standalone Sharpe / Sortino
-- frontier inclusion
+다른 자산 조합이 해당 자산의 역할을 대부분 지배하고 있다는 뜻이다.
 
-A low-correlation asset may still be rejected if its volatility is too high or expected return is too weak.
+1차 해석: **한계 효용이 낮음**
 
-A higher-correlation asset may still be useful if its return efficiency is strong enough.
+**B. 저위험 구간에서만 등장**
 
-Core question:
+일부 분산 효과는 있지만 더 높은 수익률을 요구하면 효용이 빠르게 사라진다.
 
-> **Is the diversification benefit cheap enough in terms of sacrificed return and added volatility?**
+1차 해석: **약한 또는 방어형 Diversifier**
+
+**C. 목표 함수 최적점 주변에서 지속적으로 존재**
+
+강한 신호다. 하나의 정확한 최적점에서만 큰 비중이 나오는 것보다 인접한 여러 프론티어 포트폴리오에서 의미 있는 비중을 유지하는 것이 더 신뢰할 수 있다.
+
+1차 해석: **구조적인 포트폴리오 기여 자산**
+
+**D. 주로 고수익 구간에서 등장**
+
+Risk-adjusted return을 최대로 만드는 자산은 아니지만 Expected Return을 높이는 데 기여한다.
+
+1차 해석: **Return Engine**
+
+### 정확한 한 점보다 구간을 우선한다
+
+17.3%, 24.6%처럼 하나의 정확한 비중에 과도한 의미를 부여하지 않는다.
+
+인접한 포트폴리오에서도 성과와 구성의 질이 비슷하게 유지되는 안정 구간 또는 plateau를 찾는다.
+
+좁은 수학적 최적점보다 넓은 유효 구간이 더 중요하다.
 
 ---
 
-## 7. Use standalone metrics to explain, not decide
+## 4. Sharpe 희생 대비 Expected Return 증가를 비교한다
 
-Review component statistics:
+Maximum Sharpe 지점에서 시작해 더 높은 Expected Return을 가진 프론티어 포트폴리오 쪽으로 이동하며 비교한다.
 
-- expected return
+확인 항목:
+
+- Expected Return 증가폭
+- Volatility 증가폭
+- Sharpe 하락폭
+- 구성 자산 변화
+
+핵심 질문:
+
+> **Risk-adjusted efficiency를 얼마나 포기하고 Expected Return을 얼마나 추가로 얻는가?**
+
+Sharpe가 조금만 낮아지면서 Expected Return이 의미 있게 높아지는 구간은 정확한 Maximum Sharpe 한 점보다 실제 운용에서 더 매력적인 후보가 될 수 있다.
+
+반대로 작은 추가 수익을 위해 Volatility가 크게 증가하거나 Sharpe가 급격히 하락한다면 비효율적인 구간이다.
+
+숫자상 최고 Sharpe 한 점이 아니라 **Sharpe-Return plateau**를 찾는다.
+
+---
+
+## 5. 자산 대체 관계를 추적한다: 누가 들어오고 누가 빠지는가
+
+후보 자산의 비중이 증가할 때 어떤 기존 자산의 비중이 감소하는지 확인한다.
+
+이 변화는 후보 자산의 실제 포트폴리오 역할을 드러내는 경우가 많다.
+
+예:
+
+- 고베타 성장 자산이 QQQ를 대체한다: 기존 성장 엔진의 고수익 버전일 가능성
+- 한 지역 주식이 다른 지역 주식을 대체한다: 지역 노출 측면에서 중복 가능성
+- 후보 자산이 계속 0%이고 기존 두 자산이 유지된다: 기존 자산들이 후보의 유용한 특성을 더 효율적으로 제공하고 있을 가능성
+
+항상 다음 질문을 한다.
+
+> **이 후보 자산은 어떤 기존 자산을 대체하며, 기존 포트폴리오에 실제로 무엇을 새로 추가하는가?**
+
+개별적으로 좋은 자산이어도 포트폴리오에서는 중복 자산일 수 있다.
+
+---
+
+## 6. Correlation은 Return과 Volatility를 함께 본다
+
+Correlation은 진단 근거이지 단독 선택 기준이 아니다.
+
+다음과 같이 단순 해석하지 않는다.
+
+> 낮은 Correlation = 좋은 포트폴리오 자산
+
+반드시 함께 확인한다.
+
+- 주요 포트폴리오 자산과의 Correlation
+- Expected Return
+- Standard Deviation
+- 개별 Sharpe / Sortino
+- Efficient Frontier 포함 여부
+
+Correlation이 낮아도 Volatility가 너무 높거나 Expected Return이 낮다면 선택되지 않을 수 있다.
+
+반대로 Correlation이 더 높더라도 Return efficiency가 충분히 강하면 유용할 수 있다.
+
+핵심 질문:
+
+> **이 자산이 주는 분산 효과를 얻기 위해 포기하는 수익과 추가되는 변동성이 감당할 만한가?**
+
+---
+
+## 7. 개별 자산 지표는 판정이 아니라 설명에 사용한다
+
+구성 자산별로 다음을 확인한다.
+
+- Expected Return
 - CAGR
-- standard deviation
-- Sharpe ratio
-- Sortino ratio
-- maximum drawdown
+- Standard Deviation
+- Sharpe Ratio
+- Sortino Ratio
+- Maximum Drawdown
 
-These metrics help explain optimizer behavior.
+이 지표들은 optimizer가 왜 특정 자산을 선택하거나 배제했는지 설명하는 데 사용한다.
 
-They should not override portfolio-level evidence.
+포트폴리오 수준의 결과보다 우선하지 않는다.
 
-An asset with mediocre standalone Sharpe can still improve a portfolio through correlation structure. An asset with excellent standalone Sharpe can still be redundant.
+개별 Sharpe가 낮은 자산도 Correlation 구조 덕분에 포트폴리오를 개선할 수 있다. 반대로 개별 Sharpe가 매우 높은 자산도 기존 자산과 역할이 중복되면 선택되지 않을 수 있다.
 
-Priority:
+우선순위:
 
-> **Portfolio marginal utility > standalone performance**
-
----
-
-## 8. Identify regime behavior
-
-Use annual returns, monthly returns, stress periods, and up/down-market statistics to understand when an asset earns or loses money.
-
-Ask:
-
-- Did it protect during equity selloffs?
-- Did it work mainly during inflation, commodity, growth, value, or another identifiable regime?
-- Did most of its benefit come from one exceptional year?
-- Does its behavior have a plausible economic role?
-
-This step checks whether the optimizer result has an understandable economic explanation rather than looking like a statistical accident.
-
-A diversifier does not need to perform well in every regime. Its value may come from performing differently.
+> **포트폴리오 한계 효용 > 개별 자산 성과**
 
 ---
 
-## 9. Examine drawdown depth and recovery
+## 8. Regime별 행동을 확인한다
 
-Inspect:
+Annual Returns, Monthly Returns, Stress Periods, Up/Down Market Statistics를 이용해 자산이 어떤 환경에서 수익과 손실을 냈는지 확인한다.
 
-- maximum drawdown
-- worst drawdowns
-- recovery time
-- underwater period
-- stress-period losses
+질문:
 
-Do not treat equal MDD values as equivalent when recovery behavior differs.
+- 주식 급락 시 방어 역할을 했는가?
+- 인플레이션, 원자재, Growth, Value 등 특정 regime에서 주로 작동했는가?
+- 전체 효용이 특정 한 해의 비정상적으로 좋은 성과에 크게 의존하는가?
+- 관측된 움직임에 경제적으로 설명 가능한 역할이 있는가?
 
-A portfolio that loses 20% and recovers in six months is materially different from one that loses 20% and remains underwater for three years.
+이 단계는 optimizer가 발견한 관계가 단순한 통계적 우연인지, 이해 가능한 경제적 역할을 가진 것인지 확인하는 과정이다.
 
-Always distinguish:
-
-> **drawdown depth** and **drawdown duration**
+Diversifier는 모든 regime에서 높은 수익을 낼 필요가 없다. 다른 자산과 다르게 움직이는 것 자체가 가치일 수 있다.
 
 ---
 
-## 10. Check rolling-return robustness
+## 9. Drawdown의 깊이와 회복 시간을 함께 본다
 
-Full-period averages can hide dependence on the selected start and end dates.
+확인 항목:
 
-Inspect when available:
+- Maximum Drawdown
+- Worst Drawdowns
+- Recovery Time
+- Underwater Period
+- Stress-period loss
 
-- rolling 1-year returns
-- rolling 3-year returns
-- rolling 5-year returns
-- average / high / low values
+MDD가 같다고 해서 동일한 위험으로 취급하지 않는다.
 
-Give particular attention to rolling 3-year and 5-year lows.
+20% 하락 후 6개월 만에 회복하는 포트폴리오와 20% 하락 후 3년 동안 원금을 회복하지 못하는 포트폴리오는 실질적으로 다르다.
 
-Ask:
+항상 다음 두 요소를 구분한다.
 
-- Does the optimized portfolio remain acceptable across different subperiods?
-- Is the strong full-period result driven mainly by a recent regime?
-- Does the candidate contribute consistently or only in a narrow window?
-
-A strong full-period result with weak rolling lows deserves a robustness warning.
+> **Drawdown Depth**와 **Drawdown Duration**
 
 ---
 
-## 11. Use contribution and decomposition tables to detect hidden costs
+## 10. Rolling Return으로 기간 의존성을 확인한다
 
-When available, inspect:
+전체 기간 평균은 시작일과 종료일 선택에 대한 의존성을 숨길 수 있다.
+
+가능하면 다음을 확인한다.
+
+- Rolling 1-year Returns
+- Rolling 3-year Returns
+- Rolling 5-year Returns
+- Average / High / Low
+
+특히 Rolling 3-year 및 5-year의 Low 값을 중요하게 본다.
+
+질문:
+
+- 최적화 포트폴리오가 서로 다른 하위 기간에서도 받아들일 만한 결과를 유지하는가?
+- 좋은 전체 기간 성과가 최근 특정 regime에 크게 의존하는가?
+- 후보 자산의 기여가 지속적인가, 특정 좁은 기간에서만 나타나는가?
+
+전체 기간 성과가 좋아도 Rolling Low가 약하다면 robustness 경고를 남긴다.
+
+---
+
+## 11. Contribution과 Decomposition으로 숨은 비용을 확인한다
+
+가능한 경우 다음을 확인한다.
 
 ### Active Return Contribution
 
-Compare recent contribution with full-period contribution.
+최근 기여도와 전체 기간 기여도를 비교한다.
 
-Strong 1-year or 3-year contribution but weak long-period contribution may indicate recency dependence.
+1년 또는 3년 기여도는 강하지만 장기 기여도가 약하다면 최근 regime 의존 가능성이 있다.
 
 ### Return Decomposition
 
-Measure how much portfolio gain came from each asset.
+포트폴리오 이익 중 각 자산이 얼마나 기여했는지 확인한다.
 
 ### Risk Decomposition
 
-Measure how much portfolio volatility each asset consumed.
+포트폴리오 전체 변동성 중 각 자산이 얼마나 차지했는지 확인한다.
 
-Compare allocation weight, return contribution, and risk contribution.
+Allocation Weight, Return Contribution, Risk Contribution을 함께 비교한다.
 
-Examples:
+예:
 
-- small allocation + large risk contribution + weak return contribution: inefficient
-- small allocation + modest risk contribution + meaningful return contribution: efficient
+- 작은 비중 + 큰 Risk Contribution + 약한 Return Contribution: 비효율적
+- 작은 비중 + 제한적인 Risk Contribution + 의미 있는 Return Contribution: 효율적
 
-Core question:
+핵심 질문:
 
-> **How much return did the asset provide relative to the portfolio risk it consumed?**
+> **이 자산은 포트폴리오의 위험을 얼마나 소비했고, 그 대가로 얼마나 많은 수익을 제공했는가?**
 
 ---
 
-## 12. Final asset-role classification
+## 12. 최종 자산 역할 분류
 
-Do not force every asset into a binary keep/drop decision.
+모든 자산을 단순 KEEP/DROP 이분법으로 분류하지 않는다.
 
-| Classification | Interpretation |
+| 분류 | 의미 |
 |---|---|
-| **KEEP / Strong** | Meaningful weight persists around the objective region and neighboring frontier portfolios. |
-| **KEEP / Return Engine** | Mainly useful on the higher-return side of the frontier. |
-| **KEEP / Diversifier** | Materially improves lower- or medium-risk portfolios through distinct behavior. |
-| **WATCH** | Some utility exists, but it is small, unstable, or limited to a narrow frontier or regime. |
-| **REDUNDANT** | Asset may be good individually, but existing assets provide the same role more efficiently. |
-| **DROP** | Little or no marginal utility across the relevant frontier. |
+| **KEEP / Strong** | 목표 함수 최적점 주변과 인접한 프론티어 포트폴리오에서 의미 있는 비중이 지속된다. |
+| **KEEP / Return Engine** | 주로 고수익 프론티어에서 Expected Return을 높이는 역할을 한다. |
+| **KEEP / Diversifier** | 독립적인 움직임으로 저위험 또는 중위험 포트폴리오를 의미 있게 개선한다. |
+| **WATCH** | 효용은 있으나 작거나 불안정하거나 좁은 프론티어/특정 regime에 한정된다. |
+| **REDUNDANT** | 개별적으로 좋은 자산일 수 있으나 기존 자산이 같은 역할을 더 효율적으로 수행한다. |
+| **DROP** | 관심 프론티어 구간에서 한계 효용이 거의 또는 전혀 없다. |
 
-Each classification should include a short reason based on frontier behavior and supporting evidence.
-
----
-
-## Standard analysis sequence
-
-Use this order for every review:
-
-1. **Experiment configuration and constraints**
-2. **Objective portfolio as anchor**
-3. **Efficient-frontier weight trajectory**
-4. **Sharpe sacrifice versus expected-return gain**
-5. **Asset substitution and portfolio role**
-6. **Correlation together with return and volatility**
-7. **Standalone metrics as supporting evidence**
-8. **Regime and annual-return behavior**
-9. **Drawdown and recovery behavior**
-10. **Rolling-return robustness**
-11. **Active-return / return-risk decomposition**
-12. **Role-based final classification**
+각 판정에는 반드시 Frontier에서의 행동과 이를 뒷받침하는 근거를 짧게 포함한다.
 
 ---
 
-## Interpretation guardrails
+## 표준 분석 순서
 
-- Do not treat historical Maximum Sharpe weights as recommended live weights.
-- Do not interpret a binding min/max weight as an unconstrained optimum.
-- Do not reject an asset solely because its standalone Sharpe is low.
-- Do not select an asset solely because correlation is low.
-- Do not overvalue one exact frontier point; prefer stable neighboring regions.
-- Flag results dominated by recent performance or a short common history.
-- Distinguish statistical inclusion from an understandable portfolio role.
+모든 결과 검토에서 다음 순서를 사용한다.
+
+1. **실험 조건과 제약 확인**
+2. **목표 함수 기준 최적 포트폴리오를 기준점으로 확인**
+3. **Efficient Frontier에서 자산 비중 변화 추적**
+4. **Sharpe 희생 대비 Expected Return 증가 평가**
+5. **자산 대체 관계와 포트폴리오 역할 확인**
+6. **Correlation을 Return / Volatility와 함께 해석**
+7. **개별 자산 지표는 보조 근거로 사용**
+8. **Regime / Annual Return 행동 확인**
+9. **Drawdown과 Recovery 확인**
+10. **Rolling Return으로 robustness 확인**
+11. **Active Return / Return-Risk Decomposition 확인**
+12. **역할 기반 최종 분류**
 
 ---
 
-## Recommended LLM response format
+## 해석 Guardrail
 
-### 1. Executive conclusion
+- 과거 Maximum Sharpe 비중을 현재의 권장 비중으로 그대로 해석하지 않는다.
+- 최소/최대 비중 제약에 걸린 결과를 unconstrained optimum으로 해석하지 않는다.
+- 개별 Sharpe가 낮다는 이유만으로 자산을 탈락시키지 않는다.
+- Correlation이 낮다는 이유만으로 자산을 선택하지 않는다.
+- 하나의 정확한 frontier point를 과대평가하지 않고 인접한 안정 구간을 우선한다.
+- 최근 성과 또는 짧은 공통 분석 기간에 크게 의존하는 결과는 명시적으로 경고한다.
+- 통계적으로 선택된 사실과 경제적으로 이해 가능한 포트폴리오 역할을 구분한다.
 
-State the main portfolio finding in 2-4 sentences.
+---
 
-### 2. Objective portfolio
+## 권장 LLM 응답 형식
 
-Report composition and key metrics.
+### 1. 핵심 결론
 
-### 3. Frontier interpretation
+2~4문장으로 포트폴리오 수준의 주요 발견을 먼저 제시한다.
 
-Describe:
+### 2. 목표 함수 기준 포트폴리오
 
-- candidate weight trajectory
-- Sharpe-return plateau
-- assets entering and leaving
+구성과 핵심 지표를 정리한다.
 
-### 4. Diversification and redundancy
+### 3. Frontier 해석
 
-Explain correlation together with return/volatility and substitution behavior.
+다음을 설명한다.
+
+- 후보 자산의 비중 변화 궤적
+- Sharpe-Return plateau
+- 어떤 자산이 들어오고 빠지는지
+
+### 4. 분산 효과와 중복성
+
+Correlation을 Return / Volatility 및 대체 관계와 함께 해석한다.
 
 ### 5. Robustness
 
-Summarize drawdowns, recovery, rolling returns, and regime dependence.
+Drawdown, Recovery, Rolling Returns, Regime 의존성을 요약한다.
 
-### 6. Final classification
+### 6. 최종 분류
 
-Assign important candidates one of:
+중요 후보를 다음 중 하나로 분류한다.
 
-`KEEP / Strong`, `KEEP / Return Engine`, `KEEP / Diversifier`, `WATCH`, `REDUNDANT`, `DROP`.
+`KEEP / Strong`, `KEEP / Return Engine`, `KEEP / Diversifier`, `WATCH`, `REDUNDANT`, `DROP`
 
-Include the evidence driving the classification.
+각 분류의 근거를 함께 제시한다.
 
 ---
 
-## Guiding principle
+## 핵심 원칙
 
-> **Use optimization to discover portfolio structure, not a historical weight to copy. The central question is whether an asset adds independent and meaningful marginal utility, what role it plays, and whether that role survives across the efficient frontier and time.**
+> **Optimization은 과거 최적 비중을 복사하기 위한 도구가 아니라 포트폴리오 구조를 발견하기 위한 도구로 사용한다. 핵심은 각 자산이 독립적이고 의미 있는 한계 효용을 추가하는지, 어떤 역할을 하는지, 그리고 그 역할이 효율적 프론티어와 시간의 변화 속에서도 유지되는지를 판단하는 것이다.**
