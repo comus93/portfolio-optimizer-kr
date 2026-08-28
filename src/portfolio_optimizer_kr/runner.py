@@ -49,6 +49,10 @@ def execute_run(
     if not request.run_id:
         raise ValueError("run_id is required for persisted runs")
 
+    output_dir = Path(output_root) / request.run_id
+    if output_dir.exists():
+        raise FileExistsError(f"run output already exists: {output_dir}")
+
     loader = loader or FDRLoader()
     analyze_fn = analyze_fn or analyze_prices
     writer = writer or write_analysis_run
@@ -64,8 +68,7 @@ def execute_run(
         usdkrw = loader.load_series(spec.usdkrw_symbol, start=load_start, end=request.end)
 
     result = analyze_fn(request, prices, usdkrw=usdkrw, annual_rf=annual_rf)
-    output_dir = Path(output_root) / request.run_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=False)
     writer(result, output_dir)
     return output_dir
 
