@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pandas as pd
+
 from portfolio_optimizer_kr.runner import run_yaml
 from portfolio_optimizer_kr.viewer import load_run_artifacts
 
@@ -25,6 +27,9 @@ def main() -> None:
         "data_coverage": result["data_coverage"],
         "note": "FDR market-data diagnostic; public PV moments and weights are rounded.",
     }
+    pd.DataFrame({"ticker": list(PV_WEIGHTS), "pv_published_weight": list(PV_WEIGHTS.values()), "fdr_internal_weight": [optimized["weights"][ticker] for ticker in PV_WEIGHTS], "weight_delta_vs_pv": [optimized["weights"][ticker] - value for ticker, value in PV_WEIGHTS.items()]}).to_csv(OUT / "solver_parity.csv", index=False)
+    stats = result["asset_statistics"]
+    pd.DataFrame({"ticker": list(PV_WEIGHTS), "fdr_expected_return": [stats["expected_returns"][ticker] for ticker in PV_WEIGHTS], "fdr_volatility": [stats["volatility"][ticker] for ticker in PV_WEIGHTS]}).to_csv(OUT / "moment_parity.csv", index=False)
     (OUT / "parity.json").write_text(json.dumps(parity, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
