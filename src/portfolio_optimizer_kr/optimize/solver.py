@@ -135,6 +135,10 @@ def target_volatility(
         raise InfeasibleOptimizationError(
             f"target volatility {target_vol:.6f} is below GMV {gmv.volatility:.6f}"
         )
+    # At the GMV boundary the SOCP feasible set is numerically ill-conditioned;
+    # the GMV portfolio is the unique maximum-return feasible neighborhood limit.
+    if target_vol <= gmv.volatility + 1e-6:
+        return gmv
 
     eigenvalues, eigenvectors = np.linalg.eigh(sigma)
     factor = np.diag(np.sqrt(np.clip(eigenvalues, 0.0, None))) @ eigenvectors.T
