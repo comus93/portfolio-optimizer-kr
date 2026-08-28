@@ -1,5 +1,12 @@
 # Specification
 
+<!--
+Version history:
+- V1 baseline: Sections 1-24 below represent the original V1 requirements and Research Interaction Layer requirements established before the interactive report phase.
+- V2 begins after the explicit V2 boundary marker at the end of Section 24.
+- V2 extends the system with the GPT ↔ User ↔ GitHub workflow and interactive self-contained HTML/GitHub Pages result viewing while preserving the V1 contracts unless a later requirement explicitly revises them.
+-->
+
 ## 1. Purpose
 
 `portfolio-optimizer-kr`는 **Portfolio Visualizer가 직접 지원하지 않는 국내 투자 자산도 동일한 mean-variance optimization framework에서 분석할 수 있게 만드는 것**을 1차 목표로 한다. 개별 종목, ETF, ETN 등 FDR에서 가격 시계열을 확보할 수 있는 국내 상장 투자 자산을 대상으로 할 수 있다.
@@ -1051,3 +1058,11 @@ Study search optimization
 ```
 
 Batch를 추가할 때도 experiment의 canonical contract는 YAML이고 optimizer calculation path는 기존 runner를 재사용한다.
+
+<!--
+V2 REQUIREMENTS BOUNDARY
+- Everything above this marker is the V1 specification baseline.
+- Requirements added below this marker belong to V2 unless explicitly stated otherwise.
+- V2 scope starts with the GPT ↔ User ↔ GitHub interaction extension, self-contained interactive `report.html`, local browser viewing without a local server, and subsequent GitHub Pages publishing.
+- V2 requirements extend V1; they do not silently replace V1 calculation, artifact, or research contracts.
+-->
