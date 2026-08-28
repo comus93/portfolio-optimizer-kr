@@ -1,123 +1,126 @@
 # AI Share
 
 state: active
-id: 20260828T174500+0900-llm
-created_at: 2026-08-28T17:45:00+09:00
+id: 20260828T181500+0900-llm
+created_at: 2026-08-28T18:15:00+09:00
 type: request
-reply_to: 20260828T173000+0900-agent
+reply_to: 20260828T175000+0900-agent
 
 ## Context
 
-이전 infrastructure smoke 요청은 superseded한다. 사용자 연구 입력이 이제 확정되어 첫 정식 persisted research E2E run을 수행한다.
+첫 persisted research run `runs/20260828-0001/` 분석 중 계산 semantics 문제 2건을 확인했다. 해석 프레임워크/연구 결론은 이번 작업 범위가 아니며, 계산 및 reporting semantics만 수정한다.
 
-`ai-share/PROTOCOL.md` 최신 규칙에 따라 LLM 요청 확인 시작 시 반드시 먼저 `git pull --ff-only origin <current-branch>`로 local checkout을 최신화해야 한다.
+`ai-share/PROTOCOL.md` 최신 규칙에 따라 요청 확인 시작 시 반드시 먼저 `git pull --ff-only origin <current-branch>`로 최신 main을 반영한다.
 
-확정 experiment:
+LLM이 아래 contract tests를 main에 먼저 추가했다.
 
-- `studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml`
-- `control/execute.yaml`은 위 파일을 가리킨다.
+- commit `74e943ba2e47fca40bf5e56c41aa40e376627125`: incomplete monthly sample exclusion contracts
+- commit `df04b9882c04840b9e5c59c3f956db8f99047a7b`: benchmark coverage contract
 
-사용자 확정 조건:
-
-- Provided portfolio: QQQ 40%, SPMO 10%, GDX 10%, GLD 0%, SLV 10%, AIA 15%, XLE 15%
-- Min weight: 전 자산 0%
-- Max weight: QQQ/SPMO 50%, 나머지 30%
-- Optimization objective: Maximum Sharpe
-- Rebalancing: Monthly
-- Analysis period: 7개 자산 모두의 실제 데이터가 존재하는 공통 교집합 전체 기간
-
-기본/연결 조건:
-
-- Benchmark: SPY
-- Efficient Frontier: 100 points
-- Risk-free: fixed 2.35595% (기존 PV parity 진단과 연결)
+테스트를 통과시키기 위해 contract test를 약화/삭제/의미 변경하지 않는다.
 
 ## Message
 
-### 1. 반드시 remote와 동기화부터 한다
+### 1. Remote sync
 
-작업 시작 직후 현재 branch를 확인하고 다음을 수행한다.
+작업 시작 직후 현재 branch를 확인하고:
 
 ```text
 git pull --ff-only origin <current-branch>
 ```
 
-- pull 성공 후에만 최신 `llm-to-agent.md`, experiment, control을 기준으로 진행한다.
-- pull 후 local HEAD와 `origin/<current-branch>`가 동일한지 확인한다.
-- pull이 실패하면 stale local 상태에서 실행하지 말고 blocker로 회신한다.
+을 수행한다. pull 실패 시 stale local에서 작업하지 말고 blocker로 회신한다.
 
-### 2. 코드 변경 없이 정식 research run을 실행한다
+### 2. Bug A: 미완성 월을 monthly return sample에서 제외
 
-현재 `control/execute.yaml` 대상으로 실제 명령을 실행한다.
+현재 2026-08-28 실행에서 `2026-08-31` monthly row가 생성됐고, 8월 28일까지의 partial data가 완성 월간수익률처럼 optimizer에 포함됐다.
+
+계약:
+
+- Monthly analysis는 **완료된 calendar month만** 사용한다.
+- `analysis_period.end`가 비어 있고 현재 월 데이터가 존재하더라도 현재 미완성 월은 제외한다.
+- explicit `end`가 월 중간이면 해당 terminal partial month는 제외한다.
+- 과거 완료월의 마지막 거래일이 달력 월말보다 앞선 경우(예: 월말이 주말) 그 월은 정상적인 완료월로 포함한다.
+- 따라서 현재 기준 default full-overlap research run의 마지막 월은 2026-07이어야 한다.
+
+LLM contract:
+
+```text
+uv run pytest tests/test_pipeline.py -q
+```
+
+신규 테스트가 구현 전 실패할 수 있으며 구현을 수정해 통과시킨다.
+
+### 3. Bug B: Benchmark analytics를 optimizer 실제 analysis coverage에 제한
+
+현재 portfolio optimization coverage는 2015-11 이후인데 SPY benchmark performance/drawdown/annual/monthly output에는 1993~2014 및 2000/2008 drawdown까지 포함됐다.
+
+계약:
+
+- Benchmark는 optimizer universe의 공통기간을 **결정하거나 축소시키지 않는다**.
+- 그러나 benchmark를 비교/표시하는 performance, annual returns, monthly return series, rolling returns, drawdowns, active analytics는 optimizer의 실제 monthly analysis coverage 밖 데이터를 사용하지 않는다.
+- 즉 benchmark가 더 긴 history를 갖더라도 pre-analysis-period history가 result/review 비교표에 섞이지 않는다.
+- benchmark에 optimizer 기간 중 결측이 있으면 해당 비교는 실제 overlap을 사용하되 optimizer 자체 coverage는 유지한다.
+
+LLM contract:
+
+```text
+uv run pytest tests/test_reporting.py -q
+```
+
+### 4. Regression
+
+수정 후 관련 테스트와 전체 suite를 실행한다.
+
+```text
+uv run pytest tests/test_pipeline.py tests/test_reporting.py tests/test_research.py tests/test_runner.py -q
+uv run pytest -q
+```
+
+### 5. 동일 research experiment 재실행
+
+수정 완료 후 현재 `control/execute.yaml`이 가리키는 동일 experiment:
+
+```text
+studies/seven-asset-frontier-e2e/experiments/001-base-r02.yaml
+```
+
+을 다시 실행한다.
 
 ```text
 portfolio-optimizer execute
 ```
 
-이번 run은 temporary smoke가 아니다. 생성된 `runs/<generated_run_id>/` 전체를 보존한다.
+- 기존 `runs/20260828-0001/`은 삭제/수정하지 않는다.
+- 새 generated run_id로 결과를 보존한다.
+- 새 run의 optimization monthly coverage end가 2026-07인지 확인한다.
+- benchmark annual/monthly/drawdown output에 optimizer coverage 이전 데이터가 없는지 확인한다.
+- 새 `runs/<run_id>/` 전체를 commit/push한다.
+- `study.md` Interpretation/Conclusion은 수정하지 않는다.
 
-### 3. 생성 artifact를 검증한다
+### 6. Scope guardrail
 
-최소 다음을 확인한다.
+이번 작업에서는 다음을 변경하지 않는다.
 
-```text
-runs/<generated_run_id>/input.yaml
-runs/<generated_run_id>/result.json
-runs/<generated_run_id>/context.yaml
-runs/<generated_run_id>/review/
-runs/<generated_run_id>/raw/
-```
-
-특히 다음 review artifact의 존재를 확인한다.
-
-```text
-review/efficient_frontier.csv
-review/optimization_results.csv
-review/performance_summary.csv
-review/correlations.csv
-review/drawdowns.csv
-review/return_decomposition.csv
-review/risk_decomposition.csv
-review/rolling_returns_summary.csv
-```
-
-또한:
-
-- `input.yaml`의 effective run_id와 output directory name이 일치하는지 확인
-- `context.yaml`의 run_id / study / experiment provenance가 실제 실행과 일치하는지 확인
-- `analysis_period`가 비어 있는 입력에서 실제 FDR 공통 overlap 전체 기간이 사용됐는지 data coverage로 확인
-- 실제 coverage start/end/observation count를 보고
-
-### 4. 결과를 GitHub에 영구 보존한다
-
-- 생성된 `runs/<generated_run_id>/` 전체를 Git에 commit/push한다.
-- 삭제하지 않는다.
-- `study.md`의 Interpretation/Conclusion은 수정하지 않는다. 이후 GPT + user가 결과를 읽고 갱신한다.
-
-### 5. Scope guardrail
-
-이번 요청은 실행/검증 작업이다. 코드나 금융 계산 의미론을 임의로 변경하지 않는다.
-
-실패하면 objective, period, rebalance, RF, constraints 등을 바꾸지 말고 원인을 blocker로 보고한다.
-
-다음은 추가하지 않는다.
-
+- optimizer objective 또는 solver semantics
+- expected return/covariance 정의
+- user portfolio/bounds
+- RF convention
+- research interpretation framework
+- study conclusion
 - research_summary/frontier derived artifact
-- batch/state machine
-- 별도 research DB
 
-### 6. Completion report
+### 7. Completion report
 
 `ai-share/agent-to-llm.md`에 다음을 기록하고 commit/push한다.
 
-- sync branch / pull 성공 여부
-- 실행 기준 HEAD commit SHA
-- generated run_id
-- persisted GitHub path
-- `portfolio-optimizer execute` 성공/실패
-- 실제 data coverage start/end/observations
-- 핵심 artifact 존재 확인
-- warning/blocker
-- run artifact commit SHA
-
-이번 작업의 목적은 **사용자 입력 → experiment/control → 실제 FDR/optimizer 실행 → persisted run artifact → GPT 분석**의 첫 정식 E2E research loop를 완성하는 것이다.
+- sync branch / pull 결과 / 구현 기준 HEAD
+- Bug A 원인과 수정 위치 요약
+- Bug B 원인과 수정 위치 요약
+- targeted/full test 결과
+- 재실행 generated run_id 및 persisted path
+- 새 optimizer coverage
+- benchmark coverage 정합성 확인
+- old run `20260828-0001`과 비교 시 주요 optimizer 결과 변화가 있으면 요약
+- code commit SHA / run artifact commit SHA
+- blocker/warning
