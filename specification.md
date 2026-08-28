@@ -2,9 +2,9 @@
 
 ## 1. Purpose
 
-`portfolio-optimizer-kr`는 **Portfolio Visualizer가 직접 지원하지 않는 국내 상장 ETF도 동일한 mean-variance optimization framework에서 분석할 수 있게 만드는 것**을 1차 목표로 한다.
+`portfolio-optimizer-kr`는 **Portfolio Visualizer가 직접 지원하지 않는 국내 투자 자산도 동일한 mean-variance optimization framework에서 분석할 수 있게 만드는 것**을 1차 목표로 한다. 개별 종목, ETF, ETN 등 FDR에서 가격 시계열을 확보할 수 있는 국내 상장 투자 자산을 대상으로 할 수 있다.
 
-해외 ETF도 동일 framework에서 다룰 수 있으며, KRW 기준 통화 정규화를 통해 서로 다른 국가의 자산을 하나의 portfolio에서 통합 optimization하는 기능도 지원한다. 다만 cross-country optimization은 핵심 목적이라기보다 국내 ETF까지 optimizer universe를 확장한 결과로 제공되는 feature다.
+해외 투자 자산도 동일 framework에서 다룰 수 있으며, KRW 기준 통화 정규화를 통해 서로 다른 국가의 자산을 하나의 portfolio에서 통합 optimization하는 기능도 지원한다. 다만 cross-country optimization은 핵심 목적이라기보다 국내 투자 자산까지 optimizer universe를 확장한 결과로 제공되는 feature다.
 
 목표는 Portfolio Visualizer(PV)를 복제하는 것이 아니라, 실제 portfolio research에 필요한 핵심 optimization과 analytics를 자체적으로 일관되게 수행하는 것이다.
 
@@ -76,7 +76,8 @@ Portfolio Rebalancing Period = Monthly
 Frontier Points = 100
 Risk-free Source = U.S. 3-Month Treasury Bill Rate
 Optimization Modeling = CVXPY
-Numerical Solver = CLARABEL
+QP Solver = OSQP
+SOCP Solver = CLARABEL
 Long Only = true
 Fully Invested = true
 ```
@@ -89,7 +90,7 @@ Provided Portfolio weights가 주어지면 합계는 1이어야 한다.
 
 v1의 market data source는 **FinanceDataReader(FDR)** 로 고정한다.
 
-FDR을 통해 한국 ETF/주식과 지원되는 미국 ticker를 조회한다.
+FDR을 통해 주식, ETF, ETN 등 지원되는 국내 투자 자산과 지원되는 해외 ticker를 조회한다.
 
 다른 data source는 v1 core requirement가 아니다.
 
@@ -283,14 +284,20 @@ Target volatility가 feasible minimum volatility보다 낮으면 infeasible로 �
 
 v1의 optimization modeling layer는 **CVXPY**를 사용한다.
 
-기본 numerical solver는 **CLARABEL**로 고정한다.
+문제 유형에 따라 CVXPY의 표준 specialized solver routing을 명시적으로 사용한다.
+
+```text
+QP   -> OSQP
+SOCP -> CLARABEL
+```
 
 선정 이유:
 
-- Efficient Frontier의 minimum-variance 문제는 convex QP다.
-- Target Volatility 문제는 second-order cone constraint를 포함할 수 있다.
-- CLARABEL은 QP와 SOCP를 모두 처리할 수 있어 v1 objective를 하나의 solver로 일관되게 처리할 수 있다.
+- Efficient Frontier와 convex transformation 이후의 Maximum Sharpe 문제는 QP로 다룰 수 있으며 OSQP가 해당 문제 유형에 특화되어 있다.
+- Target Volatility 문제는 second-order cone constraint를 포함하므로 CLARABEL을 사용한다.
+- CVXPY 자체도 QP에는 OSQP, SOCP에는 CLARABEL을 기본 선택하며 두 solver 모두 CVXPY 기본 dependency다.
 - CVXPY의 문제 표현을 사용하면 objective와 constraints가 코드에서 명시적으로 드러난다.
+- solver를 문제 유형에 맞게 분리하되 결과 검증 규칙은 공통으로 유지한다.
 
 PyPortfolioOpt는 core dependency로 사용하지 않는다. 공식 구현과 결과 비교를 위한 reference로 사용할 수 있다.
 
