@@ -1,0 +1,4103 @@
+{
+  "asset_statistics": {
+    "asset_performance": {
+      "GLD": {
+        "annualized_return": 0.181435486315535,
+        "annualized_volatility": 0.14457993148611167,
+        "best_year": 0.64742083428072,
+        "cagr": 0.18544560557958545,
+        "end_balance": 3.2898145538015466,
+        "max_drawdown": -0.1807689712433984,
+        "sharpe_ex_post": 1.1165829493496646,
+        "sortino": 2.333506739646612,
+        "start_balance": 1.0,
+        "trailing_returns": {
+          "10y": null,
+          "1y": 0.64742083428072,
+          "3m": 0.12214817925177313,
+          "3y": 0.3297652130702706,
+          "3y_annualized_volatility": 0.13884265939016835,
+          "5y": 0.17465718624516047,
+          "5y_annualized_volatility": 0.14479951534918986,
+          "full_period": 0.18544560557958545,
+          "ytd": 0.64742083428072
+        },
+        "worst_year": -0.04148908875959545
+      },
+      "QQQ": {
+        "annualized_return": 0.22616312452684598,
+        "annualized_volatility": 0.19899624735902252,
+        "best_year": 0.5485554994590525,
+        "cagr": 0.22736069735154563,
+        "end_balance": 4.195710214402258,
+        "max_drawdown": -0.3257699158586461,
+        "sharpe_ex_post": 1.036015137284942,
+        "sortino": 1.7379194631556931,
+        "start_balance": 1.0,
+        "trailing_returns": {
+          "10y": null,
+          "1y": 0.21779135311780817,
+          "3m": 0.03307633371334173,
+          "3y": 0.3329219018799565,
+          "3y_annualized_volatility": 0.1551773455557082,
+          "5y": 0.1526349549523487,
+          "5y_annualized_volatility": 0.19315008806424178,
+          "full_period": 0.22736069735154563,
+          "ytd": 0.21779135311780817
+        },
+        "worst_year": -0.3257699158586461
+      }
+    },
+    "correlation": {
+      "GLD": {
+        "GLD": 1.0,
+        "QQQ": 0.15497366061142895
+      },
+      "QQQ": {
+        "GLD": 0.15497366061142895,
+        "QQQ": 1.0
+      }
+    },
+    "expected_returns": {
+      "GLD": 0.181435486315535,
+      "QQQ": 0.22616312452684598
+    },
+    "volatility": {
+      "GLD": 0.14457993148611167,
+      "QQQ": 0.19899624735902252
+    }
+  },
+  "benchmark_analytics": {
+    "active_returns": {
+      "optimized": [
+        {
+          "active_return": -0.026943071912609057,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.08006528208299879,
+          "cumulative_active_return": -0.02694307191260914,
+          "date": "2019-01-31T00:00:00",
+          "portfolio_return": 0.05312221017038973,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.024248021455363544,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.03241614608974741,
+          "cumulative_active_return": -0.05335259241516632,
+          "date": "2019-02-28T00:00:00",
+          "portfolio_return": 0.008168124634383867,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.01220040252055395,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.018100498560920775,
+          "cumulative_active_return": -0.06727176407561641,
+          "date": "2019-03-31T00:00:00",
+          "portfolio_return": 0.005900096040366825,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.023080710357031024,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.040852343345424647,
+          "cumulative_active_return": -0.09466990694254607,
+          "date": "2019-04-30T00:00:00",
+          "portfolio_return": 0.017771632988393623,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.041807299191092655,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": -0.06377131358264565,
+          "cumulative_active_return": -0.04318946873100127,
+          "date": "2019-05-31T00:00:00",
+          "portfolio_return": -0.021964014391552995,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.008807260279809603,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.06958659630907671,
+          "cumulative_active_return": -0.03683192928276413,
+          "date": "2019-06-30T00:00:00",
+          "portfolio_return": 0.07839385658888631,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.005826572109656437,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.015119503324096728,
+          "cumulative_active_return": -0.04406859179136191,
+          "date": "2019-07-31T00:00:00",
+          "portfolio_return": 0.009292931214440291,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.05700447621507024,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": -0.016743454946437586,
+          "cumulative_active_return": 0.02262846521025419,
+          "date": "2019-08-31T00:00:00",
+          "portfolio_return": 0.04026102126863265,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.03632446859348509,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.019457956111362806,
+          "cumulative_active_return": -0.020654033733070065,
+          "date": "2019-09-30T00:00:00",
+          "portfolio_return": -0.016866512482122287,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.010725599137874332,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.022104565401813048,
+          "cumulative_active_return": -0.008418210719051578,
+          "date": "2019-10-31T00:00:00",
+          "portfolio_return": 0.03283016453968738,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.03945812089565138,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.036198486734749125,
+          "cumulative_active_return": -0.05694952383576912,
+          "date": "2019-11-30T00:00:00",
+          "portfolio_return": -0.003259634160902254,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.008416506099600339,
+          "annual_active_return": -0.04835089323329367,
+          "benchmark_return": 0.02905516237690664,
+          "cumulative_active_return": -0.04835089323329367,
+          "date": "2019-12-31T00:00:00",
+          "portfolio_return": 0.03747166847650698,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.039612783021749934,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": -0.0004038059700871566,
+          "cumulative_active_return": 0.001734732353036339,
+          "date": "2020-01-31T00:00:00",
+          "portfolio_return": 0.03920897705166278,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.05133163122971594,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": -0.07916555927242275,
+          "cumulative_active_return": 0.06901858499963587,
+          "date": "2020-02-29T00:00:00",
+          "portfolio_return": -0.027833928042706808,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.09467126759693922,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": -0.12487149522544794,
+          "cumulative_active_return": 0.18128444779504593,
+          "date": "2020-03-31T00:00:00",
+          "portfolio_return": -0.03020022762850871,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.023825274218635492,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.12698370986213248,
+          "cumulative_active_return": 0.1748012408329065,
+          "date": "2020-04-30T00:00:00",
+          "portfolio_return": 0.10315843564349698,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.005870169636266832,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.047645025305737,
+          "cumulative_active_return": 0.1751106102301052,
+          "date": "2020-05-31T00:00:00",
+          "portfolio_return": 0.041774855669470166,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.023698916073523035,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.017734612654093374,
+          "cumulative_active_return": 0.2119428477487919,
+          "date": "2020-06-30T00:00:00",
+          "portfolio_return": 0.04143352872761641,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.03537217620459672,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.058892042432051595,
+          "cumulative_active_return": 0.27684965568537034,
+          "date": "2020-07-31T00:00:00",
+          "portfolio_return": 0.09426421863664831,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.028401831882298896,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.06979677941272877,
+          "cumulative_active_return": 0.25011056006503285,
+          "date": "2020-08-31T00:00:00",
+          "portfolio_return": 0.041394947530429875,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.010636232917635283,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": -0.03744346576468671,
+          "cumulative_active_return": 0.22278156958186823,
+          "date": "2020-09-30T00:00:00",
+          "portfolio_return": -0.048079698682321995,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.009736361572850905,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": -0.024933502643533556,
+          "cumulative_active_return": 0.23288036824453928,
+          "date": "2020-10-31T00:00:00",
+          "portfolio_return": -0.015197141070682652,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.09697843124631023,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.10877649751558782,
+          "cumulative_active_return": 0.10466579663055176,
+          "date": "2020-11-30T00:00:00",
+          "portfolio_return": 0.011798066269277603,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.024727516644287018,
+          "annual_active_return": 0.16249152624646768,
+          "benchmark_return": 0.03704837155359675,
+          "cumulative_active_return": 0.14815661536428903,
+          "date": "2020-12-31T00:00:00",
+          "portfolio_return": 0.061775888197883766,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.008244033466827741,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": -0.010190277766667477,
+          "cumulative_active_return": 0.1326241736645868,
+          "date": "2021-01-31T00:00:00",
+          "portfolio_return": -0.018434311233495218,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.06612132832485876,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.027805526149386584,
+          "cumulative_active_return": 0.025916107275844258,
+          "date": "2021-02-28T00:00:00",
+          "portfolio_return": -0.03831580217547217,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.045504356033598044,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.04539917366340718,
+          "cumulative_active_return": -0.04597011121430494,
+          "date": "2021-03-31T00:00:00",
+          "portfolio_return": -0.00010518237019086375,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.007982950441116764,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.0529104106464211,
+          "cumulative_active_return": -0.06121866015112043,
+          "date": "2021-04-30T00:00:00",
+          "portfolio_return": 0.04492746020530434,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.03504791726508053,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.006566213017263678,
+          "cumulative_active_return": -0.002824883565211156,
+          "date": "2021-05-31T00:00:00",
+          "portfolio_return": 0.04161413028234421,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.040791582711604546,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.0224274497903596,
+          "cumulative_active_return": -0.0741671647193014,
+          "date": "2021-06-30T00:00:00",
+          "portfolio_return": -0.01836413292124495,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.00219674529242676,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.02441242622480133,
+          "cumulative_active_return": -0.07220967994726579,
+          "date": "2021-07-31T00:00:00",
+          "portfolio_return": 0.02660917151722809,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.01351313557014007,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.029759790150247323,
+          "cumulative_active_return": -0.09815453304398325,
+          "date": "2021-08-31T00:00:00",
+          "portfolio_return": 0.016246654580107253,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.004628313629705998,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": -0.046605411473920166,
+          "cumulative_active_return": -0.08529737447889962,
+          "date": "2021-09-30T00:00:00",
+          "portfolio_return": -0.04197709784421417,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.030079903553638647,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.07016338869675476,
+          "cumulative_active_return": -0.14285218417206869,
+          "date": "2021-10-31T00:00:00",
+          "portfolio_return": 0.04008348514311611,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.011776376500691304,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": -0.008034846679020546,
+          "cumulative_active_return": -0.12070527080890248,
+          "date": "2021-11-30T00:00:00",
+          "portfolio_return": 0.003741529821670758,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.021759630184636673,
+          "annual_active_return": -0.20926771509536524,
+          "benchmark_return": 0.04624786743872655,
+          "cumulative_active_return": -0.1652336245757433,
+          "date": "2021-12-31T00:00:00",
+          "portfolio_return": 0.02448823725408988,
+          "rolling_active_return": -0.1652336245757433,
+          "rolling_tracking_error": 0.12781186203332456
+        },
+        {
+          "active_return": 0.007958055064337756,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.05274104729567086,
+          "cumulative_active_return": -0.14192668207422132,
+          "date": "2022-01-31T00:00:00",
+          "portfolio_return": -0.044782992231333106,
+          "rolling_active_return": -0.08991611153039836,
+          "rolling_tracking_error": 0.12715755385760572
+        },
+        {
+          "active_return": 0.04875972659784569,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.02951704931297261,
+          "cumulative_active_return": -0.052332768860256174,
+          "date": "2022-02-28T00:00:00",
+          "portfolio_return": 0.01924267728487308,
+          "rolling_active_return": 0.03352002303971591,
+          "rolling_tracking_error": 0.1297451734105162
+        },
+        {
+          "active_return": -0.011416709815190457,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": 0.03759015803813259,
+          "cumulative_active_return": -0.07468159294623855,
+          "date": "2022-03-31T00:00:00",
+          "portfolio_return": 0.026173448222942135,
+          "rolling_active_return": 0.03586212801500799,
+          "rolling_tracking_error": 0.1297207121565029
+        },
+        {
+          "active_return": 0.02141694272311162,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.08776903890540255,
+          "cumulative_active_return": -0.02889163733471145,
+          "date": "2022-04-30T00:00:00",
+          "portfolio_return": -0.06635209618229093,
+          "rolling_active_return": 0.101619651218946,
+          "rolling_tracking_error": 0.12954856150325086
+        },
+        {
+          "active_return": -0.028238761149571575,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": 0.002257291700429098,
+          "cumulative_active_return": -0.07725688718563828,
+          "date": "2022-05-31T00:00:00",
+          "portfolio_return": -0.025981469449142477,
+          "rolling_active_return": -0.008654730496902019,
+          "rolling_tracking_error": 0.12833639440607056
+        },
+        {
+          "active_return": 0.03772131779847687,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.08246034147300951,
+          "cumulative_active_return": -0.008043409247305178,
+          "date": "2022-06-30T00:00:00",
+          "portfolio_return": -0.04473902367453264,
+          "rolling_active_return": 0.03641232890281576,
+          "rolling_tracking_error": 0.13014353372708412
+        },
+        {
+          "active_return": -0.0580038919422166,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": 0.09208741038619395,
+          "cumulative_active_return": -0.10109398422395266,
+          "date": "2022-07-31T00:00:00",
+          "portfolio_return": 0.03408351844397735,
+          "rolling_active_return": -0.03198317830343944,
+          "rolling_tracking_error": 0.13437672136519693
+        },
+        {
+          "active_return": 0.002699070056308331,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.040801847683917036,
+          "cumulative_active_return": -0.09252734429458509,
+          "date": "2022-08-31T00:00:00",
+          "portfolio_return": -0.038102777627608705,
+          "rolling_active_return": -0.103540987020591,
+          "rolling_tracking_error": 0.1298745004549778
+        },
+        {
+          "active_return": 0.03327519076905973,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.09244607654364578,
+          "cumulative_active_return": -0.031299604695354644,
+          "date": "2022-09-30T00:00:00",
+          "portfolio_return": -0.059170885774586054,
+          "rolling_active_return": -0.0044067212415523915,
+          "rolling_tracking_error": 0.1299406633917076
+        },
+        {
+          "active_return": -0.07620998173504245,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": 0.08127563769452162,
+          "cumulative_active_return": -0.14734404220227315,
+          "date": "2022-10-31T00:00:00",
+          "portfolio_return": 0.0050656559594791685,
+          "rolling_active_return": -0.11135198856246276,
+          "rolling_tracking_error": 0.1367834848683625
+        },
+        {
+          "active_return": 0.01765203061739308,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": 0.05559150717499772,
+          "cumulative_active_return": -0.12911254188683863,
+          "date": "2022-11-30T00:00:00",
+          "portfolio_return": 0.0732435377923908,
+          "rolling_active_return": -0.042356981864555054,
+          "rolling_tracking_error": 0.13558100311499677
+        },
+        {
+          "active_return": 0.03962666813499034,
+          "annual_active_return": 0.042096059266507724,
+          "benchmark_return": -0.057628321267792826,
+          "cumulative_active_return": -0.05801204429135387,
+          "date": "2022-12-31T00:00:00",
+          "portfolio_return": -0.01800165313280248,
+          "rolling_active_return": 0.0017825399879618509,
+          "rolling_tracking_error": 0.1375659989658994
+        },
+        {
+          "active_return": 0.014047927367917143,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.06288748024704605,
+          "cumulative_active_return": -0.03949864028819294,
+          "date": "2023-01-31T00:00:00",
+          "portfolio_return": 0.07693540761496319,
+          "rolling_active_return": -0.03182301869949811,
+          "rolling_tracking_error": 0.13576603858088185
+        },
+        {
+          "active_return": -0.008698549962470763,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": -0.025142732052405803,
+          "cumulative_active_return": -0.05328389067054773,
+          "date": "2023-02-28T00:00:00",
+          "portfolio_return": -0.033841282014876566,
+          "rolling_active_return": -0.11756935145593572,
+          "rolling_tracking_error": 0.13211808816417228
+        },
+        {
+          "active_return": 0.048327777356833856,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.03707786046244155,
+          "cumulative_active_return": 0.02406809140029087,
+          "date": "2023-03-31T00:00:00",
+          "portfolio_return": 0.0854056378192754,
+          "rolling_active_return": -0.22397982740785216,
+          "rolling_tracking_error": 0.12271545044918689
+        },
+        {
+          "active_return": -0.008755379710911724,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.015974996697359023,
+          "cumulative_active_return": 0.008853651488066827,
+          "date": "2023-04-30T00:00:00",
+          "portfolio_return": 0.007219616986447299,
+          "rolling_active_return": -0.18532405476680713,
+          "rolling_tracking_error": 0.1222110607864562
+        },
+        {
+          "active_return": 0.018504873594627092,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.004616047664556255,
+          "cumulative_active_return": 0.04210155192783427,
+          "date": "2023-05-31T00:00:00",
+          "portfolio_return": 0.023120921259183348,
+          "rolling_active_return": -0.14728067962913016,
+          "rolling_tracking_error": 0.1229001188146066
+        },
+        {
+          "active_return": -0.05324751870993965,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.0647999488667752,
+          "cumulative_active_return": -0.05293231347910998,
+          "date": "2023-06-30T00:00:00",
+          "portfolio_return": 0.011552430156835554,
+          "rolling_active_return": -0.2507689623058109,
+          "rolling_tracking_error": 0.1250824239315905
+        },
+        {
+          "active_return": -0.0036224873924519466,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.032733184457347075,
+          "cumulative_active_return": -0.06139264985491577,
+          "date": "2023-07-31T00:00:00",
+          "portfolio_return": 0.02911069706489513,
+          "rolling_active_return": -0.28822779105148233,
+          "rolling_tracking_error": 0.12270809036009951
+        },
+        {
+          "active_return": 0.002661478647174016,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": -0.01625208191915062,
+          "cumulative_active_return": -0.05530809486036903,
+          "date": "2023-08-31T00:00:00",
+          "portfolio_return": -0.013590603271976602,
+          "rolling_active_return": -0.23247712483712868,
+          "rolling_tracking_error": 0.12213111354143537
+        },
+        {
+          "active_return": -0.0014360946740137673,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": -0.04743433501644301,
+          "cumulative_active_return": -0.055392049735008886,
+          "date": "2023-09-30T00:00:00",
+          "portfolio_return": -0.048870429690456775,
+          "rolling_active_return": -0.21940517090646416,
+          "rolling_tracking_error": 0.12212188606234546
+        },
+        {
+          "active_return": 0.05805181561087525,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": -0.021708661289990272,
+          "cumulative_active_return": 0.049906446644170765,
+          "date": "2023-10-31T00:00:00",
+          "portfolio_return": 0.03634315432088498,
+          "rolling_active_return": -0.1654480945189969,
+          "rolling_tracking_error": 0.12727280249407158
+        },
+        {
+          "active_return": -0.03320571550843239,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.0913438546150167,
+          "cumulative_active_return": -0.007241943854953581,
+          "date": "2023-11-30T00:00:00",
+          "portfolio_return": 0.058138139106584316,
+          "rolling_active_return": -0.09063831159590019,
+          "rolling_tracking_error": 0.11617756277747857
+        },
+        {
+          "active_return": -0.015783813072173532,
+          "annual_active_return": 0.021924711548753306,
+          "benchmark_return": 0.04565525434007034,
+          "cumulative_active_return": -0.03860932054386579,
+          "date": "2023-12-31T00:00:00",
+          "portfolio_return": 0.029871441267896807,
+          "rolling_active_return": -0.13846051350446653,
+          "rolling_tracking_error": 0.11528077864748701
+        },
+        {
+          "active_return": -0.01731397724535667,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.015926587106046997,
+          "cumulative_active_return": -0.07428683235057854,
+          "date": "2024-01-31T00:00:00",
+          "portfolio_return": -0.0013873901393096745,
+          "rolling_active_return": -0.15285127897491324,
+          "rolling_tracking_error": 0.11552572506786235
+        },
+        {
+          "active_return": -0.028504768486039656,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.0521867603597006,
+          "cumulative_active_return": -0.13580864259507264,
+          "date": "2024-02-29T00:00:00",
+          "portfolio_return": 0.023681991873660945,
+          "rolling_active_return": -0.10712324814194485,
+          "rolling_tracking_error": 0.11050210124051255
+        },
+        {
+          "active_return": 0.024698290846525875,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.03270189842569571,
+          "cumulative_active_return": -0.08911978935277842,
+          "date": "2024-03-31T00:00:00",
+          "portfolio_return": 0.05740018927222158,
+          "rolling_active_return": -0.016010506338448804,
+          "rolling_tracking_error": 0.10861089656858504
+        },
+        {
+          "active_return": 0.041050452184027184,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": -0.04031951134517642,
+          "cumulative_active_return": 0.004333531427554771,
+          "date": "2024-04-30T00:00:00",
+          "portfolio_return": 0.000730940838850766,
+          "rolling_active_return": 0.0484666862012757,
+          "rolling_tracking_error": 0.11116162656003498
+        },
+        {
+          "active_return": -0.016436701299329302,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.05057959716582827,
+          "cumulative_active_return": -0.03145376491352003,
+          "date": "2024-05-31T00:00:00",
+          "portfolio_return": 0.03414289586649897,
+          "rolling_active_return": -0.01587884727653388,
+          "rolling_tracking_error": 0.10964616541280917
+        },
+        {
+          "active_return": -0.010467212601705675,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.035280096711594267,
+          "cumulative_active_return": -0.05627597391510086,
+          "date": "2024-06-30T00:00:00",
+          "portfolio_return": 0.02481288410988859,
+          "rolling_active_return": 0.02464830119588224,
+          "rolling_tracking_error": 0.10723363923767183
+        },
+        {
+          "active_return": 0.01365840186772085,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.012109001564470256,
+          "cumulative_active_return": -0.02524779697423485,
+          "date": "2024-07-31T00:00:00",
+          "portfolio_return": 0.025767403432191107,
+          "rolling_active_return": 0.039498026264178865,
+          "rolling_tracking_error": 0.10751961070760316
+        },
+        {
+          "active_return": -0.006357929613958896,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.023365741166114784,
+          "cumulative_active_return": -0.04097877367638869,
+          "date": "2024-08-31T00:00:00",
+          "portfolio_return": 0.017007811552155888,
+          "rolling_active_return": 0.04866286804541686,
+          "rolling_tracking_error": 0.10728416799556774
+        },
+        {
+          "active_return": 0.020111722831699,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.02100466682931046,
+          "cumulative_active_return": 0.006869978092985729,
+          "date": "2024-09-30T00:00:00",
+          "portfolio_return": 0.04111638966100946,
+          "rolling_active_return": 0.07352320755792219,
+          "rolling_tracking_error": 0.1078607337888242
+        },
+        {
+          "active_return": 0.03146380665331189,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": -0.00892343020322095,
+          "cumulative_active_return": 0.08614551825183181,
+          "date": "2024-10-31T00:00:00",
+          "portfolio_return": 0.02254037645009094,
+          "rolling_active_return": 0.15197407648422012,
+          "rolling_tracking_error": 0.1076522922934096
+        },
+        {
+          "active_return": -0.057307531202581405,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": 0.05963319334082584,
+          "cumulative_active_return": -0.05647698813738611,
+          "date": "2024-11-30T00:00:00",
+          "portfolio_return": 0.002325662138244436,
+          "rolling_active_return": 0.06166404134986525,
+          "rolling_tracking_error": 0.11289688436781777
+        },
+        {
+          "active_return": 0.01734992001071874,
+          "annual_active_return": 0.018733907106716963,
+          "benchmark_return": -0.02406006954082074,
+          "cumulative_active_return": -0.010279712715905998,
+          "date": "2024-12-31T00:00:00",
+          "portfolio_return": -0.006710149530101998,
+          "rolling_active_return": 0.11058037608612703,
+          "rolling_tracking_error": 0.1124875386937727
+        },
+        {
+          "active_return": 0.022692515158316398,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.026856345883270905,
+          "cumulative_active_return": 0.04769631395018781,
+          "date": "2025-01-31T00:00:00",
+          "portfolio_return": 0.0495488610415873,
+          "rolling_active_return": 0.14048679784972662,
+          "rolling_tracking_error": 0.11308514366002365
+        },
+        {
+          "active_return": 0.012988231774081491,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": -0.012694736490296177,
+          "cumulative_active_return": 0.08208386075876728,
+          "date": "2025-02-28T00:00:00",
+          "portfolio_return": 0.0002934952837853142,
+          "rolling_active_return": 0.08766173688641854,
+          "rolling_tracking_error": 0.1098745670229221
+        },
+        {
+          "active_return": 0.0827229977325417,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": -0.055719310915217646,
+          "cumulative_active_return": 0.3004488402097083,
+          "date": "2025-03-31T00:00:00",
+          "portfolio_return": 0.027003686817324058,
+          "rolling_active_return": 0.21675639551961035,
+          "rolling_tracking_error": 0.11921595368896241
+        },
+        {
+          "active_return": 0.046962296892822,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": -0.008670167189502642,
+          "cumulative_active_return": 0.4278250581824774,
+          "date": "2025-04-30T00:00:00",
+          "portfolio_return": 0.038292129703319355,
+          "rolling_active_return": 0.2738833438910846,
+          "rolling_tracking_error": 0.12140179949245372
+        },
+        {
+          "active_return": -0.02683029860983204,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.06284505165897136,
+          "cumulative_active_return": 0.37760788156282254,
+          "date": "2025-05-31T00:00:00",
+          "portfolio_return": 0.03601475304913932,
+          "rolling_active_return": 0.2958141502086977,
+          "rolling_tracking_error": 0.1212741556859811
+        },
+        {
+          "active_return": -0.023647018683963867,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.051386230006752465,
+          "cumulative_active_return": 0.3266084338698745,
+          "date": "2025-06-30T00:00:00",
+          "portfolio_return": 0.027739211322788598,
+          "rolling_active_return": 0.21386453863353894,
+          "rolling_tracking_error": 0.12069475731074454
+        },
+        {
+          "active_return": -0.017136684388199964,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.023031446515753284,
+          "cumulative_active_return": 0.2816950910191238,
+          "date": "2025-07-31T00:00:00",
+          "portfolio_return": 0.005894762127553322,
+          "rolling_active_return": 0.2695067125418089,
+          "rolling_tracking_error": 0.11583833881859401
+        },
+        {
+          "active_return": 0.013379579637010738,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.02051948404438786,
+          "cumulative_active_return": 0.3286561045079517,
+          "date": "2025-08-31T00:00:00",
+          "portfolio_return": 0.0338990636813986,
+          "rolling_active_return": 0.30716747524455723,
+          "rolling_tracking_error": 0.11596164071107697
+        },
+        {
+          "active_return": 0.0566855896175716,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.03562043418529992,
+          "cumulative_active_return": 0.5207489920314323,
+          "date": "2025-09-30T00:00:00",
+          "portfolio_return": 0.09230602380287152,
+          "rolling_active_return": 0.3905005450945882,
+          "rolling_tracking_error": 0.11872302846213663
+        },
+        {
+          "active_return": 0.016588192472691388,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.02383739357630099,
+          "cumulative_active_return": 0.5908221514510066,
+          "date": "2025-10-31T00:00:00",
+          "portfolio_return": 0.04042558604899238,
+          "rolling_active_return": 0.5758490491355595,
+          "rolling_tracking_error": 0.1086376108795198
+        },
+        {
+          "active_return": 0.024284887364442675,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.0019500049129079766,
+          "cumulative_active_return": 0.6797999617301085,
+          "date": "2025-11-30T00:00:00",
+          "portfolio_return": 0.026234892277350652,
+          "rolling_active_return": 0.563537357410083,
+          "rolling_tracking_error": 0.10891698490660187
+        },
+        {
+          "active_return": 0.009500351010125547,
+          "annual_active_return": 0.2854950455514287,
+          "benchmark_return": 0.008267699482226387,
+          "cumulative_active_return": 0.720679504632225,
+          "date": "2025-12-31T00:00:00",
+          "portfolio_return": 0.017768050492351934,
+          "rolling_active_return": 0.5255500142743936,
+          "rolling_tracking_error": 0.10726530005286723
+        }
+      ],
+      "provided": [
+        {
+          "active_return": -0.02057837559074993,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.08006528208299879,
+          "cumulative_active_return": -0.02057837559074982,
+          "date": "2019-01-31T00:00:00",
+          "portfolio_return": 0.05948690649224886,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.02050619338487264,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.03241614608974741,
+          "cumulative_active_return": -0.04297149061345995,
+          "date": "2019-02-28T00:00:00",
+          "portfolio_return": 0.011909952704874771,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.006462077873429561,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.018100498560920775,
+          "cumulative_active_return": -0.05067732424822302,
+          "date": "2019-03-31T00:00:00",
+          "portfolio_return": 0.011638420687491213,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.01667554110680708,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.040852343345424647,
+          "cumulative_active_return": -0.07083361940597355,
+          "date": "2019-04-30T00:00:00",
+          "portfolio_return": 0.024176802238617567,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.03143267196107241,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": -0.06377131358264565,
+          "cumulative_active_return": -0.03140090650878791,
+          "date": "2019-05-31T00:00:00",
+          "portfolio_return": -0.03233864162157324,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.008378168845609935,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.06958659630907671,
+          "cumulative_active_return": -0.0245804392026423,
+          "date": "2019-06-30T00:00:00",
+          "portfolio_return": 0.07796476515468664,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.003407878581620394,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.015119503324096728,
+          "cumulative_active_return": -0.028900743671088858,
+          "date": "2019-07-31T00:00:00",
+          "portfolio_return": 0.011711624742476334,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.04680727980456206,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": -0.016743454946437586,
+          "cumulative_active_return": 0.026453263054706966,
+          "date": "2019-08-31T00:00:00",
+          "portfolio_return": 0.030063824858124477,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.03184242061944936,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.019457956111362806,
+          "cumulative_active_return": -0.011481681296191981,
+          "date": "2019-09-30T00:00:00",
+          "portfolio_return": -0.012384464508086557,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.012613445929995692,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.022104565401813048,
+          "cumulative_active_return": 0.003306612191813496,
+          "date": "2019-10-31T00:00:00",
+          "portfolio_return": 0.03471801133180874,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.03189427798560379,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.036198486734749125,
+          "cumulative_active_return": -0.03592953901877749,
+          "date": "2019-11-30T00:00:00",
+          "portfolio_return": 0.004304208749145333,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.00865604309795076,
+          "annual_active_return": -0.026246406355870944,
+          "benchmark_return": 0.02905516237690664,
+          "cumulative_active_return": -0.026246406355870944,
+          "date": "2019-12-31T00:00:00",
+          "portfolio_return": 0.0377112054748574,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.038094154729601204,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": -0.0004038059700871566,
+          "cumulative_active_return": 0.02275296973804597,
+          "date": "2020-01-31T00:00:00",
+          "portfolio_return": 0.03769034875951405,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.0456974488292578,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": -0.07916555927242275,
+          "cumulative_active_return": 0.08193320294430095,
+          "date": "2020-02-29T00:00:00",
+          "portfolio_return": -0.033468110443164945,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.08733047367792057,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": -0.12487149522544794,
+          "cumulative_active_return": 0.18434088851984987,
+          "date": "2020-03-31T00:00:00",
+          "portfolio_return": -0.037541021547527365,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.015809697537517597,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.12698370986213248,
+          "cumulative_active_return": 0.18812334915837003,
+          "date": "2020-04-30T00:00:00",
+          "portfolio_return": 0.11117401232461488,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.0016998742374754183,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.047645025305737,
+          "cumulative_active_return": 0.19474170429370363,
+          "date": "2020-05-31T00:00:00",
+          "portfolio_return": 0.04594515106826158,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.02738726196973673,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.017734612654093374,
+          "cumulative_active_return": 0.23770874176122425,
+          "date": "2020-06-30T00:00:00",
+          "portfolio_return": 0.045121874623830105,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.03179300997044465,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.058892042432051595,
+          "cumulative_active_return": 0.2996474530801183,
+          "date": "2020-07-31T00:00:00",
+          "portfolio_return": 0.09068505240249625,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.016691012108653314,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.06979677941272877,
+          "cumulative_active_return": 0.29311174980067634,
+          "date": "2020-08-31T00:00:00",
+          "portfolio_return": 0.05310576730407546,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.012306544486508086,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": -0.03744346576468671,
+          "cumulative_active_return": 0.26082238972984784,
+          "date": "2020-09-30T00:00:00",
+          "portfolio_return": -0.0497500102511948,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.007111649215806259,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": -0.024933502643533556,
+          "cumulative_active_return": 0.2660233793189266,
+          "date": "2020-10-31T00:00:00",
+          "portfolio_return": -0.017821853427727297,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.07969076069768338,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.10877649751558782,
+          "cumulative_active_return": 0.16614446025710916,
+          "date": "2020-11-30T00:00:00",
+          "portfolio_return": 0.02908573681790444,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.022533185546288137,
+          "annual_active_return": 0.18728015931197017,
+          "benchmark_return": 0.03704837155359675,
+          "cumulative_active_return": 0.20978298704815201,
+          "date": "2020-12-31T00:00:00",
+          "portfolio_return": 0.059581557099884885,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.004621979853547509,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": -0.010190277766667477,
+          "cumulative_active_return": 0.1994986499517566,
+          "date": "2021-01-31T00:00:00",
+          "portfolio_return": -0.014812257620214986,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.059757476596736636,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.027805526149386584,
+          "cumulative_active_return": 0.10127886018167453,
+          "date": "2021-02-28T00:00:00",
+          "portfolio_return": -0.03195195044735005,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.042531973633150366,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.04539917366340718,
+          "cumulative_active_return": 0.03438124390943598,
+          "date": "2021-03-31T00:00:00",
+          "portfolio_return": 0.0028672000302568112,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.005544370186723491,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.0529104106464211,
+          "cumulative_active_return": 0.026853646416277854,
+          "date": "2021-04-30T00:00:00",
+          "portfolio_return": 0.04736604045969761,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.025819602279848586,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.006566213017263678,
+          "cumulative_active_return": 0.0726184623444468,
+          "date": "2021-05-31T00:00:00",
+          "portfolio_return": 0.032385815297112264,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.02685516941003302,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.0224274497903596,
+          "cumulative_active_return": 0.025294530300387308,
+          "date": "2021-06-30T00:00:00",
+          "portfolio_return": -0.00442771961967342,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.002540956216287693,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.02441242622480133,
+          "cumulative_active_return": 0.030523270429158922,
+          "date": "2021-07-31T00:00:00",
+          "portfolio_return": 0.026953382441089024,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.009049231594918605,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.029759790150247323,
+          "cumulative_active_return": 0.014566769996243734,
+          "date": "2021-08-31T00:00:00",
+          "portfolio_return": 0.020710558555328717,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.0020721108621340467,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": -0.046605411473920166,
+          "cumulative_active_return": 0.017829609032121274,
+          "date": "2021-09-30T00:00:00",
+          "portfolio_return": -0.04453330061178612,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.023444921222180115,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.07016338869675476,
+          "cumulative_active_return": -0.023532016263795308,
+          "date": "2021-10-31T00:00:00",
+          "portfolio_return": 0.04671846747457464,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": 0.014568824630291355,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": -0.008034846679020546,
+          "cumulative_active_return": 0.004373903450177963,
+          "date": "2021-11-30T00:00:00",
+          "portfolio_return": 0.0065339779512708085,
+          "rolling_active_return": null,
+          "rolling_tracking_error": null
+        },
+        {
+          "active_return": -0.023990700528609854,
+          "annual_active_return": -0.17668166320909418,
+          "benchmark_return": 0.04624786743872655,
+          "cumulative_active_return": -0.04136377412520886,
+          "date": "2021-12-31T00:00:00",
+          "portfolio_return": 0.0222571669101167,
+          "rolling_active_return": -0.04136377412520886,
+          "rolling_tracking_error": 0.11018866905894367
+        },
+        {
+          "active_return": 0.0006122274776602654,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.05274104729567086,
+          "cumulative_active_return": -0.03798375326868908,
+          "date": "2022-01-31T00:00:00",
+          "portfolio_return": -0.0521288198180106,
+          "rolling_active_return": -0.0018005930872526665,
+          "rolling_tracking_error": 0.1095835843337187
+        },
+        {
+          "active_return": 0.037745836725067816,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.02951704931297261,
+          "cumulative_active_return": 0.0331742054187536,
+          "date": "2022-02-28T00:00:00",
+          "portfolio_return": 0.008228787412095206,
+          "rolling_active_return": 0.09699473910991774,
+          "rolling_tracking_error": 0.11109459459959645
+        },
+        {
+          "active_return": -0.007888066042114672,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": 0.03759015803813259,
+          "cumulative_active_return": 0.01966461190425628,
+          "date": "2022-03-31T00:00:00",
+          "portfolio_return": 0.02970209199601792,
+          "rolling_active_return": 0.09660526977249662,
+          "rolling_tracking_error": 0.11113083552987955
+        },
+        {
+          "active_return": 0.009438871222642975,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.08776903890540255,
+          "cumulative_active_return": 0.03612093049065068,
+          "date": "2022-04-30T00:00:00",
+          "portfolio_return": -0.07833016768275958,
+          "rolling_active_return": 0.126380623905181,
+          "rolling_tracking_error": 0.11072544743224992
+        },
+        {
+          "active_return": -0.026498035311620483,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": 0.002257291700429098,
+          "cumulative_active_return": -0.010842906770400562,
+          "date": "2022-05-31T00:00:00",
+          "portfolio_return": -0.024240743611191384,
+          "rolling_active_return": 0.03594557585968006,
+          "rolling_tracking_error": 0.11045514054242551
+        },
+        {
+          "active_return": 0.03009105663287842,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.08246034147300951,
+          "cumulative_active_return": 0.04218067874696407,
+          "date": "2022-06-30T00:00:00",
+          "portfolio_return": -0.05236928484013109,
+          "rolling_active_return": 0.06508012489881398,
+          "rolling_tracking_error": 0.11171339023467655
+        },
+        {
+          "active_return": -0.042269409244624134,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": 0.09208741038619395,
+          "cumulative_active_return": -0.02332730280111206,
+          "date": "2022-07-31T00:00:00",
+          "portfolio_return": 0.04981800114156981,
+          "rolling_active_return": 0.01595345086619271,
+          "rolling_tracking_error": 0.11443065362043506
+        },
+        {
+          "active_return": 0.0004242440746238807,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.040801847683917036,
+          "cumulative_active_return": -0.02164434166369822,
+          "date": "2022-08-31T00:00:00",
+          "portfolio_return": -0.040377603609293156,
+          "rolling_active_return": -0.049004333139988754,
+          "rolling_tracking_error": 0.11096232674968855
+        },
+        {
+          "active_return": 0.02532751057094801,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.09244607654364578,
+          "cumulative_active_return": 0.022244816474431994,
+          "date": "2022-09-30T00:00:00",
+          "portfolio_return": -0.06711856597269777,
+          "rolling_active_return": 0.03081269291631461,
+          "rolling_tracking_error": 0.11052969116232061
+        },
+        {
+          "active_return": -0.07019851197296517,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": 0.08127563769452162,
+          "cumulative_active_return": -0.08425354065861268,
+          "date": "2022-10-31T00:00:00",
+          "portfolio_return": 0.011077125721556447,
+          "rolling_active_return": -0.07185994179585364,
+          "rolling_tracking_error": 0.1174112962176043
+        },
+        {
+          "active_return": 0.014588545374770723,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": 0.05559150717499772,
+          "cumulative_active_return": -0.06617994705935537,
+          "date": "2022-11-30T00:00:00",
+          "portfolio_return": 0.07018005254976845,
+          "rolling_active_return": -0.013941995144873376,
+          "rolling_tracking_error": 0.11646012869763739
+        },
+        {
+          "active_return": 0.027213282905180713,
+          "annual_active_return": 0.008638547692410459,
+          "benchmark_return": -0.057628321267792826,
+          "cumulative_active_return": -0.01693556121660067,
+          "date": "2022-12-31T00:00:00",
+          "portfolio_return": -0.030415038362612112,
+          "rolling_active_return": 0.012269274125835228,
+          "rolling_tracking_error": 0.11747758696570973
+        },
+        {
+          "active_return": 0.01912337627006455,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.06288748024704605,
+          "cumulative_active_return": 0.012953453076373522,
+          "date": "2023-01-31T00:00:00",
+          "portfolio_return": 0.0820108565171106,
+          "rolling_active_return": -0.012890354029239326,
+          "rolling_tracking_error": 0.11583923446412604
+        },
+        {
+          "active_return": -0.0034940427971802968,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": -0.025142732052405803,
+          "cumulative_active_return": 0.006508313025701318,
+          "date": "2023-02-28T00:00:00",
+          "portfolio_return": -0.0286367748495861,
+          "rolling_active_return": -0.08408328365991391,
+          "rolling_tracking_error": 0.1124669946413422
+        },
+        {
+          "active_return": 0.04996626051026143,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.03707786046244155,
+          "cumulative_active_return": 0.0917543432361676,
+          "date": "2023-03-31T00:00:00",
+          "portfolio_return": 0.08704412097270298,
+          "rolling_active_return": -0.1729971838511375,
+          "rolling_tracking_error": 0.10399533554787896
+        },
+        {
+          "active_return": -0.00912375653381814,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.015974996697359023,
+          "cumulative_active_return": 0.07634732350764883,
+          "date": "2023-04-30T00:00:00",
+          "portfolio_return": 0.006851240163540884,
+          "rolling_active_return": -0.14908089798576918,
+          "rolling_tracking_error": 0.103794210228846
+        },
+        {
+          "active_return": 0.02809297363972435,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.004616047664556255,
+          "cumulative_active_return": 0.12900874003394436,
+          "date": "2023-05-31T00:00:00",
+          "portfolio_return": 0.032709021304280606,
+          "rolling_active_return": -0.10459803612074214,
+          "rolling_tracking_error": 0.10536102966703803
+        },
+        {
+          "active_return": -0.044387477557642274,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.0647999488667752,
+          "cumulative_active_return": 0.05201583402040755,
+          "date": "2023-06-30T00:00:00",
+          "portfolio_return": 0.02041247130913293,
+          "rolling_active_return": -0.20258083754578005,
+          "rolling_tracking_error": 0.10653920146289543
+        },
+        {
+          "active_return": -0.001989331011284623,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.032733184457347075,
+          "cumulative_active_return": 0.04981511047427856,
+          "date": "2023-07-31T00:00:00",
+          "portfolio_return": 0.030743853446062452,
+          "rolling_active_return": -0.23694435357125831,
+          "rolling_tracking_error": 0.10436492929671981
+        },
+        {
+          "active_return": 0.0024481604347141306,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": -0.01625208191915062,
+          "cumulative_active_return": 0.053956854191934855,
+          "date": "2023-08-31T00:00:00",
+          "portfolio_return": -0.013803921484436488,
+          "rolling_active_return": -0.19710379057602578,
+          "rolling_tracking_error": 0.10423756587071652
+        },
+        {
+          "active_return": -0.0017679102363065136,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": -0.04743433501644301,
+          "cumulative_active_return": 0.047871249323367504,
+          "date": "2023-09-30T00:00:00",
+          "portfolio_return": -0.04920224525274952,
+          "rolling_active_return": -0.18244074845288027,
+          "rolling_tracking_error": 0.10415599135486357
+        },
+        {
+          "active_return": 0.048243265030784244,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": -0.021708661289990272,
+          "cumulative_active_return": 0.13832152704734169,
+          "date": "2023-10-31T00:00:00",
+          "portfolio_return": 0.02653460374079397,
+          "rolling_active_return": -0.13481604821342041,
+          "rolling_tracking_error": 0.10835586272379888
+        },
+        {
+          "active_return": -0.02459277702613205,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.0913438546150167,
+          "cumulative_active_return": 0.10308058420171973,
+          "date": "2023-11-30T00:00:00",
+          "portfolio_return": 0.06675107758888466,
+          "rolling_active_return": -0.06968191054380579,
+          "rolling_tracking_error": 0.09934983832433335
+        },
+        {
+          "active_return": -0.011309922583877752,
+          "annual_active_return": 0.06528166551899184,
+          "benchmark_return": 0.04565525434007034,
+          "cumulative_active_return": 0.08429957479728278,
+          "date": "2023-12-31T00:00:00",
+          "portfolio_return": 0.03434533175619259,
+          "rolling_active_return": -0.1103549224102871,
+          "rolling_tracking_error": 0.09841729871260832
+        },
+        {
+          "active_return": -0.013944627273273391,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.015926587106046997,
+          "cumulative_active_return": 0.05568894613533537,
+          "date": "2024-01-31T00:00:00",
+          "portfolio_return": 0.0019819598327736054,
+          "rolling_active_return": -0.12464798355468121,
+          "rolling_tracking_error": 0.09862326013200864
+        },
+        {
+          "active_return": -0.023488198090709456,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.0521867603597006,
+          "cumulative_active_return": 0.008042233871145221,
+          "date": "2024-02-29T00:00:00",
+          "portfolio_return": 0.028698562268991146,
+          "rolling_active_return": -0.07935204022693254,
+          "rolling_tracking_error": 0.09356846935097377
+        },
+        {
+          "active_return": 0.017014586106519514,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.03270189842569571,
+          "cumulative_active_return": 0.04597614970936892,
+          "date": "2024-03-31T00:00:00",
+          "portfolio_return": 0.04971648453221522,
+          "rolling_active_return": -0.0008617287051675415,
+          "rolling_tracking_error": 0.09101822599737111
+        },
+        {
+          "active_return": 0.03339797681436979,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": -0.04031951134517642,
+          "cumulative_active_return": 0.12174301612840877,
+          "date": "2024-04-30T00:00:00",
+          "portfolio_return": -0.006921534530806628,
+          "rolling_active_return": 0.04982774912531207,
+          "rolling_tracking_error": 0.09301895249858698
+        },
+        {
+          "active_return": -0.011725756855350489,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.05057959716582827,
+          "cumulative_active_return": 0.10083739477677645,
+          "date": "2024-05-31T00:00:00",
+          "portfolio_return": 0.03885384031047778,
+          "rolling_active_return": 0.003038143305074348,
+          "rolling_tracking_error": 0.0920605833566211
+        },
+        {
+          "active_return": -0.003603009210319419,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.035280096711594267,
+          "cumulative_active_return": 0.09575601222957619,
+          "date": "2024-06-30T00:00:00",
+          "portfolio_return": 0.03167708750127485,
+          "rolling_active_return": 0.03424352909549255,
+          "rolling_tracking_error": 0.09073582256413945
+        },
+        {
+          "active_return": 0.006336404834736631,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.012109001564470256,
+          "cumulative_active_return": 0.11258958412337572,
+          "date": "2024-07-31T00:00:00",
+          "portfolio_return": 0.018445406399206887,
+          "rolling_active_return": 0.03891044203869165,
+          "rolling_tracking_error": 0.09079466394957268
+        },
+        {
+          "active_return": -0.0073851189348996815,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.023365741166114784,
+          "cumulative_active_return": 0.09661514232741997,
+          "date": "2024-08-31T00:00:00",
+          "portfolio_return": 0.015980622231215103,
+          "rolling_active_return": 0.04079828959603948,
+          "rolling_tracking_error": 0.09074043258130093
+        },
+        {
+          "active_return": 0.017547573018552476,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.02100466682931046,
+          "cumulative_active_return": 0.14355821656428214,
+          "date": "2024-09-30T00:00:00",
+          "portfolio_return": 0.038552239847862935,
+          "rolling_active_return": 0.06527752748068805,
+          "rolling_tracking_error": 0.09127455948674074
+        },
+        {
+          "active_return": 0.02609702723415802,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": -0.00892343020322095,
+          "cumulative_active_return": 0.21164870522962476,
+          "date": "2024-10-31T00:00:00",
+          "portfolio_return": 0.01717359703093707,
+          "rolling_active_return": 0.12725450680473727,
+          "rolling_tracking_error": 0.09123261383595148
+        },
+        {
+          "active_return": -0.0484997352388975,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": 0.05963319334082584,
+          "cumulative_active_return": 0.09313318171397889,
+          "date": "2024-11-30T00:00:00",
+          "portfolio_return": 0.01113345810192834,
+          "rolling_active_return": 0.04547862983910078,
+          "rolling_tracking_error": 0.0954780795491701
+        },
+        {
+          "active_return": 0.019285953574997627,
+          "annual_active_return": 0.017849454495913797,
+          "benchmark_return": -0.02406006954082074,
+          "cumulative_active_return": 0.14361960807742147,
+          "date": "2024-12-31T00:00:00",
+          "portfolio_return": -0.004774115965823111,
+          "rolling_active_return": 0.10061292522942722,
+          "rolling_tracking_error": 0.09494182476063943
+        },
+        {
+          "active_return": 0.0178888058705996,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.026856345883270905,
+          "cumulative_active_return": 0.19615067345152593,
+          "date": "2025-01-31T00:00:00",
+          "portfolio_return": 0.044745151753870505,
+          "rolling_active_return": 0.13432661788781064,
+          "rolling_tracking_error": 0.0953974779379074
+        },
+        {
+          "active_return": 0.008285405506145871,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": -0.012694736490296177,
+          "cumulative_active_return": 0.21721322885603023,
+          "date": "2025-02-28T00:00:00",
+          "portfolio_return": -0.004409330984150306,
+          "rolling_active_return": 0.09089479344540519,
+          "rolling_tracking_error": 0.09311978062966063
+        },
+        {
+          "active_return": 0.0650213093599693,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": -0.055719310915217646,
+          "cumulative_active_return": 0.389129097778544,
+          "date": "2025-03-31T00:00:00",
+          "portfolio_return": 0.009301998444751658,
+          "rolling_active_return": 0.18879642799956686,
+          "rolling_tracking_error": 0.09990645017102306
+        },
+        {
+          "active_return": 0.04277651948698358,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": -0.008670167189502642,
+          "cumulative_active_return": 0.5079445779221614,
+          "date": "2025-04-30T00:00:00",
+          "portfolio_return": 0.034106352297480935,
+          "rolling_active_return": 0.25748643308177366,
+          "rolling_tracking_error": 0.10242241384000783
+        },
+        {
+          "active_return": -0.017233403264264313,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.06284505165897136,
+          "cumulative_active_return": 0.48896096778049936,
+          "date": "2025-05-31T00:00:00",
+          "portfolio_return": 0.04561164839470705,
+          "rolling_active_return": 0.291580124642296,
+          "rolling_tracking_error": 0.10160358803196694
+        },
+        {
+          "active_return": -0.017431451123487096,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.051386230006752465,
+          "cumulative_active_return": 0.4602478423766403,
+          "date": "2025-06-30T00:00:00",
+          "portfolio_return": 0.03395477888326537,
+          "rolling_active_return": 0.23644782591262592,
+          "rolling_tracking_error": 0.10121317022994233
+        },
+        {
+          "active_return": -0.013980261361710378,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.023031446515753284,
+          "cumulative_active_return": 0.42620226151873997,
+          "date": "2025-07-31T00:00:00",
+          "portfolio_return": 0.009051185154042907,
+          "rolling_active_return": 0.2689625230103756,
+          "rolling_tracking_error": 0.09812269540567488
+        },
+        {
+          "active_return": 0.00918768373778045,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.02051948404438786,
+          "cumulative_active_return": 0.4645540102544077,
+          "date": "2025-08-31T00:00:00",
+          "portfolio_return": 0.02970716778216831,
+          "rolling_active_return": 0.30317910105941737,
+          "rolling_tracking_error": 0.09814285984348381
+        },
+        {
+          "active_return": 0.05005275176444346,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.03562043418529992,
+          "cumulative_active_return": 0.647182555359453,
+          "date": "2025-09-30T00:00:00",
+          "portfolio_return": 0.08567318594974338,
+          "rolling_active_return": 0.391449728182512,
+          "rolling_tracking_error": 0.10095956637272911
+        },
+        {
+          "active_return": 0.017857896189054645,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.02383739357630099,
+          "cumulative_active_return": 0.726940835660042,
+          "date": "2025-10-31T00:00:00",
+          "portfolio_return": 0.041695289765355636,
+          "rolling_active_return": 0.5653930528703794,
+          "rolling_tracking_error": 0.09077190380283559
+        },
+        {
+          "active_return": 0.017083926654998915,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.0019500049129079766,
+          "cumulative_active_return": 0.7924674204890652,
+          "date": "2025-11-30T00:00:00",
+          "portfolio_return": 0.019033931567906892,
+          "rolling_active_return": 0.5439373539074221,
+          "rolling_tracking_error": 0.0908510392763085
+        },
+        {
+          "active_return": 0.006714499904408977,
+          "annual_active_return": 0.24049462386715104,
+          "benchmark_return": 0.008267699482226387,
+          "cumulative_active_return": 0.824695691430593,
+          "date": "2025-12-31T00:00:00",
+          "portfolio_return": 0.014982199386635364,
+          "rolling_active_return": 0.5290491124468168,
+          "rolling_tracking_error": 0.09009149619857915
+        }
+      ]
+    },
+    "coverage": {
+      "end": "2025-12-31",
+      "observations": 84,
+      "start": "2019-01-31"
+    },
+    "optimized": {
+      "active_return": 0.024855714644610227,
+      "information_ratio": 0.2064239776476828,
+      "tracking_error": 0.12041098581596509
+    },
+    "provided": {
+      "active_return": 0.029504134226728613,
+      "information_ratio": 0.28951537607365196,
+      "tracking_error": 0.1019086952370462
+    }
+  },
+  "configuration": {
+    "analysis_period": {
+      "end": "2025-12-31",
+      "start": "2019-01-01"
+    },
+    "assets": [
+      {
+        "currency": "USD",
+        "max_weight": 0.8,
+        "min_weight": 0.0,
+        "name": "Invesco QQQ Trust",
+        "symbol": "QQQ"
+      },
+      {
+        "currency": "USD",
+        "max_weight": 0.8,
+        "min_weight": 0.0,
+        "name": "SPDR Gold Shares",
+        "symbol": "GLD"
+      }
+    ],
+    "benchmark": {
+      "currency": "USD",
+      "name": null,
+      "symbol": "SPY"
+    },
+    "frontier_points": 100,
+    "market_data_source": "FinanceDataReader",
+    "objective": "max_sharpe",
+    "provided_weights": {
+      "GLD": 0.5,
+      "QQQ": 0.5
+    },
+    "rebalancing_period": "monthly",
+    "risk_free": {
+      "effective_annual_rate": 0.02,
+      "requested_mode": "fixed"
+    },
+    "run_id": "example-max-sharpe",
+    "solver_routing": {
+      "qp": "OSQP",
+      "socp": "CLARABEL"
+    },
+    "target_volatility": null
+  },
+  "correlations": {
+    "GLD": {
+      "GLD": 1.0,
+      "QQQ": 0.15497366061142895,
+      "benchmark": 0.16634616686711445,
+      "optimized": 0.787614507468042,
+      "provided": 0.6657843901995281
+    },
+    "QQQ": {
+      "GLD": 0.15497366061142895,
+      "QQQ": 1.0,
+      "benchmark": 0.9232125140849722,
+      "optimized": 0.7307836399950135,
+      "provided": 0.8403087650246052
+    },
+    "benchmark": {
+      "GLD": 0.16634616686711445,
+      "QQQ": 0.9232125140849722,
+      "benchmark": 1.0,
+      "optimized": 0.690748926173066,
+      "provided": 0.7885540876580168
+    },
+    "optimized": {
+      "GLD": 0.787614507468042,
+      "QQQ": 0.7307836399950135,
+      "benchmark": 0.690748926173066,
+      "optimized": 1.0,
+      "provided": 0.9841318472840795
+    },
+    "provided": {
+      "GLD": 0.6657843901995281,
+      "QQQ": 0.8403087650246052,
+      "benchmark": 0.7885540876580168,
+      "optimized": 0.9841318472840795,
+      "provided": 1.0
+    }
+  },
+  "data_coverage": {
+    "benchmark_overlap": {
+      "end": "2025-12-31",
+      "observations": 84,
+      "start": "2019-01-31"
+    },
+    "optimization_monthly_returns": {
+      "end": "2025-12-31",
+      "observations": 84,
+      "start": "2019-01-31"
+    }
+  },
+  "efficient_frontier": [
+    {
+      "expected_return": 0.19569396504307907,
+      "point": 1,
+      "sharpe": 1.4039324967729676,
+      "volatility": 0.12514416857428926,
+      "weight_GLD": 0.681215478890672,
+      "weight_QQQ": 0.31878452110932803
+    },
+    {
+      "expected_return": 0.19591137546188372,
+      "point": 2,
+      "sharpe": 1.4056150820931756,
+      "volatility": 0.12514903809933856,
+      "weight_GLD": 0.6763547165634158,
+      "weight_QQQ": 0.3236452834365841
+    },
+    {
+      "expected_return": 0.19612878588068838,
+      "point": 3,
+      "sharpe": 1.4071880466881832,
+      "volatility": 0.12516364553778542,
+      "weight_GLD": 0.6714939542361608,
+      "weight_QQQ": 0.32850604576383924
+    },
+    {
+      "expected_return": 0.19634619629949301,
+      "point": 4,
+      "sharpe": 1.4086511002220912,
+      "volatility": 0.12518798748085305,
+      "weight_GLD": 0.6666331919089051,
+      "weight_QQQ": 0.3333668080910949
+    },
+    {
+      "expected_return": 0.19656360671829767,
+      "point": 5,
+      "sharpe": 1.4100040295093235,
+      "volatility": 0.12522205825166416,
+      "weight_GLD": 0.6617724295816495,
+      "weight_QQQ": 0.33822757041835044
+    },
+    {
+      "expected_return": 0.19678101713710233,
+      "point": 6,
+      "sharpe": 1.4112466986133683,
+      "volatility": 0.1252658499118545,
+      "weight_GLD": 0.6569116672543939,
+      "weight_QQQ": 0.3430883327456061
+    },
+    {
+      "expected_return": 0.19699842755590702,
+      "point": 7,
+      "sharpe": 1.4123790487954782,
+      "volatility": 0.12531935227080643,
+      "weight_GLD": 0.6520509049271379,
+      "weight_QQQ": 0.3479490950728621
+    },
+    {
+      "expected_return": 0.1972158379747117,
+      "point": 8,
+      "sharpe": 1.4134010983140268,
+      "volatility": 0.12538255289747782,
+      "weight_GLD": 0.6471901425998816,
+      "weight_QQQ": 0.35280985740011833
+    },
+    {
+      "expected_return": 0.19743324839351634,
+      "point": 9,
+      "sharpe": 1.4143129420757998,
+      "volatility": 0.1254554371347942,
+      "weight_GLD": 0.6423293802726263,
+      "weight_QQQ": 0.35767061972737363
+    },
+    {
+      "expected_return": 0.19765065881232097,
+      "point": 10,
+      "sharpe": 1.415114751141046,
+      "volatility": 0.12553798811656536,
+      "weight_GLD": 0.6374686179453712,
+      "weight_QQQ": 0.36253138205462876
+    },
+    {
+      "expected_return": 0.19786806923112565,
+      "point": 11,
+      "sharpe": 1.4158067720846488,
+      "volatility": 0.12563018678688112,
+      "weight_GLD": 0.6326078556181154,
+      "weight_QQQ": 0.3673921443818846
+    },
+    {
+      "expected_return": 0.19808547964993034,
+      "point": 12,
+      "sharpe": 1.4163893262163125,
+      "volatility": 0.12573201192193462,
+      "weight_GLD": 0.6277470932908598,
+      "weight_QQQ": 0.3722529067091403
+    },
+    {
+      "expected_return": 0.19830289006873497,
+      "point": 13,
+      "sharpe": 1.4168628086631563,
+      "volatility": 0.12584344015421506,
+      "weight_GLD": 0.6228863309636044,
+      "weight_QQQ": 0.3771136690363957
+    },
+    {
+      "expected_return": 0.1985203004875396,
+      "point": 14,
+      "sharpe": 1.4172276873185914,
+      "volatility": 0.12596444599900652,
+      "weight_GLD": 0.6180255686363484,
+      "weight_QQQ": 0.3819744313636515
+    },
+    {
+      "expected_return": 0.1987377109063443,
+      "point": 15,
+      "sharpe": 1.4174845016618114,
+      "volatility": 0.12609500188312336,
+      "weight_GLD": 0.6131648063090931,
+      "weight_QQQ": 0.38683519369090685
+    },
+    {
+      "expected_return": 0.19895512132514898,
+      "point": 16,
+      "sharpe": 1.4176338614526625,
+      "volatility": 0.1262350781758077,
+      "weight_GLD": 0.6083040439818369,
+      "weight_QQQ": 0.3916959560181631
+    },
+    {
+      "expected_return": 0.19917253174395363,
+      "point": 17,
+      "sharpe": 1.4176764453070563,
+      "volatility": 0.12638464322170948,
+      "weight_GLD": 0.6034432816545819,
+      "weight_QQQ": 0.39655671834541817
+    },
+    {
+      "expected_return": 0.1993899421627583,
+      "point": 18,
+      "sharpe": 1.4176129991584485,
+      "volatility": 0.12654366337586584,
+      "weight_GLD": 0.5985825193273254,
+      "weight_QQQ": 0.40141748067267463
+    },
+    {
+      "expected_return": 0.19960735258156295,
+      "point": 19,
+      "sharpe": 1.417444334611258,
+      "volatility": 0.1267121030405905,
+      "weight_GLD": 0.5937217570000696,
+      "weight_QQQ": 0.4062782429999303
+    },
+    {
+      "expected_return": 0.1998247630003676,
+      "point": 20,
+      "sharpe": 1.41717132719238,
+      "volatility": 0.1268899247041826,
+      "weight_GLD": 0.5888609946728139,
+      "weight_QQQ": 0.41113900532718595
+    },
+    {
+      "expected_return": 0.20004217341917227,
+      "point": 21,
+      "sharpe": 1.4167949145072338,
+      "volatility": 0.12707708898135872,
+      "weight_GLD": 0.5840002323455588,
+      "weight_QQQ": 0.41599976765444124
+    },
+    {
+      "expected_return": 0.20025958383797693,
+      "point": 22,
+      "sharpe": 1.4163160943069917,
+      "volatility": 0.1272735546553106,
+      "weight_GLD": 0.579139470018303,
+      "weight_QQQ": 0.42086052998169693
+    },
+    {
+      "expected_return": 0.2004769942567816,
+      "point": 23,
+      "sharpe": 1.4157359224738424,
+      "volatility": 0.1274792787212872,
+      "weight_GLD": 0.5742787076910476,
+      "weight_QQQ": 0.4257212923089524
+    },
+    {
+      "expected_return": 0.20069440467558627,
+      "point": 24,
+      "sharpe": 1.4150555109312837,
+      "volatility": 0.12769421643159903,
+      "weight_GLD": 0.5694179453637918,
+      "weight_QQQ": 0.4305820546362083
+    },
+    {
+      "expected_return": 0.20091181509439093,
+      "point": 25,
+      "sharpe": 1.4142760254865645,
+      "volatility": 0.1279183213419392,
+      "weight_GLD": 0.5645571830365361,
+      "weight_QQQ": 0.43544281696346393
+    },
+    {
+      "expected_return": 0.20112922551319556,
+      "point": 26,
+      "sharpe": 1.41339868361247,
+      "volatility": 0.12815154535891599,
+      "weight_GLD": 0.5596964207092803,
+      "weight_QQQ": 0.44030357929071967
+    },
+    {
+      "expected_return": 0.20134663593200025,
+      "point": 27,
+      "sharpe": 1.4124247521756843,
+      "volatility": 0.12839383878869,
+      "weight_GLD": 0.5548356583820251,
+      "weight_QQQ": 0.44516434161797497
+    },
+    {
+      "expected_return": 0.20156404635080488,
+      "point": 28,
+      "sharpe": 1.4113555451189814,
+      "volatility": 0.1286451503866083,
+      "weight_GLD": 0.5499748960547695,
+      "weight_QQQ": 0.45002510394523054
+    },
+    {
+      "expected_return": 0.20178145676960957,
+      "point": 29,
+      "sharpe": 1.4101924211044583,
+      "volatility": 0.12890542740772845,
+      "weight_GLD": 0.5451141337275136,
+      "weight_QQQ": 0.4548858662724865
+    },
+    {
+      "expected_return": 0.20199886718841426,
+      "point": 30,
+      "sharpe": 1.408936781124972,
+      "volatility": 0.12917461565812516,
+      "weight_GLD": 0.5402533714002581,
+      "weight_QQQ": 0.459746628599742
+    },
+    {
+      "expected_return": 0.20221627760721889,
+      "point": 31,
+      "sharpe": 1.4075900660908436,
+      "volatility": 0.12945265954687332,
+      "weight_GLD": 0.5353926090730027,
+      "weight_QQQ": 0.46460739092699743
+    },
+    {
+      "expected_return": 0.20243368802602357,
+      "point": 32,
+      "sharpe": 1.4061537543987848,
+      "volatility": 0.12973950213860144,
+      "weight_GLD": 0.530531846745746,
+      "weight_QQQ": 0.469468153254254
+    },
+    {
+      "expected_return": 0.2026510984448282,
+      "point": 33,
+      "sharpe": 1.4046293594898314,
+      "volatility": 0.13003508520651172,
+      "weight_GLD": 0.5256710844184905,
+      "weight_QQQ": 0.47432891558150947
+    },
+    {
+      "expected_return": 0.20286850886363286,
+      "point": 34,
+      "sharpe": 1.4030184274029185,
+      "volatility": 0.1303393492857644,
+      "weight_GLD": 0.5208103220912349,
+      "weight_QQQ": 0.47918967790876504
+    },
+    {
+      "expected_return": 0.20308591928243752,
+      "point": 35,
+      "sharpe": 1.4013225343305125,
+      "volatility": 0.1306522337271252,
+      "weight_GLD": 0.5159495597639792,
+      "weight_QQQ": 0.48405044023602073
+    },
+    {
+      "expected_return": 0.20330332970124218,
+      "point": 36,
+      "sharpe": 1.399543284182507,
+      "volatility": 0.1309736767507782,
+      "weight_GLD": 0.5110887974367238,
+      "weight_QQQ": 0.4889112025632762
+    },
+    {
+      "expected_return": 0.20352074012004684,
+      "point": 37,
+      "sharpe": 1.3976823061643433,
+      "volatility": 0.13130361550020794,
+      "weight_GLD": 0.5062280351094682,
+      "weight_QQQ": 0.4937719648905317
+    },
+    {
+      "expected_return": 0.2037381505388515,
+      "point": 38,
+      "sharpe": 1.3957412523750559,
+      "volatility": 0.13164198609605787,
+      "weight_GLD": 0.5013672727822128,
+      "weight_QQQ": 0.4986327272177872
+    },
+    {
+      "expected_return": 0.20395556095765616,
+      "point": 39,
+      "sharpe": 1.3937217954306813,
+      "volatility": 0.13198872368987463,
+      "weight_GLD": 0.4965065104549572,
+      "weight_QQQ": 0.5034934895450428
+    },
+    {
+      "expected_return": 0.20417297137646084,
+      "point": 40,
+      "sharpe": 1.3916256261181652,
+      "volatility": 0.13234376251765173,
+      "weight_GLD": 0.4916457481277007,
+      "weight_QQQ": 0.5083542518722993
+    },
+    {
+      "expected_return": 0.2043903817952655,
+      "point": 41,
+      "sharpe": 1.3894544510846234,
+      "volatility": 0.13270703595308816,
+      "weight_GLD": 0.4867849858004454,
+      "weight_QQQ": 0.5132150141995546
+    },
+    {
+      "expected_return": 0.20460779221407016,
+      "point": 42,
+      "sharpe": 1.3872099905664883,
+      "volatility": 0.13307847656048294,
+      "weight_GLD": 0.4819242234731895,
+      "weight_QQQ": 0.5180757765268105
+    },
+    {
+      "expected_return": 0.2048252026328748,
+      "point": 43,
+      "sharpe": 1.384893976162781,
+      "volatility": 0.13345801614718728,
+      "weight_GLD": 0.47706346114593406,
+      "weight_QQQ": 0.5229365388540659
+    },
+    {
+      "expected_return": 0.20504261305167948,
+      "point": 44,
+      "sharpe": 1.3825081486564121,
+      "volatility": 0.13384558581554315,
+      "weight_GLD": 0.4722026988186787,
+      "weight_QQQ": 0.5277973011813213
+    },
+    {
+      "expected_return": 0.2052600234704841,
+      "point": 45,
+      "sharpe": 1.3800542558871087,
+      "volatility": 0.1342411160142379,
+      "weight_GLD": 0.4673419364914231,
+      "weight_QQQ": 0.5326580635085769
+    },
+    {
+      "expected_return": 0.2054774338892888,
+      "point": 46,
+      "sharpe": 1.3775340506792406,
+      "volatility": 0.13464453658901046,
+      "weight_GLD": 0.46248117416416723,
+      "weight_QQQ": 0.5375188258358328
+    },
+    {
+      "expected_return": 0.20569484430809346,
+      "point": 47,
+      "sharpe": 1.3749492888274981,
+      "volatility": 0.13505577683264713,
+      "weight_GLD": 0.4576204118369118,
+      "weight_QQQ": 0.5423795881630882
+    },
+    {
+      "expected_return": 0.20591225472689811,
+      "point": 48,
+      "sharpe": 1.3723017271430589,
+      "volatility": 0.1354747655342106,
+      "weight_GLD": 0.4527596495096564,
+      "weight_QQQ": 0.5472403504903436
+    },
+    {
+      "expected_return": 0.2061296651457028,
+      "point": 49,
+      "sharpe": 1.3695931215625767,
+      "volatility": 0.13590143102744734,
+      "weight_GLD": 0.4478988871823999,
+      "weight_QQQ": 0.5521011128176001
+    },
+    {
+      "expected_return": 0.20634707556450743,
+      "point": 50,
+      "sharpe": 1.3668252253220068,
+      "volatility": 0.13633570123832506,
+      "weight_GLD": 0.4430381248551446,
+      "weight_QQQ": 0.5569618751448554
+    },
+    {
+      "expected_return": 0.20656448598331212,
+      "point": 51,
+      "sharpe": 1.3639997871969884,
+      "volatility": 0.13677750373165456,
+      "weight_GLD": 0.43817736252788875,
+      "weight_QQQ": 0.5618226374721113
+    },
+    {
+      "expected_return": 0.20678189640211675,
+      "point": 52,
+      "sharpe": 1.3611185498112253,
+      "volatility": 0.1372267657567533,
+      "weight_GLD": 0.43331660020063334,
+      "weight_QQQ": 0.5666833997993667
+    },
+    {
+      "expected_return": 0.20699930682092146,
+      "point": 53,
+      "sharpe": 1.358183248014001,
+      "volatility": 0.13768341429211456,
+      "weight_GLD": 0.4284558378733772,
+      "weight_QQQ": 0.5715441621266228
+    },
+    {
+      "expected_return": 0.2072167172397261,
+      "point": 54,
+      "sharpe": 1.3551956073277216,
+      "volatility": 0.13814737608904618,
+      "weight_GLD": 0.42359507554612197,
+      "weight_QQQ": 0.576404924453878
+    },
+    {
+      "expected_return": 0.20743412765853073,
+      "point": 55,
+      "sharpe": 1.3521573424660902,
+      "volatility": 0.13861857771425093,
+      "weight_GLD": 0.4187343132188664,
+      "weight_QQQ": 0.5812656867811336
+    },
+    {
+      "expected_return": 0.2076515380773354,
+      "point": 56,
+      "sharpe": 1.3490701559232972,
+      "volatility": 0.13909694559131924,
+      "weight_GLD": 0.4138735508916105,
+      "weight_QQQ": 0.5861264491083895
+    },
+    {
+      "expected_return": 0.20786894849614007,
+      "point": 57,
+      "sharpe": 1.3459357366343476,
+      "volatility": 0.13958240604111302,
+      "weight_GLD": 0.4090127885643546,
+      "weight_QQQ": 0.5909872114356454
+    },
+    {
+      "expected_return": 0.20808635891494476,
+      "point": 58,
+      "sharpe": 1.3427557587064438,
+      "volatility": 0.14007488532102033,
+      "weight_GLD": 0.40415202623709917,
+      "weight_QQQ": 0.5958479737629009
+    },
+    {
+      "expected_return": 0.2083037693337494,
+      "point": 59,
+      "sharpe": 1.3395318802211167,
+      "volatility": 0.14057430966306383,
+      "weight_GLD": 0.3992912639098439,
+      "weight_QQQ": 0.6007087360901561
+    },
+    {
+      "expected_return": 0.20852117975255408,
+      "point": 60,
+      "sharpe": 1.3362657421066115,
+      "volatility": 0.14108060531085087,
+      "weight_GLD": 0.3944305015825879,
+      "weight_QQQ": 0.6055694984174121
+    },
+    {
+      "expected_return": 0.2087385901713587,
+      "point": 61,
+      "sharpe": 1.3329589670798436,
+      "volatility": 0.14159369855535348,
+      "weight_GLD": 0.3895697392553325,
+      "weight_QQQ": 0.6104302607446674
+    },
+    {
+      "expected_return": 0.2089560005901634,
+      "point": 62,
+      "sharpe": 1.329613158657067,
+      "volatility": 0.14211351576951325,
+      "weight_GLD": 0.38470897692807665,
+      "weight_QQQ": 0.6152910230719234
+    },
+    {
+      "expected_return": 0.20917341100896805,
+      "point": 63,
+      "sharpe": 1.326229900232251,
+      "volatility": 0.14263998344166406,
+      "weight_GLD": 0.37984821460082074,
+      "weight_QQQ": 0.6201517853991793
+    },
+    {
+      "expected_return": 0.2093908214277727,
+      "point": 64,
+      "sharpe": 1.3228107542220033,
+      "volatility": 0.14317302820777328,
+      "weight_GLD": 0.3749874522735648,
+      "weight_QQQ": 0.6250125477264352
+    },
+    {
+      "expected_return": 0.2096082318465774,
+      "point": 65,
+      "sharpe": 1.3193572612757567,
+      "volatility": 0.14371257688250044,
+      "weight_GLD": 0.3701266899463092,
+      "weight_QQQ": 0.6298733100536908
+    },
+    {
+      "expected_return": 0.20982564226538203,
+      "point": 66,
+      "sharpe": 1.3158709395498083,
+      "volatility": 0.1442585564890779,
+      "weight_GLD": 0.36526592761905385,
+      "weight_QQQ": 0.6347340723809461
+    },
+    {
+      "expected_return": 0.21004305268418672,
+      "point": 67,
+      "sharpe": 1.312353284043709,
+      "volatility": 0.14481089428801794,
+      "weight_GLD": 0.3604051652917979,
+      "weight_QQQ": 0.6395948347082021
+    },
+    {
+      "expected_return": 0.21026046310299135,
+      "point": 68,
+      "sharpe": 1.3088057659973888,
+      "volatility": 0.1453695178046541,
+      "weight_GLD": 0.3555444029645426,
+      "weight_QQQ": 0.6444555970354574
+    },
+    {
+      "expected_return": 0.21047787352179598,
+      "point": 69,
+      "sharpe": 1.3052298323473337,
+      "volatility": 0.14593435485552714,
+      "weight_GLD": 0.35068364063728724,
+      "weight_QQQ": 0.6493163593627127
+    },
+    {
+      "expected_return": 0.21069528394060064,
+      "point": 70,
+      "sharpe": 1.3016269052400575,
+      "volatility": 0.14650533357362563,
+      "weight_GLD": 0.34582287831003183,
+      "weight_QQQ": 0.6541771216899681
+    },
+    {
+      "expected_return": 0.2109126943594053,
+      "point": 71,
+      "sharpe": 1.297998381601046,
+      "volatility": 0.14708238243249552,
+      "weight_GLD": 0.34096211598277587,
+      "weight_QQQ": 0.6590378840172241
+    },
+    {
+      "expected_return": 0.21113010477820995,
+      "point": 72,
+      "sharpe": 1.2943456327573097,
+      "volatility": 0.14766543026923237,
+      "weight_GLD": 0.3361013536555206,
+      "weight_QQQ": 0.6638986463444794
+    },
+    {
+      "expected_return": 0.2113475151970146,
+      "point": 73,
+      "sharpe": 1.29067000411163,
+      "volatility": 0.1482544063063737,
+      "weight_GLD": 0.3312405913282646,
+      "weight_QQQ": 0.6687594086717353
+    },
+    {
+      "expected_return": 0.21156492561581935,
+      "point": 74,
+      "sharpe": 1.2869728148665707,
+      "volatility": 0.14884924017270731,
+      "weight_GLD": 0.3263798290010079,
+      "weight_QQQ": 0.6736201709989921
+    },
+    {
+      "expected_return": 0.21178233603462399,
+      "point": 75,
+      "sharpe": 1.283255357796282,
+      "volatility": 0.14944986192301535,
+      "weight_GLD": 0.32151906667375263,
+      "weight_QQQ": 0.6784809333262474
+    },
+    {
+      "expected_return": 0.21199974645342864,
+      "point": 76,
+      "sharpe": 1.279518899064129,
+      "volatility": 0.15005620205677453,
+      "weight_GLD": 0.3166583043464972,
+      "weight_QQQ": 0.6833416956535028
+    },
+    {
+      "expected_return": 0.21221715687223328,
+      "point": 77,
+      "sharpe": 1.2757646780841685,
+      "volatility": 0.150668191535831,
+      "weight_GLD": 0.3117975420192418,
+      "weight_QQQ": 0.6882024579807582
+    },
+    {
+      "expected_return": 0.212434567291038,
+      "point": 78,
+      "sharpe": 1.2719939074244846,
+      "volatility": 0.15128576180107403,
+      "weight_GLD": 0.30693677969198585,
+      "weight_QQQ": 0.6930632203080141
+    },
+    {
+      "expected_return": 0.21265197770984262,
+      "point": 79,
+      "sharpe": 1.2682077727504213,
+      "volatility": 0.15190884478812908,
+      "weight_GLD": 0.3020760173647305,
+      "weight_QQQ": 0.6979239826352696
+    },
+    {
+      "expected_return": 0.21286938812864728,
+      "point": 80,
+      "sharpe": 1.264407432805753,
+      "volatility": 0.15253737294209438,
+      "weight_GLD": 0.29721525503747515,
+      "weight_QQQ": 0.7027847449625249
+    },
+    {
+      "expected_return": 0.21308679854745197,
+      "point": 81,
+      "sharpe": 1.260594019429848,
+      "volatility": 0.15317127923134435,
+      "weight_GLD": 0.2923544927102185,
+      "weight_QQQ": 0.7076455072897815
+    },
+    {
+      "expected_return": 0.21330420896625663,
+      "point": 82,
+      "sharpe": 1.2567686376089293,
+      "volatility": 0.15381049716042278,
+      "weight_GLD": 0.2874937303829632,
+      "weight_QQQ": 0.7125062696170368
+    },
+    {
+      "expected_return": 0.21352161938506128,
+      "point": 83,
+      "sharpe": 1.2529323655595246,
+      "volatility": 0.15445496078205304,
+      "weight_GLD": 0.2826329680557073,
+      "weight_QQQ": 0.7173670319442927
+    },
+    {
+      "expected_return": 0.2137390298038659,
+      "point": 84,
+      "sharpe": 1.2490862548422823,
+      "volatility": 0.15510460470828624,
+      "weight_GLD": 0.27777220572845246,
+      "weight_QQQ": 0.7222277942715475
+    },
+    {
+      "expected_return": 0.2139564402226706,
+      "point": 85,
+      "sharpe": 1.2452313305043157,
+      "volatility": 0.1557593641208166,
+      "weight_GLD": 0.27291144340119594,
+      "weight_QQQ": 0.727088556598804
+    },
+    {
+      "expected_return": 0.21417385064147526,
+      "point": 86,
+      "sharpe": 1.2413685912483268,
+      "volatility": 0.15641917478048403,
+      "weight_GLD": 0.2680506810739406,
+      "weight_QQQ": 0.7319493189260594
+    },
+    {
+      "expected_return": 0.2143912610602799,
+      "point": 87,
+      "sharpe": 1.2374990096267557,
+      "volatility": 0.15708397303599506,
+      "weight_GLD": 0.2631899187466851,
+      "weight_QQQ": 0.7368100812533148
+    },
+    {
+      "expected_return": 0.21460867147908458,
+      "point": 88,
+      "sharpe": 1.2336235322592934,
+      "volatility": 0.15775369583188212,
+      "weight_GLD": 0.2583291564194292,
+      "weight_QQQ": 0.7416708435805708
+    },
+    {
+      "expected_return": 0.21482608189788924,
+      "point": 89,
+      "sharpe": 1.2297430800721074,
+      "volatility": 0.15842828071572918,
+      "weight_GLD": 0.25346839409217325,
+      "weight_QQQ": 0.7465316059078267
+    },
+    {
+      "expected_return": 0.2150434923166939,
+      "point": 90,
+      "sharpe": 1.2258585485572049,
+      "volatility": 0.15910766584468794,
+      "weight_GLD": 0.24860763176491793,
+      "weight_QQQ": 0.751392368235082
+    },
+    {
+      "expected_return": 0.21526090273549855,
+      "point": 91,
+      "sharpe": 1.221970808050383,
+      "volatility": 0.1597917899913103,
+      "weight_GLD": 0.2437468694376624,
+      "weight_QQQ": 0.7562531305623376
+    },
+    {
+      "expected_return": 0.21547831315430324,
+      "point": 92,
+      "sharpe": 1.2180807040263033,
+      "volatility": 0.16048059254872005,
+      "weight_GLD": 0.23888610711040653,
+      "weight_QQQ": 0.7611138928895935
+    },
+    {
+      "expected_return": 0.21569572357310784,
+      "point": 93,
+      "sharpe": 1.2141890574092407,
+      "volatility": 0.1611740135351499,
+      "weight_GLD": 0.23402534478315112,
+      "weight_QQQ": 0.7659746552168488
+    },
+    {
+      "expected_return": 0.21591313399191253,
+      "point": 94,
+      "sharpe": 1.2102966648981388,
+      "volatility": 0.16187199359786802,
+      "weight_GLD": 0.22916458245589522,
+      "weight_QQQ": 0.7708354175441048
+    },
+    {
+      "expected_return": 0.2161305444107172,
+      "point": 95,
+      "sharpe": 1.2064042993046507,
+      "volatility": 0.16257447401651606,
+      "weight_GLD": 0.2243038201286404,
+      "weight_QQQ": 0.7756961798713596
+    },
+    {
+      "expected_return": 0.21634795482952185,
+      "point": 96,
+      "sharpe": 1.2025127099028834,
+      "volatility": 0.1632813967058853,
+      "weight_GLD": 0.21944305780138393,
+      "weight_QQQ": 0.780556942198616
+    },
+    {
+      "expected_return": 0.21656536524832654,
+      "point": 97,
+      "sharpe": 1.198622622789652,
+      "volatility": 0.16399270421815,
+      "weight_GLD": 0.2145822954741279,
+      "weight_QQQ": 0.7854177045258721
+    },
+    {
+      "expected_return": 0.2167827756671312,
+      "point": 98,
+      "sharpe": 1.1947347412540512,
+      "volatility": 0.16470833974458507,
+      "weight_GLD": 0.20972153314687259,
+      "weight_QQQ": 0.7902784668531274
+    },
+    {
+      "expected_return": 0.21700018608593585,
+      "point": 99,
+      "sharpe": 1.1908497461552603,
+      "volatility": 0.16542824711678733,
+      "weight_GLD": 0.2048607708196166,
+      "weight_QQQ": 0.7951392291803834
+    },
+    {
+      "expected_return": 0.21721759664614074,
+      "point": 100,
+      "sharpe": 1.1869682961274508,
+      "volatility": 0.16615237095175497,
+      "weight_GLD": 0.20000000829558506,
+      "weight_QQQ": 0.7999999922907125
+    }
+  ],
+  "optimization_result": {
+    "expected_return": 0.1991508858390721,
+    "sharpe": 1.4176769711100965,
+    "solver": "OSQP",
+    "status": "optimal",
+    "volatility": 0.1263693277734419,
+    "weights": {
+      "GLD": 0.6039272308579631,
+      "QQQ": 0.3960727691420369
+    }
+  },
+  "portfolio_performance": {
+    "annual_returns": [
+      {
+        "benchmark": 0.3122383908497526,
+        "optimized": 0.2638874976164589,
+        "provided": 0.28599198449388163,
+        "year": 2019
+      },
+      {
+        "benchmark": 0.18331615614995855,
+        "optimized": 0.34580768239642623,
+        "provided": 0.3705963154619287,
+        "year": 2020
+      },
+      {
+        "benchmark": 0.2872877201276429,
+        "optimized": 0.07802000503227768,
+        "provided": 0.11060605691854875,
+        "year": 2021
+      },
+      {
+        "benchmark": -0.1817536936501497,
+        "optimized": -0.13965763438364198,
+        "provided": -0.17311514595773925,
+        "year": 2022
+      },
+      {
+        "benchmark": 0.26175798891456137,
+        "optimized": 0.2836827004633147,
+        "provided": 0.3270396544335532,
+        "year": 2023
+      },
+      {
+        "benchmark": 0.24886463075613463,
+        "optimized": 0.2675985378628516,
+        "provided": 0.2667140852520484,
+        "year": 2024
+      },
+      {
+        "benchmark": 0.1859775180068537,
+        "optimized": 0.4714725635582824,
+        "provided": 0.42647214187400473,
+        "year": 2025
+      }
+    ],
+    "benchmark": {
+      "annualized_return": 0.17429517119446186,
+      "annualized_volatility": 0.16570536474528486,
+      "best_year": 0.3122383908497526,
+      "cagr": 0.17305981336253518,
+      "end_balance": 3.056617526518034,
+      "expected_return": 0.17429517119446186,
+      "max_drawdown": -0.23927178828328322,
+      "sharpe_ex_post": 0.9311416768650657,
+      "sortino": 1.488018485434294,
+      "start_balance": 1.0,
+      "worst_year": -0.1817536936501497
+    },
+    "drawdowns": [
+      {
+        "bottom": "2022-09-30T00:00:00",
+        "duration_months": 17,
+        "maximum_drawdown": -0.1877909254371437,
+        "portfolio": "optimized",
+        "rank": 1,
+        "recovery": "2023-05-31T00:00:00",
+        "start": "2022-01-31T00:00:00"
+      },
+      {
+        "bottom": "2020-10-31T00:00:00",
+        "duration_months": 4,
+        "maximum_drawdown": -0.06254616578949335,
+        "portfolio": "optimized",
+        "rank": 2,
+        "recovery": "2020-12-31T00:00:00",
+        "start": "2020-09-30T00:00:00"
+      },
+      {
+        "bottom": "2023-09-30T00:00:00",
+        "duration_months": 4,
+        "maximum_drawdown": -0.061796854340779195,
+        "portfolio": "optimized",
+        "rank": 3,
+        "recovery": "2023-11-30T00:00:00",
+        "start": "2023-08-31T00:00:00"
+      },
+      {
+        "bottom": "2020-03-31T00:00:00",
+        "duration_months": 3,
+        "maximum_drawdown": -0.05719356470853032,
+        "portfolio": "optimized",
+        "rank": 4,
+        "recovery": "2020-04-30T00:00:00",
+        "start": "2020-02-29T00:00:00"
+      },
+      {
+        "bottom": "2021-03-31T00:00:00",
+        "duration_months": 5,
+        "maximum_drawdown": -0.05614307553823983,
+        "portfolio": "optimized",
+        "rank": 5,
+        "recovery": "2021-05-31T00:00:00",
+        "start": "2021-01-31T00:00:00"
+      },
+      {
+        "bottom": "2021-09-30T00:00:00",
+        "duration_months": 3,
+        "maximum_drawdown": -0.04197709784421422,
+        "portfolio": "optimized",
+        "rank": 6,
+        "recovery": "2021-11-30T00:00:00",
+        "start": "2021-09-30T00:00:00"
+      },
+      {
+        "bottom": "2019-05-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.021964014391552933,
+        "portfolio": "optimized",
+        "rank": 7,
+        "recovery": "2019-06-30T00:00:00",
+        "start": "2019-05-31T00:00:00"
+      },
+      {
+        "bottom": "2021-06-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.018364132921244947,
+        "portfolio": "optimized",
+        "rank": 8,
+        "recovery": "2021-07-31T00:00:00",
+        "start": "2021-06-30T00:00:00"
+      },
+      {
+        "bottom": "2019-09-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.016866512482122342,
+        "portfolio": "optimized",
+        "rank": 9,
+        "recovery": "2019-10-31T00:00:00",
+        "start": "2019-09-30T00:00:00"
+      },
+      {
+        "bottom": "2024-12-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.006710149530101961,
+        "portfolio": "optimized",
+        "rank": 10,
+        "recovery": "2025-01-31T00:00:00",
+        "start": "2024-12-31T00:00:00"
+      },
+      {
+        "bottom": "2019-11-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.003259634160902136,
+        "portfolio": "optimized",
+        "rank": 11,
+        "recovery": "2019-12-31T00:00:00",
+        "start": "2019-11-30T00:00:00"
+      },
+      {
+        "bottom": "2024-01-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.0013873901393096633,
+        "portfolio": "optimized",
+        "rank": 12,
+        "recovery": "2024-02-29T00:00:00",
+        "start": "2024-01-31T00:00:00"
+      },
+      {
+        "bottom": "2022-09-30T00:00:00",
+        "duration_months": 18,
+        "maximum_drawdown": -0.2118333957444012,
+        "portfolio": "provided",
+        "rank": 1,
+        "recovery": "2023-06-30T00:00:00",
+        "start": "2022-01-31T00:00:00"
+      },
+      {
+        "bottom": "2020-03-31T00:00:00",
+        "duration_months": 3,
+        "maximum_drawdown": -0.06975270493539032,
+        "portfolio": "provided",
+        "rank": 2,
+        "recovery": "2020-04-30T00:00:00",
+        "start": "2020-02-29T00:00:00"
+      },
+      {
+        "bottom": "2020-10-31T00:00:00",
+        "duration_months": 4,
+        "maximum_drawdown": -0.06668522628819717,
+        "portfolio": "provided",
+        "rank": 3,
+        "recovery": "2020-12-31T00:00:00",
+        "start": "2020-09-30T00:00:00"
+      },
+      {
+        "bottom": "2023-09-30T00:00:00",
+        "duration_months": 4,
+        "maximum_drawdown": -0.06232698280685911,
+        "portfolio": "provided",
+        "rank": 4,
+        "recovery": "2023-11-30T00:00:00",
+        "start": "2023-08-31T00:00:00"
+      },
+      {
+        "bottom": "2021-02-28T00:00:00",
+        "duration_months": 4,
+        "maximum_drawdown": -0.04629092754607045,
+        "portfolio": "provided",
+        "rank": 5,
+        "recovery": "2021-04-30T00:00:00",
+        "start": "2021-01-31T00:00:00"
+      },
+      {
+        "bottom": "2021-09-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.044533300611786064,
+        "portfolio": "provided",
+        "rank": 6,
+        "recovery": "2021-10-31T00:00:00",
+        "start": "2021-09-30T00:00:00"
+      },
+      {
+        "bottom": "2019-05-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.03233864162157318,
+        "portfolio": "provided",
+        "rank": 7,
+        "recovery": "2019-06-30T00:00:00",
+        "start": "2019-05-31T00:00:00"
+      },
+      {
+        "bottom": "2019-09-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.012384464508086612,
+        "portfolio": "provided",
+        "rank": 8,
+        "recovery": "2019-10-31T00:00:00",
+        "start": "2019-09-30T00:00:00"
+      },
+      {
+        "bottom": "2024-04-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.006921534530806683,
+        "portfolio": "provided",
+        "rank": 9,
+        "recovery": "2024-05-31T00:00:00",
+        "start": "2024-04-30T00:00:00"
+      },
+      {
+        "bottom": "2024-12-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.004774115965823,
+        "portfolio": "provided",
+        "rank": 10,
+        "recovery": "2025-01-31T00:00:00",
+        "start": "2024-12-31T00:00:00"
+      },
+      {
+        "bottom": "2021-06-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.004427719619673365,
+        "portfolio": "provided",
+        "rank": 11,
+        "recovery": "2021-07-31T00:00:00",
+        "start": "2021-06-30T00:00:00"
+      },
+      {
+        "bottom": "2025-02-28T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.004409330984150306,
+        "portfolio": "provided",
+        "rank": 12,
+        "recovery": "2025-03-31T00:00:00",
+        "start": "2025-02-28T00:00:00"
+      },
+      {
+        "bottom": "2022-09-30T00:00:00",
+        "duration_months": 24,
+        "maximum_drawdown": -0.23927178828328322,
+        "portfolio": "benchmark",
+        "rank": 1,
+        "recovery": "2023-12-31T00:00:00",
+        "start": "2022-01-31T00:00:00"
+      },
+      {
+        "bottom": "2020-03-31T00:00:00",
+        "duration_months": 7,
+        "maximum_drawdown": -0.19447693916322917,
+        "portfolio": "benchmark",
+        "rank": 2,
+        "recovery": "2020-07-31T00:00:00",
+        "start": "2020-01-31T00:00:00"
+      },
+      {
+        "bottom": "2025-04-30T00:00:00",
+        "duration_months": 5,
+        "maximum_drawdown": -0.07578984416954637,
+        "portfolio": "benchmark",
+        "rank": 3,
+        "recovery": "2025-06-30T00:00:00",
+        "start": "2025-02-28T00:00:00"
+      },
+      {
+        "bottom": "2019-05-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.06377131358264565,
+        "portfolio": "benchmark",
+        "rank": 4,
+        "recovery": "2019-06-30T00:00:00",
+        "start": "2019-05-31T00:00:00"
+      },
+      {
+        "bottom": "2020-10-31T00:00:00",
+        "duration_months": 3,
+        "maximum_drawdown": -0.061443371655593215,
+        "portfolio": "benchmark",
+        "rank": 5,
+        "recovery": "2020-11-30T00:00:00",
+        "start": "2020-09-30T00:00:00"
+      },
+      {
+        "bottom": "2021-09-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.046605411473920166,
+        "portfolio": "benchmark",
+        "rank": 6,
+        "recovery": "2021-10-31T00:00:00",
+        "start": "2021-09-30T00:00:00"
+      },
+      {
+        "bottom": "2024-04-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.040319511345176307,
+        "portfolio": "benchmark",
+        "rank": 7,
+        "recovery": "2024-05-31T00:00:00",
+        "start": "2024-04-30T00:00:00"
+      },
+      {
+        "bottom": "2024-12-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.02406006954082074,
+        "portfolio": "benchmark",
+        "rank": 8,
+        "recovery": "2025-01-31T00:00:00",
+        "start": "2024-12-31T00:00:00"
+      },
+      {
+        "bottom": "2019-08-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.016743454946437586,
+        "portfolio": "benchmark",
+        "rank": 9,
+        "recovery": "2019-09-30T00:00:00",
+        "start": "2019-08-31T00:00:00"
+      },
+      {
+        "bottom": "2021-01-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.010190277766667477,
+        "portfolio": "benchmark",
+        "rank": 10,
+        "recovery": "2021-02-28T00:00:00",
+        "start": "2021-01-31T00:00:00"
+      },
+      {
+        "bottom": "2024-10-31T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.00892343020322095,
+        "portfolio": "benchmark",
+        "rank": 11,
+        "recovery": "2024-11-30T00:00:00",
+        "start": "2024-10-31T00:00:00"
+      },
+      {
+        "bottom": "2021-11-30T00:00:00",
+        "duration_months": 2,
+        "maximum_drawdown": -0.008034846679020546,
+        "portfolio": "benchmark",
+        "rank": 12,
+        "recovery": "2021-12-31T00:00:00",
+        "start": "2021-11-30T00:00:00"
+      }
+    ],
+    "monthly_returns": [
+      {
+        "asset_GLD": 0.028865979381443196,
+        "asset_QQQ": 0.09010783360305452,
+        "benchmark": 0.08006528208299879,
+        "date": "2019-01-31T00:00:00",
+        "optimized": 0.05312221017038973,
+        "provided": 0.05948690649224886
+      },
+      {
+        "asset_GLD": -0.006092201492829408,
+        "asset_QQQ": 0.02991210690257895,
+        "benchmark": 0.03241614608974741,
+        "date": "2019-02-28T00:00:00",
+        "optimized": 0.008168124634383867,
+        "provided": 0.011909952704874771
+      },
+      {
+        "asset_GLD": -0.01596899557748621,
+        "asset_QQQ": 0.03924583695246864,
+        "benchmark": 0.018100498560920775,
+        "date": "2019-03-31T00:00:00",
+        "optimized": 0.005900096040366825,
+        "provided": 0.011638420687491213
+      },
+      {
+        "asset_GLD": -0.006638842503124187,
+        "asset_QQQ": 0.05499244698035932,
+        "benchmark": 0.040852343345424647,
+        "date": "2019-04-30T00:00:00",
+        "optimized": 0.017771632988393623,
+        "provided": 0.024176802238617567
+      },
+      {
+        "asset_GLD": 0.017574298155486723,
+        "asset_QQQ": -0.0822515813986332,
+        "benchmark": -0.06377131358264565,
+        "date": "2019-05-31T00:00:00",
+        "optimized": -0.021964014391552995,
+        "provided": -0.03233864162157324
+      },
+      {
+        "asset_GLD": 0.08002914919848991,
+        "asset_QQQ": 0.07590038111088337,
+        "benchmark": 0.06958659630907671,
+        "date": "2019-06-30T00:00:00",
+        "optimized": 0.07839385658888631,
+        "provided": 0.07796476515468664
+      },
+      {
+        "asset_GLD": 7.514839229982861e-05,
+        "asset_QQQ": 0.02334810109265284,
+        "benchmark": 0.015119503324096728,
+        "date": "2019-07-31T00:00:00",
+        "optimized": 0.009292931214440291,
+        "provided": 0.011711624742476334
+      },
+      {
+        "asset_GLD": 0.0791231345612986,
+        "asset_QQQ": -0.01899548484504965,
+        "benchmark": -0.016743454946437586,
+        "date": "2019-08-31T00:00:00",
+        "optimized": 0.04026102126863265,
+        "provided": 0.030063824858124477
+      },
+      {
+        "asset_GLD": -0.0339478600543478,
+        "asset_QQQ": 0.009178931038174687,
+        "benchmark": 0.019457956111362806,
+        "date": "2019-09-30T00:00:00",
+        "optimized": -0.016866512482122287,
+        "provided": -0.012384464508086557
+      },
+      {
+        "asset_GLD": 0.02563546974700759,
+        "asset_QQQ": 0.04380055291660989,
+        "benchmark": 0.022104565401813048,
+        "date": "2019-10-31T00:00:00",
+        "optimized": 0.03283016453968738,
+        "provided": 0.03471801133180874
+      },
+      {
+        "asset_GLD": -0.03208588289288572,
+        "asset_QQQ": 0.040694300391176386,
+        "benchmark": 0.036198486734749125,
+        "date": "2019-11-30T00:00:00",
+        "optimized": -0.003259634160902254,
+        "provided": 0.004304208749145333
+      },
+      {
+        "asset_GLD": 0.03655877893383952,
+        "asset_QQQ": 0.03886363201587528,
+        "benchmark": 0.02905516237690664,
+        "date": "2019-12-31T00:00:00",
+        "optimized": 0.03747166847650698,
+        "provided": 0.0377112054748574
+      },
+      {
+        "asset_GLD": 0.04499655849690343,
+        "asset_QQQ": 0.030384139022124668,
+        "benchmark": -0.0004038059700871566,
+        "date": "2020-01-31T00:00:00",
+        "optimized": 0.03920897705166278,
+        "provided": 0.03769034875951405
+      },
+      {
+        "asset_GLD": -0.006361728631845698,
+        "asset_QQQ": -0.06057449225448419,
+        "benchmark": -0.07916555927242275,
+        "date": "2020-02-29T00:00:00",
+        "optimized": -0.027833928042706808,
+        "provided": -0.033468110443164945
+      },
+      {
+        "asset_GLD": -0.002224031676743232,
+        "asset_QQQ": -0.0728580114183115,
+        "benchmark": -0.12487149522544794,
+        "date": "2020-03-31T00:00:00",
+        "optimized": -0.03020022762850871,
+        "provided": -0.037541021547527365
+      },
+      {
+        "asset_GLD": 0.07261060302877431,
+        "asset_QQQ": 0.14973742162045545,
+        "benchmark": 0.12698370986213248,
+        "date": "2020-04-30T00:00:00",
+        "optimized": 0.10315843564349698,
+        "provided": 0.11117401232461488
+      },
+      {
+        "asset_GLD": 0.02588161543682088,
+        "asset_QQQ": 0.06600868669970228,
+        "benchmark": 0.047645025305737,
+        "date": "2020-05-31T00:00:00",
+        "optimized": 0.041774855669470166,
+        "provided": 0.04594515106826158
+      },
+      {
+        "asset_GLD": 0.02737702630176453,
+        "asset_QQQ": 0.06286672294589568,
+        "benchmark": 0.017734612654093374,
+        "date": "2020-06-30T00:00:00",
+        "optimized": 0.04143352872761641,
+        "provided": 0.045121874623830105
+      },
+      {
+        "asset_GLD": 0.10790463097013703,
+        "asset_QQQ": 0.07346547383485547,
+        "benchmark": 0.058892042432051595,
+        "date": "2020-07-31T00:00:00",
+        "optimized": 0.09426421863664831,
+        "provided": 0.09068505240249625
+      },
+      {
+        "asset_GLD": -0.0032356731296194763,
+        "asset_QQQ": 0.10944720773777039,
+        "benchmark": 0.06979677941272877,
+        "date": "2020-08-31T00:00:00",
+        "optimized": 0.041394947530429875,
+        "provided": 0.05310576730407546
+      },
+      {
+        "asset_GLD": -0.0417140433776253,
+        "asset_QQQ": -0.0577859771247643,
+        "benchmark": -0.03744346576468671,
+        "date": "2020-09-30T00:00:00",
+        "optimized": -0.048079698682321995,
+        "provided": -0.0497500102511948
+      },
+      {
+        "asset_GLD": -0.0051942084141127776,
+        "asset_QQQ": -0.030449498441341816,
+        "benchmark": -0.024933502643533556,
+        "date": "2020-10-31T00:00:00",
+        "optimized": -0.015197141070682652,
+        "provided": -0.017821853427727297
+      },
+      {
+        "asset_GLD": -0.05408625961608993,
+        "asset_QQQ": 0.1122577332518988,
+        "benchmark": 0.10877649751558782,
+        "date": "2020-11-30T00:00:00",
+        "optimized": 0.011798066269277603,
+        "provided": 0.02908573681790444
+      },
+      {
+        "asset_GLD": 0.07013861264675048,
+        "asset_QQQ": 0.049024501553019295,
+        "benchmark": 0.03704837155359675,
+        "date": "2020-12-31T00:00:00",
+        "optimized": 0.061775888197883766,
+        "provided": 0.059581557099884885
+      },
+      {
+        "asset_GLD": -0.03223816988295236,
+        "asset_QQQ": 0.0026136546425223894,
+        "benchmark": -0.010190277766667477,
+        "date": "2021-01-31T00:00:00",
+        "optimized": -0.018434311233495218,
+        "provided": -0.014812257620214986
+      },
+      {
+        "asset_GLD": -0.06256881416817583,
+        "asset_QQQ": -0.0013350867265242705,
+        "benchmark": 0.027805526149386584,
+        "date": "2021-02-28T00:00:00",
+        "optimized": -0.03831580217547217,
+        "provided": -0.03195195044735005
+      },
+      {
+        "asset_GLD": -0.011433105943016053,
+        "asset_QQQ": 0.017167506003529676,
+        "benchmark": 0.04539917366340718,
+        "date": "2021-03-31T00:00:00",
+        "optimized": -0.00010518237019086375,
+        "provided": 0.0028672000302568112
+      },
+      {
+        "asset_GLD": 0.035633887903232075,
+        "asset_QQQ": 0.05909819301616315,
+        "benchmark": 0.0529104106464211,
+        "date": "2021-04-30T00:00:00",
+        "optimized": 0.04492746020530434,
+        "provided": 0.04736604045969761
+      },
+      {
+        "asset_GLD": 0.07678377966625938,
+        "asset_QQQ": -0.01201214907203485,
+        "benchmark": 0.006566213017263678,
+        "date": "2021-05-31T00:00:00",
+        "optimized": 0.04161413028234421,
+        "provided": 0.032385815297112264
+      },
+      {
+        "asset_GLD": -0.07147662098325525,
+        "asset_QQQ": 0.0626211817439084,
+        "benchmark": 0.0224274497903596,
+        "date": "2021-06-30T00:00:00",
+        "optimized": -0.01836413292124495,
+        "provided": -0.00442771961967342
+      },
+      {
+        "asset_GLD": 0.025297363508325565,
+        "asset_QQQ": 0.028609401373852483,
+        "benchmark": 0.02441242622480133,
+        "date": "2021-07-31T00:00:00",
+        "optimized": 0.02660917151722809,
+        "provided": 0.026953382441089024
+      },
+      {
+        "asset_GLD": -0.0007655451490135023,
+        "asset_QQQ": 0.04218666225967094,
+        "benchmark": 0.029759790150247323,
+        "date": "2021-08-31T00:00:00",
+        "optimized": 0.016246654580107253,
+        "provided": 0.020710558555328717
+      },
+      {
+        "asset_GLD": -0.03223525924924131,
+        "asset_QQQ": -0.05683134197433093,
+        "benchmark": -0.046605411473920166,
+        "date": "2021-09-30T00:00:00",
+        "optimized": -0.04197709784421417,
+        "provided": -0.04453330061178612
+      },
+      {
+        "asset_GLD": 0.014797178527087285,
+        "asset_QQQ": 0.078639756422062,
+        "benchmark": 0.07016338869675476,
+        "date": "2021-10-31T00:00:00",
+        "optimized": 0.04008348514311611,
+        "provided": 0.04671846747457464
+      },
+      {
+        "asset_GLD": -0.006900653696985448,
+        "asset_QQQ": 0.019968609599527065,
+        "benchmark": -0.008034846679020546,
+        "date": "2021-11-30T00:00:00",
+        "optimized": 0.003741529821670758,
+        "provided": 0.0065339779512708085
+      },
+      {
+        "asset_GLD": 0.032990977123064535,
+        "asset_QQQ": 0.011523356697168863,
+        "benchmark": 0.04624786743872655,
+        "date": "2021-12-31T00:00:00",
+        "optimized": 0.02448823725408988,
+        "provided": 0.0222571669101167
+      },
+      {
+        "asset_GLD": -0.016787612677039987,
+        "asset_QQQ": -0.0874700269589812,
+        "benchmark": -0.05274104729567086,
+        "date": "2022-01-31T00:00:00",
+        "optimized": -0.044782992231333106,
+        "provided": -0.0521288198180106
+      },
+      {
+        "asset_GLD": 0.061217257237826006,
+        "asset_QQQ": -0.04475968241363559,
+        "benchmark": -0.02951704931297261,
+        "date": "2022-02-28T00:00:00",
+        "optimized": 0.01924267728487308,
+        "provided": 0.008228787412095206
+      },
+      {
+        "asset_GLD": 0.0127255799503041,
+        "asset_QQQ": 0.04667860404173174,
+        "benchmark": 0.03759015803813259,
+        "date": "2022-03-31T00:00:00",
+        "optimized": 0.026173448222942135,
+        "provided": 0.02970209199601792
+      },
+      {
+        "asset_GLD": -0.020702963524693363,
+        "asset_QQQ": -0.1359573718408258,
+        "benchmark": -0.08776903890540255,
+        "date": "2022-04-30T00:00:00",
+        "optimized": -0.06635209618229093,
+        "provided": -0.07833016768275958
+      },
+      {
+        "asset_GLD": -0.03261547766106776,
+        "asset_QQQ": -0.01586600956131501,
+        "benchmark": 0.002257291700429098,
+        "date": "2022-05-31T00:00:00",
+        "optimized": -0.025981469449142477,
+        "provided": -0.024240743611191384
+      },
+      {
+        "asset_GLD": -0.01565965107712486,
+        "asset_QQQ": -0.08907891860313732,
+        "benchmark": -0.08246034147300951,
+        "date": "2022-06-30T00:00:00",
+        "optimized": -0.04473902367453264,
+        "provided": -0.05236928484013109
+      },
+      {
+        "asset_GLD": -0.0258815174913124,
+        "asset_QQQ": 0.12551751977445202,
+        "benchmark": 0.09208741038619395,
+        "date": "2022-07-31T00:00:00",
+        "optimized": 0.03408351844397735,
+        "provided": 0.04981800114156981
+      },
+      {
+        "asset_GLD": -0.02943328245830701,
+        "asset_QQQ": -0.0513219247602793,
+        "benchmark": -0.040801847683917036,
+        "date": "2022-08-31T00:00:00",
+        "optimized": -0.038102777627608705,
+        "provided": -0.040377603609293156
+      },
+      {
+        "asset_GLD": -0.028881810636775418,
+        "asset_QQQ": -0.10535532130862013,
+        "benchmark": -0.09244607654364578,
+        "date": "2022-09-30T00:00:00",
+        "optimized": -0.059170885774586054,
+        "provided": -0.06711856597269777
+      },
+      {
+        "asset_GLD": -0.017844407703562548,
+        "asset_QQQ": 0.03999865914667544,
+        "benchmark": 0.08127563769452162,
+        "date": "2022-10-31T00:00:00",
+        "optimized": 0.0050656559594791685,
+        "provided": 0.011077125721556447
+      },
+      {
+        "asset_GLD": 0.0849186596373046,
+        "asset_QQQ": 0.055441445462232286,
+        "benchmark": 0.05559150717499772,
+        "date": "2022-11-30T00:00:00",
+        "optimized": 0.0732435377923908,
+        "provided": 0.07018005254976845
+      },
+      {
+        "asset_GLD": 0.02930648566594085,
+        "asset_QQQ": -0.09013656239116508,
+        "benchmark": -0.057628321267792826,
+        "date": "2022-12-31T00:00:00",
+        "optimized": -0.01800165313280248,
+        "provided": -0.030415038362612112
+      },
+      {
+        "asset_GLD": 0.05759257431981046,
+        "asset_QQQ": 0.10642913871441073,
+        "benchmark": 0.06288748024704605,
+        "date": "2023-01-31T00:00:00",
+        "optimized": 0.07693540761496319,
+        "provided": 0.0820108565171106
+      },
+      {
+        "asset_GLD": -0.05367596391642193,
+        "asset_QQQ": -0.0035975857827502677,
+        "benchmark": -0.025142732052405803,
+        "date": "2023-02-28T00:00:00",
+        "optimized": -0.033841282014876566,
+        "provided": -0.0286367748495861
+      },
+      {
+        "asset_GLD": 0.07916128247166143,
+        "asset_QQQ": 0.09492695947374452,
+        "benchmark": 0.03707786046244155,
+        "date": "2023-03-31T00:00:00",
+        "optimized": 0.0854056378192754,
+        "provided": 0.08704412097270298
+      },
+      {
+        "asset_GLD": 0.008623522653246951,
+        "asset_QQQ": 0.005078957673834816,
+        "benchmark": 0.015974996697359023,
+        "date": "2023-04-30T00:00:00",
+        "optimized": 0.007219616986447299,
+        "provided": 0.006851240163540884
+      },
+      {
+        "asset_GLD": -0.013419890078922081,
+        "asset_QQQ": 0.07883793268748329,
+        "benchmark": 0.004616047664556255,
+        "date": "2023-05-31T00:00:00",
+        "optimized": 0.023120921259183348,
+        "provided": 0.032709021304280606
+      },
+      {
+        "asset_GLD": -0.02221370606110007,
+        "asset_QQQ": 0.06303864867936593,
+        "benchmark": 0.0647999488667752,
+        "date": "2023-06-30T00:00:00",
+        "optimized": 0.011552430156835554,
+        "provided": 0.02041247130913293
+      },
+      {
+        "asset_GLD": 0.02288664235862692,
+        "asset_QQQ": 0.038601064533497986,
+        "benchmark": 0.032733184457347075,
+        "date": "2023-07-31T00:00:00",
+        "optimized": 0.02911069706489513,
+        "provided": 0.030743853446062452
+      },
+      {
+        "asset_GLD": -0.012777635059315506,
+        "asset_QQQ": -0.014830207909557469,
+        "benchmark": -0.01625208191915062,
+        "date": "2023-08-31T00:00:00",
+        "optimized": -0.013590603271976602,
+        "provided": -0.013803921484436488
+      },
+      {
+        "asset_GLD": -0.047605861131121974,
+        "asset_QQQ": -0.05079862937437707,
+        "benchmark": -0.04743433501644301,
+        "date": "2023-09-30T00:00:00",
+        "optimized": -0.048870429690456775,
+        "provided": -0.04920224525274952
+      },
+      {
+        "asset_GLD": 0.07372411557093361,
+        "asset_QQQ": -0.02065490808934567,
+        "benchmark": -0.021708661289990272,
+        "date": "2023-10-31T00:00:00",
+        "optimized": 0.03634315432088498,
+        "provided": 0.02653460374079397
+      },
+      {
+        "asset_GLD": 0.02531372564947043,
+        "asset_QQQ": 0.10818842952829888,
+        "benchmark": 0.0913438546150167,
+        "date": "2023-11-30T00:00:00",
+        "optimized": 0.058138139106584316,
+        "provided": 0.06675107758888466
+      },
+      {
+        "asset_GLD": 0.012821182352028115,
+        "asset_QQQ": 0.05586948116035706,
+        "benchmark": 0.04565525434007034,
+        "date": "2023-12-31T00:00:00",
+        "optimized": 0.029871441267896807,
+        "provided": 0.03434533175619259
+      },
+      {
+        "asset_GLD": -0.014228180398366375,
+        "asset_QQQ": 0.018192100063913585,
+        "benchmark": 0.015926587106046997,
+        "date": "2024-01-31T00:00:00",
+        "optimized": -0.0013873901393096745,
+        "provided": 0.0019819598327736054
+      },
+      {
+        "asset_GLD": 0.004563548019519192,
+        "asset_QQQ": 0.0528335765184631,
+        "benchmark": 0.0521867603597006,
+        "date": "2024-02-29T00:00:00",
+        "optimized": 0.023681991873660945,
+        "provided": 0.028698562268991146
+      },
+      {
+        "asset_GLD": 0.08668323846462611,
+        "asset_QQQ": 0.012749730599804332,
+        "benchmark": 0.03270189842569571,
+        "date": "2024-03-31T00:00:00",
+        "optimized": 0.05740018927222158,
+        "provided": 0.04971648453221522
+      },
+      {
+        "asset_GLD": 0.02989497307015121,
+        "asset_QQQ": -0.043738042131764465,
+        "benchmark": -0.04031951134517642,
+        "date": "2024-04-30T00:00:00",
+        "optimized": 0.000730940838850766,
+        "provided": -0.006921534530806628
+      },
+      {
+        "asset_GLD": 0.016189210429127243,
+        "asset_QQQ": 0.06151847019182832,
+        "benchmark": 0.05057959716582827,
+        "date": "2024-05-31T00:00:00",
+        "optimized": 0.03414289586649897,
+        "provided": 0.03885384031047778
+      },
+      {
+        "asset_GLD": -0.0013469974027457976,
+        "asset_QQQ": 0.06470117240529549,
+        "benchmark": 0.035280096711594267,
+        "date": "2024-06-30T00:00:00",
+        "optimized": 0.02481288410988859,
+        "provided": 0.03167708750127485
+      },
+      {
+        "asset_GLD": 0.053671963349382734,
+        "asset_QQQ": -0.01678115055096896,
+        "benchmark": 0.012109001564470256,
+        "date": "2024-07-31T00:00:00",
+        "optimized": 0.025767403432191107,
+        "provided": 0.018445406399206887
+      },
+      {
+        "asset_GLD": 0.02092249026936499,
+        "asset_QQQ": 0.011038754193065214,
+        "benchmark": 0.023365741166114784,
+        "date": "2024-08-31T00:00:00",
+        "optimized": 0.017007811552155888,
+        "provided": 0.015980622231215103
+      },
+      {
+        "asset_GLD": 0.050888514912532656,
+        "asset_QQQ": 0.026215964783193213,
+        "benchmark": 0.02100466682931046,
+        "date": "2024-09-30T00:00:00",
+        "optimized": 0.04111638966100946,
+        "provided": 0.038552239847862935
+      },
+      {
+        "asset_GLD": 0.04299348742370923,
+        "asset_QQQ": -0.008646293361835089,
+        "benchmark": -0.00892343020322095,
+        "date": "2024-10-31T00:00:00",
+        "optimized": 0.02254037645009094,
+        "provided": 0.01717359703093707
+      },
+      {
+        "asset_GLD": -0.031241364603207922,
+        "asset_QQQ": 0.0535082808070646,
+        "benchmark": 0.05963319334082584,
+        "date": "2024-11-30T00:00:00",
+        "optimized": 0.002325662138244436,
+        "provided": 0.01113345810192834
+      },
+      {
+        "asset_GLD": -0.014088486936242095,
+        "asset_QQQ": 0.004540255004595872,
+        "benchmark": -0.02406006954082074,
+        "date": "2024-12-31T00:00:00",
+        "optimized": -0.006710149530101998,
+        "provided": -0.004774115965823111
+      },
+      {
+        "asset_GLD": 0.06785607873643396,
+        "asset_QQQ": 0.021634224771307053,
+        "benchmark": 0.026856345883270905,
+        "date": "2025-01-31T00:00:00",
+        "optimized": 0.0495488610415873,
+        "provided": 0.044745151753870505
+      },
+      {
+        "asset_GLD": 0.018216241876358952,
+        "asset_QQQ": -0.027034903844659564,
+        "benchmark": -0.012694736490296177,
+        "date": "2025-02-28T00:00:00",
+        "optimized": 0.0002934952837853142,
+        "provided": -0.004409330984150306
+      },
+      {
+        "asset_GLD": 0.09446585889998316,
+        "asset_QQQ": -0.07586186201047984,
+        "benchmark": -0.055719310915217646,
+        "date": "2025-03-31T00:00:00",
+        "optimized": 0.027003686817324058,
+        "provided": 0.009301998444751658
+      },
+      {
+        "asset_GLD": 0.05424437277239913,
+        "asset_QQQ": 0.01396833182256274,
+        "benchmark": -0.008670167189502642,
+        "date": "2025-04-30T00:00:00",
+        "optimized": 0.038292129703319355,
+        "provided": 0.034106352297480935
+      },
+      {
+        "asset_GLD": -0.0005595776946504261,
+        "asset_QQQ": 0.09178287448406452,
+        "benchmark": 0.06284505165897136,
+        "date": "2025-05-31T00:00:00",
+        "optimized": 0.03601475304913932,
+        "provided": 0.04561164839470705
+      },
+      {
+        "asset_GLD": 0.004051318985581975,
+        "asset_QQQ": 0.06385823878094876,
+        "benchmark": 0.051386230006752465,
+        "date": "2025-06-30T00:00:00",
+        "optimized": 0.027739211322788598,
+        "provided": 0.03395477888326537
+      },
+      {
+        "asset_GLD": -0.0061345510598058706,
+        "asset_QQQ": 0.024236921367891684,
+        "benchmark": 0.023031446515753284,
+        "date": "2025-07-31T00:00:00",
+        "optimized": 0.005894762127553322,
+        "provided": 0.009051185154042907
+      },
+      {
+        "asset_GLD": 0.049874624687468394,
+        "asset_QQQ": 0.009539710876868224,
+        "benchmark": 0.02051948404438786,
+        "date": "2025-08-31T00:00:00",
+        "optimized": 0.0338990636813986,
+        "provided": 0.02970716778216831
+      },
+      {
+        "asset_GLD": 0.11758415768627128,
+        "asset_QQQ": 0.053762214213215476,
+        "benchmark": 0.03562043418529992,
+        "date": "2025-09-30T00:00:00",
+        "optimized": 0.09230602380287152,
+        "provided": 0.08567318594974338
+      },
+      {
+        "asset_GLD": 0.035586670754335525,
+        "asset_QQQ": 0.04780390877637575,
+        "benchmark": 0.02383739357630099,
+        "date": "2025-10-31T00:00:00",
+        "optimized": 0.04042558604899238,
+        "provided": 0.041695289765355636
+      },
+      {
+        "asset_GLD": 0.05367817567023114,
+        "asset_QQQ": -0.015610312534417359,
+        "benchmark": 0.0019500049129079766,
+        "date": "2025-11-30T00:00:00",
+        "optimized": 0.026234892277350652,
+        "provided": 0.019033931567906892
+      },
+      {
+        "asset_GLD": 0.02838509236626252,
+        "asset_QQQ": 0.0015793064070082075,
+        "benchmark": 0.008267699482226387,
+        "date": "2025-12-31T00:00:00",
+        "optimized": 0.017768050492351934,
+        "provided": 0.014982199386635364
+      }
+    ],
+    "optimized": {
+      "annualized_return": 0.19915088583907214,
+      "annualized_volatility": 0.1263693277734419,
+      "best_year": 0.4714725635582824,
+      "cagr": 0.20907835977980493,
+      "end_balance": 3.777297031150259,
+      "expected_return": 0.1991508858390721,
+      "max_drawdown": -0.1877909254371437,
+      "sharpe_ex_post": 1.417676971110097,
+      "sortino": 2.76612181831608,
+      "start_balance": 1.0,
+      "worst_year": -0.13965763438364198
+    },
+    "provided": {
+      "annualized_return": 0.20379930542119046,
+      "annualized_volatility": 0.1317386761911807,
+      "best_year": 0.42647214187400473,
+      "cagr": 0.21377954134244415,
+      "end_balance": 3.881313217948627,
+      "expected_return": 0.20379930542119049,
+      "max_drawdown": -0.2118333957444012,
+      "sharpe_ex_post": 1.3951810564306777,
+      "sortino": 2.5989651054772915,
+      "start_balance": 1.0,
+      "worst_year": -0.17311514595773925
+    },
+    "rolling_returns": {
+      "benchmark": {
+        "36m": {
+          "2021-12-31": 0.25968817710177206,
+          "2022-01-31": 0.20578337243922462,
+          "2022-02-28": 0.1811734182286302,
+          "2022-03-31": 0.18866295854722215,
+          "2022-04-30": 0.13753287632112876,
+          "2022-05-31": 0.16366967660634013,
+          "2022-06-30": 0.1056882176464995,
+          "2022-07-31": 0.13295525447765555,
+          "2022-08-31": 0.12363843743014202,
+          "2022-09-30": 0.08092184409524927,
+          "2022-10-31": 0.10139049305090331,
+          "2022-11-30": 0.1082191096362648,
+          "2022-12-31": 0.07618472784733799,
+          "2023-01-31": 0.09843507071868207,
+          "2023-02-28": 0.11950889973650125,
+          "2023-03-31": 0.18469728941608543,
+          "2023-04-30": 0.14444744862670333,
+          "2023-05-31": 0.1285596206367452,
+          "2023-06-30": 0.14569495203028726,
+          "2023-07-31": 0.1361817666498608,
+          "2023-08-31": 0.1048635906215154,
+          "2023-09-30": 0.10102763895461475,
+          "2023-10-31": 0.1022401143086602,
+          "2023-11-30": 0.09643294784678225,
+          "2023-12-31": 0.09945784139323433,
+          "2024-01-31": 0.10904402051187057,
+          "2024-02-29": 0.117745026456332,
+          "2024-03-31": 0.11320125446904261,
+          "2024-04-30": 0.07932466606770028,
+          "2024-05-31": 0.09483239719267433,
+          "2024-06-30": 0.09940091683879881,
+          "2024-07-31": 0.09498182678816058,
+          "2024-08-31": 0.09271077651982784,
+          "2024-09-30": 0.1179530738711374,
+          "2024-10-31": 0.08970584651862001,
+          "2024-11-30": 0.11394135406426686,
+          "2024-12-31": 0.08840825646122208,
+          "2025-01-31": 0.11807812809013218,
+          "2025-02-28": 0.12450139684745865,
+          "2025-03-31": 0.08972877981753835,
+          "2025-04-30": 0.12035642753941289,
+          "2025-05-31": 0.14249187497133242,
+          "2025-06-30": 0.1955440990633306,
+          "2025-07-31": 0.1697941931328082,
+          "2025-08-31": 0.19420930364232403,
+          "2025-09-30": 0.24792889630551462,
+          "2025-10-31": 0.22542865313964366,
+          "2025-11-30": 0.20430942621588577,
+          "2025-12-31": 0.23175016338025878
+        },
+        "60m": {
+          "2023-12-31": 0.15592552881442434,
+          "2024-01-31": 0.14185857927004553,
+          "2024-02-29": 0.14619874408081435,
+          "2024-03-31": 0.14946775608651985,
+          "2024-04-30": 0.13095233476493418,
+          "2024-05-31": 0.15732065767837322,
+          "2024-06-30": 0.14979942664071166,
+          "2024-07-31": 0.14911663279585574,
+          "2024-08-31": 0.15834230112608316,
+          "2024-09-30": 0.15869357292483333,
+          "2024-10-31": 0.15157167531195892,
+          "2024-11-30": 0.15673398207240985,
+          "2024-12-31": 0.14453843305335523,
+          "2025-01-31": 0.15071400859259332,
+          "2025-02-28": 0.16686705902998988,
+          "2025-03-31": 0.1847514132607455,
+          "2025-04-30": 0.15474833018085588,
+          "2025-05-31": 0.15807984385368323,
+          "2025-06-30": 0.1656389495266266,
+          "2025-07-31": 0.15763463170659686,
+          "2025-08-31": 0.14676786240372897,
+          "2025-09-30": 0.16367146923058096,
+          "2025-10-31": 0.17508622966838416,
+          "2025-11-30": 0.15151644609378634,
+          "2025-12-31": 0.14505280012423327
+        }
+      },
+      "optimized": {
+        "36m": {
+          "2021-12-31": 0.2239755628720428,
+          "2022-01-31": 0.18480580092477816,
+          "2022-02-28": 0.18912830768765532,
+          "2022-03-31": 0.19706396915504176,
+          "2022-04-30": 0.16313007959323378,
+          "2022-05-31": 0.16153530677701133,
+          "2022-06-30": 0.11552838603053961,
+          "2022-07-31": 0.12458793731870466,
+          "2022-08-31": 0.09560886034191785,
+          "2022-09-30": 0.07966317506788978,
+          "2022-10-31": 0.06990067624203133,
+          "2022-11-30": 0.096601596648626,
+          "2022-12-31": 0.07669751538049385,
+          "2023-01-31": 0.08957208068382694,
+          "2023-02-28": 0.0873231597674422,
+          "2023-03-31": 0.12891688891699582,
+          "2023-04-30": 0.09519318341133687,
+          "2023-05-31": 0.08861696186389789,
+          "2023-06-30": 0.07810413285634232,
+          "2023-07-31": 0.056267722761607075,
+          "2023-08-31": 0.03734030822189749,
+          "2023-09-30": 0.03705299972479814,
+          "2023-10-31": 0.05483786924235834,
+          "2023-11-30": 0.0707018519414766,
+          "2023-12-31": 0.0598683889587881,
+          "2024-01-31": 0.06596881180869829,
+          "2024-02-29": 0.0884004001669445,
+          "2024-03-31": 0.10887786641600905,
+          "2024-04-30": 0.09301832532183063,
+          "2024-05-31": 0.09039873752562233,
+          "2024-06-30": 0.10615688327521555,
+          "2024-07-31": 0.10585446953106037,
+          "2024-08-31": 0.10613049135928487,
+          "2024-09-30": 0.13722787121557323,
+          "2024-10-31": 0.13079770028822435,
+          "2024-11-30": 0.13026575281096386,
+          "2024-12-31": 0.11867408078996844,
+          "2025-01-31": 0.1543489550922177,
+          "2025-02-28": 0.14715049203454167,
+          "2025-03-31": 0.1474597808382836,
+          "2025-04-30": 0.18882049616586571,
+          "2025-05-31": 0.2135262942224685,
+          "2025-06-30": 0.24347241155242982,
+          "2025-07-31": 0.2320692852399262,
+          "2025-08-31": 0.2620743919427011,
+          "2025-09-30": 0.3264660783098525,
+          "2025-10-31": 0.3418429183830747,
+          "2025-11-30": 0.321958566125345,
+          "2025-12-31": 0.33781849488537863
+        },
+        "60m": {
+          "2023-12-31": 0.15156762789193978,
+          "2024-01-31": 0.13939183390935406,
+          "2024-02-29": 0.14287707892665047,
+          "2024-03-31": 0.15434713556869895,
+          "2024-04-30": 0.15045550535074592,
+          "2024-05-31": 0.16336225841691232,
+          "2024-06-30": 0.15156486215937282,
+          "2024-07-31": 0.15529990390438764,
+          "2024-08-31": 0.15008815297815326,
+          "2024-09-30": 0.16334489559571153,
+          "2024-10-31": 0.16101758879111072,
+          "2024-11-30": 0.16231584886702244,
+          "2024-12-31": 0.15224308412847098,
+          "2025-01-31": 0.15452692200172335,
+          "2025-02-28": 0.16113164523644885,
+          "2025-03-31": 0.1745173764633532,
+          "2025-04-30": 0.16036809925319617,
+          "2025-05-31": 0.1590820880129742,
+          "2025-06-30": 0.1560176599405656,
+          "2025-07-31": 0.13671224481988165,
+          "2025-08-31": 0.1350711187697835,
+          "2025-09-30": 0.1667339126344316,
+          "2025-10-31": 0.1796255376497473,
+          "2025-11-30": 0.18297278170915376,
+          "2025-12-31": 0.17299981407310439
+        }
+      },
+      "provided": {
+        "36m": {
+          "2021-12-31": 0.2509384831245378,
+          "2022-01-31": 0.20537041576652348,
+          "2022-02-28": 0.20390699200525964,
+          "2022-03-31": 0.21103035798039138,
+          "2022-04-30": 0.16919919965357266,
+          "2022-05-31": 0.1724516345681233,
+          "2022-06-30": 0.12315524845987746,
+          "2022-07-31": 0.13708312908051212,
+          "2022-08-31": 0.11054875423366717,
+          "2022-09-30": 0.08964193381399377,
+          "2022-10-31": 0.08127932846938846,
+          "2022-11-30": 0.10442210399409713,
+          "2022-12-31": 0.07970441747837964,
+          "2023-01-31": 0.09486227511280121,
+          "2023-02-28": 0.09668351449038282,
+          "2023-03-31": 0.14209692681347508,
+          "2023-04-30": 0.1051741225859526,
+          "2023-05-31": 0.10049243320508183,
+          "2023-06-30": 0.09175033572595104,
+          "2023-07-31": 0.07137242659910181,
+          "2023-08-31": 0.04818407768761768,
+          "2023-09-30": 0.04838544514108101,
+          "2023-10-31": 0.06393580655846054,
+          "2023-11-30": 0.0767608806993858,
+          "2023-12-31": 0.06814363879426888,
+          "2024-01-31": 0.07417892142669791,
+          "2024-02-29": 0.0961593656316011,
+          "2024-03-31": 0.11296941232568591,
+          "2024-04-30": 0.09339794720051753,
+          "2024-05-31": 0.09567661960929041,
+          "2024-06-30": 0.10876470032140317,
+          "2024-07-31": 0.10569428675087034,
+          "2024-08-31": 0.10398372583437698,
+          "2024-09-30": 0.1350986360958546,
+          "2024-10-31": 0.12431671125693877,
+          "2024-11-30": 0.12602667685016056,
+          "2024-12-31": 0.11601280874347997,
+          "2025-01-31": 0.15280591014243972,
+          "2025-02-28": 0.14796884653620834,
+          "2025-03-31": 0.14033717286930414,
+          "2025-04-30": 0.1849405438427889,
+          "2025-05-31": 0.2125671649712768,
+          "2025-06-30": 0.2483219560410217,
+          "2025-07-31": 0.23194977619025248,
+          "2025-08-31": 0.2612391887089893,
+          "2025-09-30": 0.32664587329553996,
+          "2025-10-31": 0.3399044069439321,
+          "2025-11-30": 0.3182094277505094,
+          "2025-12-31": 0.3384698668231665
+        },
+        "60m": {
+          "2023-12-31": 0.16521846822268937,
+          "2024-01-31": 0.15228582950245806,
+          "2024-02-29": 0.15608422225628704,
+          "2024-03-31": 0.16465907391381673,
+          "2024-04-30": 0.15749877637580356,
+          "2024-05-31": 0.17405042680598237,
+          "2024-06-30": 0.1637899292090863,
+          "2024-07-31": 0.16533501895607694,
+          "2024-08-31": 0.16213091736455643,
+          "2024-09-30": 0.1738784828366451,
+          "2024-10-31": 0.16987040917054252,
+          "2024-11-30": 0.1714571184510072,
+          "2024-12-31": 0.16170384559228657,
+          "2025-01-31": 0.16327915078089816,
+          "2025-02-28": 0.17019131466412962,
+          "2025-03-31": 0.18136649989328912,
+          "2025-04-30": 0.16450478499001608,
+          "2025-05-31": 0.16443051436486367,
+          "2025-06-30": 0.16193142936528226,
+          "2025-07-31": 0.14399273463973272,
+          "2025-08-31": 0.1388633452764505,
+          "2025-09-30": 0.16961751409640335,
+          "2025-10-31": 0.1834609970321195,
+          "2025-11-30": 0.18113997136166038,
+          "2025-12-31": 0.17102501908728884
+        }
+      }
+    },
+    "summary": {
+      "benchmark": {
+        "annualized_return": 0.17429517119446186,
+        "annualized_volatility": 0.16570536474528486,
+        "best_year": 0.3122383908497526,
+        "cagr": 0.17305981336253518,
+        "end_balance": 3.056617526518034,
+        "expected_return": 0.17429517119446186,
+        "max_drawdown": -0.23927178828328322,
+        "sharpe_ex_post": 0.9311416768650657,
+        "sortino": 1.488018485434294,
+        "start_balance": 1.0,
+        "worst_year": -0.1817536936501497
+      },
+      "optimized": {
+        "annualized_return": 0.19915088583907214,
+        "annualized_volatility": 0.1263693277734419,
+        "best_year": 0.4714725635582824,
+        "cagr": 0.20907835977980493,
+        "end_balance": 3.777297031150259,
+        "expected_return": 0.1991508858390721,
+        "max_drawdown": -0.1877909254371437,
+        "sharpe_ex_post": 1.417676971110097,
+        "sortino": 2.76612181831608,
+        "start_balance": 1.0,
+        "worst_year": -0.13965763438364198
+      },
+      "provided": {
+        "annualized_return": 0.20379930542119046,
+        "annualized_volatility": 0.1317386761911807,
+        "best_year": 0.42647214187400473,
+        "cagr": 0.21377954134244415,
+        "end_balance": 3.881313217948627,
+        "expected_return": 0.20379930542119049,
+        "max_drawdown": -0.2118333957444012,
+        "sharpe_ex_post": 1.3951810564306777,
+        "sortino": 2.5989651054772915,
+        "start_balance": 1.0,
+        "worst_year": -0.17311514595773925
+      }
+    },
+    "trailing_returns": {
+      "benchmark": {
+        "10y": null,
+        "1y": 0.1859775180068537,
+        "3m": 0.034315167774918276,
+        "3y": 0.23175016338025878,
+        "3y_annualized_volatility": 0.11925049991711036,
+        "5y": 0.14505280012423327,
+        "5y_annualized_volatility": 0.1512915559513147,
+        "full_period": 0.17305981336253518,
+        "ytd": 0.1859775180068537
+      },
+      "optimized": {
+        "10y": null,
+        "1y": 0.4714725635582824,
+        "3m": 0.08669236055822283,
+        "3y": 0.33781849488537863,
+        "3y_annualized_volatility": 0.10070836968907791,
+        "5y": 0.17299981407310439,
+        "5y_annualized_volatility": 0.12190718231070131,
+        "full_period": 0.20907835977980493,
+        "ytd": 0.4714725635582824
+      },
+      "provided": {
+        "10y": null,
+        "1y": 0.42647214187400473,
+        "3m": 0.07742679356697035,
+        "3y": 0.3384698668231665,
+        "3y_annualized_volatility": 0.10071209644093844,
+        "5y": 0.17102501908728884,
+        "5y_annualized_volatility": 0.12645795631280882,
+        "full_period": 0.21377954134244415,
+        "ytd": 0.42647214187400473
+      }
+    }
+  },
+  "return_decomposition": {
+    "optimized": {
+      "contribution_GLD": 1.6688635259385898,
+      "contribution_QQQ": 1.1084335052116698
+    },
+    "provided": {
+      "contribution_GLD": 1.442757958496759,
+      "contribution_QQQ": 1.4385552594518662
+    }
+  },
+  "risk_decomposition": {
+    "optimized": {
+      "GLD": 0.5442076702893217,
+      "QQQ": 0.45579232971067846
+    },
+    "provided": {
+      "GLD": 0.365340932149182,
+      "QQQ": 0.634659067850818
+    }
+  }
+}
