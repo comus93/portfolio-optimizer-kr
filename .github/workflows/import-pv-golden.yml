@@ -1,0 +1,39 @@
+name: Import PV golden reference
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-pv-golden.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          path: target
+
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          repository: comus93/llm_share
+          path: source
+
+      - name: Copy golden reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/tests/golden/pv
+          cp source/projects/portfoliovisualizer/optimizations/260828_PTF_maxsharpe.md target/tests/golden/pv/
+          cp source/projects/portfoliovisualizer/optimizations/260828_PTF_maxsharpe.jpg target/tests/golden/pv/
+          cd target
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/golden/pv/260828_PTF_maxsharpe.md tests/golden/pv/260828_PTF_maxsharpe.jpg
+          git diff --cached --quiet && exit 0
+          git commit -m "Add PV golden reference"
+          git push
