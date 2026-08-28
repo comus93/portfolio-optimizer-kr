@@ -6,15 +6,15 @@
 
 핵심 원칙은 다음과 같다.
 
-> **결과의 의미를 바꾸는 연구 조건은 LLM이 임의로 채우지 않는다. 필요한 값이 없으면 사용자에게 묻고, 사용자가 선택할 수 있도록 필요한 선택지만 간결하게 제시한다.**
+> **결과의 의미를 바꾸는 연구 조건은 LLM이 임의로 채우지 않는다. 다만 프로젝트가 명시적으로 정한 default가 있는 항목은 그 default를 안내하고, 사용자가 별도 값을 지정하지 않으면 default를 적용한다.**
 
 이 문서는 optimizer의 금융 계산 규칙이 아니라 **연구 실행 전 사용자-LLM 상호작용 계약**이다.
 
 ---
 
-## 1. 실행 전 필수 결정값
+## 1. 실행 전 결정 및 확정 규칙
 
-다음 항목은 실제 persisted research run을 만들기 전에 확정되어야 한다.
+다음 항목은 실제 persisted research run을 만들기 전에 사용자 입력 또는 프로젝트 default에 의해 결정되어야 한다.
 
 ### 1.1 연구 대상 자산
 
@@ -75,15 +75,25 @@ LLM은 rebalancing 주기를 임의로 정하지 않는다.
 
 ### 1.4 Analysis Period
 
-분석 시작일과 종료일은 결과의 Expected Return, covariance, correlation, Efficient Frontier를 직접 바꾸므로 사용자 확인 없이 확정하지 않는다.
+분석 기간은 Expected Return, covariance, correlation, Efficient Frontier를 직접 바꾸므로 사용자에게 기간 선택 가능성을 안내한다.
 
-사용자가 기간을 주지 않은 경우 LLM은 연구 목적에 맞는 기간을 **제안**할 수 있지만, 실행 전 사용자에게 확인받는다.
+프로젝트 default는 다음과 같다.
 
-예:
+> **사용자가 별도의 시작일/종료일을 지정하지 않으면, optimizer universe의 모든 자산에 유효한 데이터가 존재하는 공통 교집합 전체 기간을 사용한다.**
 
-> 기존 PV 비교와 맞추기 위해 2016-08 ~ 2026-07을 제안한다. 이 기간으로 실행할까?
+따라서 Analysis Period는 다음 방식으로 처리한다.
 
-특정 자산의 짧은 listing history 때문에 실제 공통 분석 기간이 줄어들 수 있으면 실행 후 반드시 별도로 보고한다.
+- 사용자가 시작일/종료일을 지정하면 그 기간을 우선한다.
+- 사용자가 별도 기간을 지정하지 않으면 공통 데이터 교집합 전체 기간을 자동 적용한다.
+- LLM은 기본값을 숨기지 않고, 기간을 물을 때 교집합 전체 기간이 default임을 함께 안내한다.
+- benchmark는 optimizer universe의 공통 기간을 불필요하게 축소시키지 않는다.
+- 실제 실행 후에는 계산에 사용된 실제 data coverage의 시작일, 종료일, observation 수를 보고한다.
+
+사용자 확인 예:
+
+> 분석 기간은 별도로 지정할까? 별도 지정이 없으면 모든 자산의 데이터가 존재하는 공통 교집합 전체 기간을 기본으로 사용할게.
+
+특정 자산의 짧은 listing history 때문에 공통 분석 기간이 크게 줄어들면 실행 후 반드시 별도로 보고한다.
 
 ---
 
@@ -123,15 +133,15 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 
 사용자가 이미 제공한 정보를 다시 묻지 않는다.
 
-빠진 필수 결정값만 한 번에 묶어서 간결하게 질문한다.
+빠진 필수 결정값과 default가 있는 확인 항목만 한 번에 묶어서 간결하게 질문한다.
 
 예를 들어 사용자가 자산, 기존 비중, min/max만 제공했다면 다음 정도면 충분하다.
 
-> 종목/비중/제약은 확정됐어. 실행 전에 세 가지만 정하면 돼.  
+> 종목/비중/제약은 확정됐어. 실행 전에 다음만 정하면 돼.  
 > 1. Optimization Goal: Maximum Sharpe / Maximum Return at target annual vol  
 > 2. Maximum Return이면 허용 annual vol (%)  
 > 3. Rebalancing: Monthly / Annual  
-> 4. Analysis Period: 직접 지정하거나 내가 적절한 기간을 제안
+> 4. Analysis Period: 별도 지정 가능. 지정하지 않으면 모든 자산의 공통 데이터 교집합 전체 기간을 사용
 
 이미 연구 목적상 명확한 값은 선택지를 불필요하게 늘리지 않는다.
 
@@ -147,9 +157,11 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 - Optimization Goal 확정
 - Maximum Return at Target Volatility인 경우 target annual volatility 확정
 - Rebalancing frequency 확정
-- Analysis period 확정
+- Analysis Period가 사용자 지정 기간 또는 project default인 공통 데이터 교집합 전체 기간 중 하나로 결정됨
 
-필수값이 미확정이면 experiment YAML을 초안으로 작성할 수는 있지만 **실행 가능한 최종 experiment로 간주하지 않는다.**
+사용자가 Analysis Period를 별도로 지정하지 않은 것은 미확정 상태가 아니다. 이 경우 **공통 데이터 교집합 전체 기간이 자동으로 확정값**이 된다.
+
+그 외 필수값이 미확정이면 experiment YAML을 초안으로 작성할 수는 있지만 **실행 가능한 최종 experiment로 간주하지 않는다.**
 
 특히 미확정 experiment를 `control/execute.yaml`의 실제 실행 대상으로 넘기거나 Agent에게 실행 요청하지 않는다.
 
@@ -167,7 +179,7 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 Assets / provided weights / bounds
 Optimization Goal
 Target Volatility (해당 시)
-Analysis Period
+Analysis Period 또는 common-overlap default
 Rebalancing
 Benchmark
 Risk-free convention
@@ -183,6 +195,8 @@ Risk-free convention
 
 > **이 값을 다르게 선택하면 Efficient Frontier, 최적 비중 또는 historical portfolio 성과의 의미가 달라지는가?**
 
-그렇다면 사용자에게 확인한다.
+그렇다면 사용자에게 확인하거나, 프로젝트가 명시적으로 정한 default가 있으면 그 default를 안내해 적용한다.
+
+Analysis Period의 default는 **optimizer universe의 공통 데이터 교집합 전체 기간**이다.
 
 단순한 출력 형식, 저장 경로, frontier sampling density처럼 연구 결론의 의미를 바꾸지 않는 구현 세부사항은 project default를 사용할 수 있다.
