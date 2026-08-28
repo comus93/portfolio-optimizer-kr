@@ -2,7 +2,9 @@
 
 ## 1. Purpose
 
-`portfolio-optimizer-kr`는 국내 ETF와 해외 ETF를 동일한 framework에서 비교하고 optimization할 수 있는 연구 도구다.
+`portfolio-optimizer-kr`는 **Portfolio Visualizer가 직접 지원하지 않는 국내 상장 ETF도 동일한 mean-variance optimization framework에서 분석할 수 있게 만드는 것**을 1차 목표로 한다.
+
+해외 ETF도 동일 framework에서 다룰 수 있으며, KRW 기준 통화 정규화를 통해 서로 다른 국가의 자산을 하나의 portfolio에서 통합 optimization하는 기능도 지원한다. 다만 cross-country optimization은 핵심 목적이라기보다 국내 ETF까지 optimizer universe를 확장한 결과로 제공되는 feature다.
 
 목표는 Portfolio Visualizer(PV)를 복제하는 것이 아니라, 실제 portfolio research에 필요한 핵심 optimization과 analytics를 자체적으로 일관되게 수행하는 것이다.
 
@@ -26,6 +28,7 @@ v1은 다음을 구현한다.
 - asset min/max weight constraints
 - Efficient Frontier 생성
 - Provided / Optimized / Benchmark historical performance 비교
+- monthly / yearly rebalancing 선택
 - 핵심 performance / risk / benchmark analytics
 - machine-readable result와 표 형태 output
 - PV golden reference 기반 sanity/parity test
@@ -51,6 +54,7 @@ Sortino, MDD 등은 optimization objective가 아니라 performance metric으로
 ```text
 Assets
 Analysis Period
+Portfolio Rebalancing Period # monthly | yearly
 Provided Portfolio Weights
 Asset Min Weight
 Asset Max Weight
@@ -61,13 +65,18 @@ Risk-free Configuration
 Frontier Points
 ```
 
+`Analysis Period`는 연구 대상 날짜 구간이고, `Portfolio Rebalancing Period`는 historical portfolio performance를 만들 때 target weights로 복귀하는 주기다.
+
 기본값:
 
 ```text
 Market Data Source = FDR
 Return Frequency = Monthly
+Portfolio Rebalancing Period = Monthly
 Frontier Points = 100
 Risk-free Source = U.S. 3-Month Treasury Bill Rate
+Optimization Modeling = CVXPY
+Numerical Solver = CLARABEL
 Long Only = true
 Fully Invested = true
 ```
@@ -231,7 +240,7 @@ max_weight = 1
 
 Constraint 자체가 infeasible하면 optimization을 실행하지 않고 명시적인 error를 반환한다.
 
-## 10. Optimization Objectives
+## 10. Optimization Objectives and Solver
 
 ### 10.1 Maximum Sharpe Ratio
 
@@ -240,6 +249,8 @@ Constraint 자체가 infeasible하면 optimization을 실행하지 않고 명시
 ```text
 Sharpe = (Expected Return - Risk-free Rate) / Volatility
 ```
+
+직접 nonlinear ratio optimization을 수행하지 않고, convex variable transformation을 이용해 CVXPY에서 풀 수 있는 동등한 형태로 변환한다.
 
 출력:
 
@@ -257,6 +268,8 @@ maximize Expected Return
 subject to Volatility <= Target Annual Volatility
 ```
 
+CVXPY에서 second-order-cone compatible constraint로 표현한다.
+
 출력:
 
 - optimized weights
@@ -266,19 +279,35 @@ subject to Volatility <= Target Annual Volatility
 
 Target volatility가 feasible minimum volatility보다 낮으면 infeasible로 처리한다.
 
-### 10.3 Solver Requirements
+### 10.3 Optimization Backend
 
-구현 solver는 표준 numerical optimization library를 사용할 수 있다.
+v1의 optimization modeling layer는 **CVXPY**를 사용한다.
+
+기본 numerical solver는 **CLARABEL**로 고정한다.
+
+선정 이유:
+
+- Efficient Frontier의 minimum-variance 문제는 convex QP다.
+- Target Volatility 문제는 second-order cone constraint를 포함할 수 있다.
+- CLARABEL은 QP와 SOCP를 모두 처리할 수 있어 v1 objective를 하나의 solver로 일관되게 처리할 수 있다.
+- CVXPY의 문제 표현을 사용하면 objective와 constraints가 코드에서 명시적으로 드러난다.
+
+PyPortfolioOpt는 core dependency로 사용하지 않는다. 공식 구현과 결과 비교를 위한 reference로 사용할 수 있다.
+
+SciPy SLSQP는 v1 primary solver로 사용하지 않는다. 범용 nonlinear solver가 필요한 objective가 향후 추가될 경우 별도 검토한다.
 
 Solver 성공 flag만 신뢰하지 않고 결과에 대해 다음을 재검증한다.
 
+- solver status가 optimal 또는 허용된 optimal-inaccurate 상태인지
 - weight sum
 - min/max bounds
 - long-only constraint
 - target volatility constraint
 - finite objective/statistics
 
-동일 입력에서 deterministic한 결과를 만들어야 한다.
+허용 tolerance는 명시적인 공통 설정으로 관리한다.
+
+동일 입력과 설정에서 deterministic한 결과를 만들어야 한다.
 
 ## 11. Efficient Frontier
 
@@ -321,11 +350,32 @@ subject to
 
 Provided Portfolio와 Optimized Portfolio는 동일한 monthly asset return matrix를 이용한다.
 
-각 portfolio는 target weights로 **monthly rebalanced**된 것으로 계산한다.
+Historical portfolio return은 `Portfolio Rebalancing Period`에 따라 계산한다.
+
+### Monthly
+
+매월 각 period 시작 시 target weights로 rebalancing한 것으로 계산한다.
 
 ```text
-portfolio_return_t = sum(weight_i * asset_return_i,t)
+portfolio_return_t = sum(target_weight_i * asset_return_i,t)
 ```
+
+### Yearly
+
+첫 active period에는 target weights로 시작한다.
+
+이후 같은 calendar year 안에서는 매월 rebalancing하지 않고 자산별 수익률에 따라 weights가 drift하도록 둔다.
+
+```text
+portfolio_return_t = sum(weight_i,t * asset_return_i,t)
+
+weight_i,t+1 = weight_i,t * (1 + asset_return_i,t)
+               / (1 + portfolio_return_t)
+```
+
+새 calendar year의 첫 available monthly period가 시작될 때 target weights로 다시 rebalancing한다.
+
+Analysis Period가 연도 중간에 시작하면 첫 active period에서 target weights를 적용하고, 다음 calendar year부터 정상적인 annual rebalance schedule을 따른다.
 
 Optimization에 사용한 expected statistics와 historical realized portfolio series는 별도 저장한다.
 
@@ -515,16 +565,18 @@ Annualized Active Return / Tracking Error
 
 ## 15. Return Decomposition
 
-monthly rebalanced portfolio의 각 period에서 asset contribution은 다음과 같다.
+Portfolio Return Decomposition은 실제 historical rebalancing schedule을 반영한 period별 시작 weight를 사용한다.
+
+각 period에서 asset contribution은 다음과 같다.
 
 ```text
-asset_return_contribution_i,t = weight_i * asset_return_i,t
+asset_return_contribution_i,t = weight_i,t * asset_return_i,t
 ```
 
 Terminal wealth에 대한 누적 monetary contribution은 다음 방식으로 계산한다.
 
 ```text
-asset_pnl_i,t = portfolio_value_(t-1) * weight_i * asset_return_i,t
+asset_pnl_i,t = portfolio_value_(t-1) * weight_i,t * asset_return_i,t
 cumulative_asset_pnl_i = sum(asset_pnl_i,t)
 ```
 
@@ -679,10 +731,13 @@ v1 core는 최소한 다음을 자동 테스트한다.
 15. Efficient Frontier의 target expected return이 순차 증가한다.
 16. 각 frontier point가 모든 weight constraints를 만족한다.
 17. 동일 입력과 설정으로 반복 실행하면 동일 결과가 나온다.
-18. return decomposition 합이 total portfolio gain과 일치한다.
-19. risk contribution 합이 100%와 일치한다.
-20. benchmark가 있을 때 active return / tracking error / information ratio가 독립 계산 fixture와 일치한다.
-21. PV golden run과 비교 report를 생성할 수 있다.
+18. monthly rebalancing fixture에서 매월 target weights가 복원되고 portfolio return이 hand calculation과 일치한다.
+19. yearly rebalancing fixture에서 연중 weight drift가 유지되고 새 calendar year에 target weights가 복원된다.
+20. monthly와 yearly rebalancing의 historical return series가 의도한 경우 서로 다르게 생성된다.
+21. return decomposition 합이 total portfolio gain과 일치한다.
+22. risk contribution 합이 100%와 일치한다.
+23. benchmark가 있을 때 active return / tracking error / information ratio가 독립 계산 fixture와 일치한다.
+24. PV golden run과 비교 report를 생성할 수 있다.
 
 ## 22. Implementation Order
 
@@ -700,6 +755,8 @@ v1 core는 최소한 다음을 자동 테스트한다.
 
 ### P1 - Optimizer
 
+- CVXPY model
+- CLARABEL solver integration
 - constraints
 - Maximum Sharpe
 - Target Volatility
@@ -716,6 +773,7 @@ v1 core는 최소한 다음을 자동 테스트한다.
 
 - Provided Portfolio series
 - Optimized Portfolio series
+- monthly / yearly rebalancing
 - Benchmark series
 
 ### P4 - Basic Analytics
