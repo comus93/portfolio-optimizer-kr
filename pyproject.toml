@@ -1,0 +1,31 @@
+[project]
+name = "portfolio-optimizer-kr"
+version = "0.1.0"
+description = "Mean-variance portfolio optimizer with first-class support for Korean investment assets."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "clarabel>=0.9",
+    "cvxpy>=1.6",
+    "finance-datareader>=0.9.100",
+    "numpy>=1.26",
+    "osqp>=0.6",
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "golden: tests using Portfolio Visualizer golden-reference files",
+    "integration: tests that may require external data/network access",
+]
