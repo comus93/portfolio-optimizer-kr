@@ -259,21 +259,24 @@ User + LLM
 interaction requirement / schema / acceptance scenario 확정
   ↓
 LLM
-  - control/execute.yaml contract
-  - context.yaml contract
-  - single research loop contract test
-  - 필요한 최소 skeleton
+  - control/execute.yaml contract 정의
+  - context.yaml contract 정의
+  - pytest contract test 작성
+  - 초기 skeleton code 직접 개발
   ↓
 Agent
-  - repository 실제 구조에 맞춘 구현 보강
+  - LLM skeleton을 repository 실제 구조에 맞게 구현 보강
   - dependency / CLI wiring
-  - end-to-end 실행 및 디버깅
-  - regression test
+  - 실제 실행 및 디버깅
+  - integration / UI hardening
+  - full regression test
 ```
 
-Agent는 구현 편의를 위해 LLM이 확정한 schema나 contract test를 임의로 약화하거나 다른 실행 의미론을 만들지 않는다. 계약에 문제가 있으면 `ai-share/agent-to-llm.md`로 blocker를 제기한다.
+LLM의 역할은 분석 설계에서 끝나지 않는다. 확정한 계약을 코드로 고정하기 위해 테스트 코드와 초기 동작 가능한 뼈대 코드를 직접 작성한다.
 
-LLM 역시 optimizer core 구현 세부를 불필요하게 선점하지 않는다. 계약과 최소 skeleton을 넘은 실제 환경 hardening은 Agent 책임으로 둔다.
+Agent는 구현 편의를 위해 LLM이 확정한 schema, contract test, 초기 실행 의미론을 임의로 약화하거나 변경하지 않는다. 계약 자체에 문제가 있으면 `ai-share/agent-to-llm.md`로 blocker를 제기한다.
+
+Agent는 LLM이 작성한 초기 코드를 실제 dependency와 repository 환경에서 완성하고, end-to-end 실행과 regression을 통해 production-quality 수준으로 hardening한다.
 
 ## 7. Single Research Loop v0
 
