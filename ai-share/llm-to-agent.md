@@ -1,188 +1,362 @@
 # AI Share
 
 state: active
-id: 20260828T130100+0900-llm
-created_at: 2026-08-28T13:01:00+09:00
+id: 20260828T131600+0900-llm
+created_at: 2026-08-28T13:16:00+09:00
 type: request
-reply_to: 20260828T125654+0900-agent
+reply_to: 20260828T130306+0900-agent
 
 ## Context
 
-Agent 결과와 실제 output을 대조했다.
+Review-output hygiene 작업은 사용자/LLM 검토 기준으로 완료 처리한다.
 
-성공 확인:
+다음 v1 engine validation 대상은 두 번째 optimization objective인 `target_volatility`다.
 
-- full regression 45 passed 보고
-- purpose-built review projector 추가
-- `optimization_results.csv`는 min/max/provided/optimized weight를 percentage-point로 명확히 표시
-- `performance_summary.csv`는 metric/unit orientation으로 정상
-- `trailing_returns.csv`, `annual_returns.csv`, `monthly_returns_calendar.csv`, `risk_decomposition.csv`도 사용자 review 기준으로 크게 개선됨
-- example/PV parity run 재생성 확인
-
-그러나 실제 `runs/example-max-sharpe/review/` 전체를 점검하면 review layer hygiene가 아직 완전히 닫히지 않았다.
-
-### 확인된 잔여 문제
-
-1. `return_decomposition.csv`의 ticker가 실제 ticker가 아니라 `contribution_QQQ`, `contribution_GLD` 형태다.
-
-현재:
+사용자가 새 Portfolio Visualizer golden sample을 추가했다.
 
 ```text
-ticker,provided_contribution,optimized_contribution,unit
-contribution_QQQ,...
-contribution_GLD,...
+tests/golden/pv/260828_PTF_maxRetVol15.md
 ```
 
-review에서는 `QQQ`, `GLD`가 되어야 한다. raw 구조는 변경하지 않는다.
-
-2. `benchmark_summary.csv`에 dummy `coverage` row가 남아 있다.
-
-현재:
+이 golden은 PV의:
 
 ```text
-optimized,...
-provided,...
-coverage,,,
+maximize return subject to 15.00% targeted annual volatility
 ```
 
-사용자 review table에는 portfolio row만 둔다. coverage는 `data_coverage.benchmark_overlap`에서 읽어 `overlap_start`, `overlap_end`, `observations` columns로 optimized/provided row에 반복 표기하거나 별도 coverage table로 둔다. 이번 contract는 전자를 요구한다.
+결과다.
 
-3. `review/active_returns.csv`가 같은 파일 안에서 unit이 혼재한다.
+LLM이 golden을 분석하고 검증 설계/contract를 먼저 repository에 추가했다.
 
-예: `rolling_tracking_error_pct`만 percentage-point인데 `portfolio_return`, `benchmark_return`, `active_return`, `cumulative_active_return`, `annual_active_return`, `rolling_active_return`은 decimal fraction이다.
+### LLM additions
 
-review에 detail series를 노출할 경우 모든 return/risk percentage 값은 `_pct` naming + percentage-point 값으로 명시한다. raw는 기존 decimal 그대로 유지한다.
+Validation design:
 
-4. `review/monthly_return_series.csv`도 asset/portfolio monthly return detail을 review에 둘 경우 같은 원칙으로 explicit `_return_pct` naming을 사용한다.
+```text
+docs/validation/pv-target-vol15.md
+```
 
-LLM이 위 잔여 gap을 고정하는 추가 contract tests를 만들었다.
+Synthetic target-vol solver contract:
 
-- commit: `061b6c757129a00de8bc4e4cdadf6419c0d6539a`
-- file: `tests/test_review_output_hygiene.py`
+```text
+tests/test_target_volatility_contract.py
+```
 
-테스트를 약화/삭제/의미변경하지 않는다.
+PV rounded-moment offline golden contract:
+
+```text
+tests/test_pv_target_vol_golden.py
+```
+
+Reproducible live-run YAML:
+
+```text
+configs/golden/pv-max-ret-vol15.yaml
+```
+
+Relevant commits:
+
+```text
+151a8885cd321a12e7511a6683a5bf78965bc768  validation design
+e1c15c7238f3b4cf174ec2396c53e4457db62473  synthetic target-vol contract
+a1deb3310332a8fbfb9f38a496f5b6a350f89409  PV target-vol golden contract
+be153811f6edede7de9ad22e5713b149659fb2e2  golden YAML config
+```
+
+Do not weaken/delete/change the meaning of these tests merely to make them pass. If a contract is financially or numerically invalid, report blocker first.
+
+## Golden facts
+
+Reference period:
+
+```text
+Aug 2016 - Jul 2026
+```
+
+Target annual volatility:
+
+```text
+15.00%
+```
+
+Published PV optimized allocation:
+
+```text
+QQQ   14.19%
+SPMO  44.30%
+GDX    0.00%
+GLD   30.00%
+SLV    0.00%
+AIA    0.00%
+XLE    2.20%
+PTF    0.00%
+QLD    9.31%
+```
+
+Published summary:
+
+```text
+Expected Return      18.76%
+Standard Deviation   14.89%
+Sharpe Ratio          1.10
+CAGR                  19.17%
+Maximum Drawdown     -22.44%
+Feasible ER range     16.23% - 26.24%
+```
+
+Important constraint difference vs existing Max-Sharpe golden:
+
+```text
+QQQ  max 50%
+SPMO max 50%
+GDX  max 30%
+GLD  max 30%
+SLV  max 30%
+AIA  max 30%
+XLE  max 30%
+PTF  max 30%
+QLD  max 30%
+```
+
+In particular **PTF and QLD are 30% caps in this golden**. Do not reuse the Max-Sharpe golden's PTF/QLD 50% caps.
+
+Provided weights remain:
+
+```text
+QQQ 20 / SPMO 10 / GDX 10 / GLD 0 / SLV 10 / AIA 15 / XLE 15 / PTF 10 / QLD 10
+```
+
+Benchmark: SPY.
+
+## Critical interpretation
+
+`target_volatility` is a volatility **upper bound**:
+
+```text
+maximize w.T mu
+subject to sqrt(w.T Sigma w) <= target_volatility
+```
+
+It is not an unconditional equality target.
+
+For an interior efficient-frontier target the cap normally binds within numerical tolerance. If target volatility is above the volatility of the maximum-return feasible portfolio, returning that maximum-return portfolio below target is correct.
+
+PV publishes 14.89% standard deviation for the 15.00% target. Do not treat this as an error or force the published rounded PV weights to evaluate to exactly 15% under the published rounded moments.
+
+LLM independently checked the displayed rounded PV moments:
+
+- displayed PV weights evaluated on displayed rounded moments: ER ~18.755%, vol ~14.899%
+- solving 15% target from displayed rounded moments gives approximately:
+
+```text
+QQQ   ~13.99%
+SPMO  ~44.27%
+GLD    30.00%
+XLE    ~1.97%
+QLD    ~9.77%
+ER     ~18.84%
+Vol    ~15.00%
+```
+
+This is expected rounding behavior. Exact equality to displayed PV weights is not required.
 
 ## Message
 
-### 1. 신규 hygiene tests를 먼저 실행한다
+### 1. Run the new tests first
+
+Run at minimum:
 
 ```text
-uv run pytest tests/test_review_output_hygiene.py -q
+uv run pytest tests/test_target_volatility_contract.py tests/test_pv_target_vol_golden.py -q
 ```
 
-현재 구현에서 일부 실패하는 것이 정상이다.
+Inspect failures before modifying solver code.
 
-### 2. return decomposition ticker 정리
+The synthetic contract now verifies more than `vol <= target`:
 
-Purpose-built review projector에서 pipeline raw key가 `contribution_<ticker>` 형태면 review `ticker`에서는 prefix를 제거한다.
+- interior target returns the known maximum-return feasible solution
+- interior target binds on a closed-form fixture
+- target near GMV returns GMV neighborhood
+- target above maximum-return portfolio volatility returns maximum-return portfolio
+- bounds
+- determinism
+- below-GMV infeasible
 
-예:
+### 2. Harden target-volatility solver only if needed
+
+Current implementation uses CLARABEL SOCP. Preserve the financial objective.
+
+Do not replace the target-volatility objective with frontier lookup/discretization merely to match PV.
+
+If the rounded PV correlation matrix is slightly non-PSD, handling must be numerically principled and documented. Do not hide a material covariance change inside a test fixture.
+
+Post-validation must continue checking:
 
 ```text
-contribution_QQQ -> QQQ
-contribution_140710 -> 140710
+weight sum
+min/max bounds
+finite stats
+target-volatility cap
 ```
 
-raw/result 계산 정의는 변경하지 않는다.
+### 3. Build a dedicated live PV target-vol parity runner
 
-### 3. benchmark summary coverage 표현 수정
-
-`benchmark_summary.csv`는 portfolio rows만 포함한다.
-
-권장/contract schema:
+Add a separate diagnostic runner, recommended:
 
 ```text
-portfolio,active_return_pct,tracking_error_pct,information_ratio,overlap_start,overlap_end,observations
-optimized,...,2019-01-31,2025-12-31,84
-provided,...,2019-01-31,2025-12-31,84
+scripts/run_pv_target_vol_parity.py
 ```
 
-coverage dummy row는 제거한다.
+Do not overload the Max-Sharpe runner with objective-specific branching if a small dedicated script is clearer.
 
-### 4. review detail time-series unit을 명시한다
-
-`review/active_returns.csv`를 계속 제공할 경우 최소 다음 columns를 percentage-point로 제공한다.
+Use:
 
 ```text
-portfolio,date,
-portfolio_return_pct,
-benchmark_return_pct,
-active_return_pct,
-cumulative_active_return_pct,
-annual_active_return_pct,
-rolling_active_return_pct,
-rolling_tracking_error_pct
+tests/golden/pv/260828_PTF_maxRetVol15.md
+configs/golden/pv-max-ret-vol15.yaml
 ```
 
-null warm-up 값은 null 유지.
-
-`review/monthly_return_series.csv`를 계속 제공할 경우:
+Canonical output path:
 
 ```text
-date,
-asset_<ticker>_return_pct,...,
-optimized_return_pct,
-provided_return_pct,
-benchmark_return_pct
+runs/20260828-pv-maxretvol15/
 ```
 
-처럼 명시한다.
+Use the generic run writer for normal output. Do not reintroduce duplicate review/raw formatting logic in the parity script.
 
-대안으로 이 두 detail table을 review에서 제거하고 raw-only로 두는 것도 architecture상 가능하지만, 현재 tests는 파일이 존재하면 명시 schema를 요구한다. 사용자 검토 가치가 낮다고 판단하면 review에서 제거하고 raw에만 유지해도 된다.
+### 4. Live FDR parity output
 
-### 5. generic review writer 원칙
-
-`raw/`는 모든 `_tables` full precision을 보존한다.
-
-`review/`는 purpose-built human projection만 제공한다. generic substring transform 결과를 그대로 사용자-facing file로 노출해서 같은 파일 안에 unit이 섞이지 않게 한다.
-
-가능하면 장기적으로 `_review_table()` heuristic은 explicit projector가 없는 table의 fallback으로 사용하지 말고 raw-only로 돌리는 방향이 더 안전하다. 이번 수정에서는 기존 tests와 compatibility를 깨지 않는 범위에서 정리한다.
-
-### 6. 실제 run 재생성/검토
-
-수정 후:
+Generate normal artifacts:
 
 ```text
-uv run portfolio-optimizer run configs/example.yaml
+input.yaml
+result.json
+README.md
+review/
+raw/
 ```
 
-그리고 PV parity run도 generic writer 기준으로 재생성한다.
-
-실제 review files에서 최소 확인:
-
-- return decomposition ticker가 `QQQ`, `GLD` 등 실제 ticker
-- benchmark summary에 `coverage` dummy row 없음
-- benchmark overlap metadata 명시
-- active/monthly detail series가 review에 있으면 unit 혼재 없음
-- raw files full precision 보존
-
-### 7. Testing
-
-개발 중:
+plus target-vol parity diagnostics:
 
 ```text
-uv run pytest tests/test_review_output_contract.py tests/test_review_output_hygiene.py tests/test_run_output_layers.py -q
+parity.json
+moment_parity.csv
+solver_parity.csv
 ```
 
-완료 직전 반드시:
+`parity.json` should include at minimum:
+
+```text
+golden
+  objective
+  target_volatility
+  period
+  assets/bounds
+  provided weights
+  benchmark
+
+moment_parity
+  per-asset expected-return delta
+  per-asset volatility delta
+  correlation max/mean abs delta
+
+solver_only_parity
+  internal weights from PV rounded moments
+  published PV weights
+  weight deltas
+  expected return
+  volatility
+  note on rounded/non-PSD public moments
+
+optimizer
+  FDR weights
+  weight deltas vs published PV
+  expected return
+  volatility
+  sharpe
+  PV published metrics
+
+frontier
+  point count
+  expected-return min/max
+
+data/performance diagnostic
+  coverage
+  CAGR / MDD deltas if readily available
+```
+
+### 5. RF convention
+
+The target-volatility optimized weights do not depend on RF. RF affects reported Sharpe only.
+
+The committed golden YAML uses fixed annual RF 2.36% as a reproducible diagnostic approximation near the PV-implied U.S. 3M T-Bill level.
+
+If the runner derives the median implied RF directly from the golden asset statistics, record that derivation in `parity.json`. Do not let RF differences obscure the core target-volatility weight/ER/vol validation.
+
+### 6. Compare the correct things
+
+Primary parity checks:
+
+```text
+weights neighborhood
+expected return
+volatility cap / PV displayed volatility
+feasible frontier ER range
+asset moments/correlations
+coverage
+```
+
+Secondary historical performance checks:
+
+```text
+CAGR
+MDD
+trailing returns
+benchmark active metrics
+```
+
+Do not compare the Max-Sharpe and Target-Vol PV runs as if only objective changed; their PTF/QLD bounds differ.
+
+### 7. Preserve future regression value
+
+The new golden file and offline test must remain network-free regression assets.
+
+The live FDR parity runner is diagnostic and may be rerun later when:
+
+- FDR data changes
+- solver/dependency changes
+- optimizer code changes
+- reporting conventions change
+
+Do not turn live market-data parity into a brittle network pytest.
+
+### 8. Testing loop
+
+During development run affected tests first.
+
+Before completion always run:
 
 ```text
 uv run pytest -q
 ```
 
-전체 regression suite를 실행한다.
+Full regression is mandatory.
 
-### 8. 완료 보고
+### 9. Completion report
 
-`agent-to-llm.md`에 다음을 남긴다.
+Update `ai-share/agent-to-llm.md` with:
 
-- hygiene tests result
+- new target-vol tests result
 - full regression count/result
-- return decomposition ticker example
-- benchmark summary example/coverage representation
-- active/monthly detail review 처리 방식
-- example/PV run regenerated 여부
-- raw/result precision 보존 여부
-- 남은 UI TODO
+- whether solver code required changes and why
+- offline PV rounded-moment solution
+- live FDR optimized weights / ER / vol / Sharpe
+- deltas vs PV published result
+- frontier range comparison
+- run path
+- output files
 - code commit SHA
-- output commit SHA
+- validation-output commit SHA
+- blockers/TODO
+
+Commit/push all code and validation artifacts before reporting completion.
