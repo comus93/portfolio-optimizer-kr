@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -47,6 +48,42 @@ def golden_moments(text: str) -> tuple[pd.Series, pd.Series, pd.DataFrame]:
     return expected, volatility, correlation
 
 
+def _review_pct(frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    for column in out.columns:
+        lowered = column.lower()
+        if any(token in lowered for token in ("return", "volatility", "drawdown", "weight", "contribution", "cagr", "tracking_error")) and "date" not in lowered:
+            out[column + "_pct"] = out.pop(column) * 100
+    return out
+
+
+def write_review_and_raw_layers(result: dict) -> None:
+    raw = OUT / "raw"; review = OUT / "review"
+    raw.mkdir(parents=True, exist_ok=True); review.mkdir(parents=True, exist_ok=True)
+    for path in OUT.glob("*.csv"):
+        if path.name not in {"moment_parity.csv", "solver_parity.csv", "rolling_returns_parity.csv"}:
+            shutil.copy2(path, raw / path.name)
+    tables = result["_tables"]
+    optimized = result["optimization_result"]["weights"]
+    config = result["configuration"]
+    assets = pd.DataFrame(config["assets"])
+    assets["provided_weight"] = assets["symbol"].map(config["provided_weights"])
+    assets["optimized_weight"] = assets["symbol"].map(optimized)
+    _review_pct(assets).to_csv(review / "optimization_results.csv", index=False)
+    performance = tables["portfolio_performance"].set_index("portfolio").T.reset_index(names="metric")
+    _review_pct(performance).to_csv(review / "performance_summary.csv", index=False)
+    trailing = pd.DataFrame(result["portfolio_performance"]["trailing_returns"]).T.rename_axis("portfolio").reset_index()
+    _review_pct(trailing).to_csv(review / "trailing_returns.csv", index=False)
+    for name in ("asset_statistics", "correlations", "efficient_frontier", "annual_returns", "monthly_returns", "drawdowns", "return_decomposition", "risk_decomposition", "benchmark_analytics", "rolling_returns_summary", "rolling_returns_3y", "rolling_returns_5y"):
+        if name in tables:
+            _review_pct(tables[name]).to_csv(review / f"{name}.csv", index=False)
+    monthly = tables["monthly_return_series"].copy()
+    monthly["year"] = pd.to_datetime(monthly["date"]).dt.year; monthly["month"] = pd.to_datetime(monthly["date"]).dt.month
+    _review_pct(monthly.drop(columns="date")).to_csv(review / "monthly_returns.csv", index=False)
+    _review_pct(tables["monthly_returns"]).to_csv(review / "monthly_returns_calendar.csv", index=False)
+    (OUT / "README.md").write_text("# PV Max Sharpe diagnostic run\n\n`result.json` is the full-precision canonical result and `parity.json` holds PV diagnostic comparisons. `raw/` preserves full-precision decimal CSV projections; `review/` contains human-oriented tables with percentage-point columns suffixed `_pct`. Ratios (Sharpe, Sortino, correlation, information ratio) remain unitless. The run uses the 2016-08 to 2026-07 period, SPY benchmark, and the golden-implied fixed RF diagnostic convention.\n", encoding="utf-8")
+
+
 def main() -> None:
     golden = GOLDEN.read_text(encoding="utf-8")
     implied = golden_implied_rf(golden)
@@ -63,6 +100,7 @@ def main() -> None:
     result = analyze_prices(request, prices)
     result["configuration"]["risk_free"]["parity_derivation"] = {"method": "median(expected_return - sharpe * volatility) from PV Efficient Frontier Assets", "per_asset": implied}
     write_analysis_run(result, OUT)
+    write_review_and_raw_layers(result)
     rolling = pd.read_csv(OUT / "rolling_returns_summary.csv")
     pv_rolling = {1: {"provided": (21.22, 81.63, -19.44), "optimized": (19.33, 46.78, -12.33), "benchmark": (15.78, 56.25, -18.17)}, 3: {"provided": (17.83, 39.07, 4.13), "optimized": (17.17, 35.98, 7.03), "benchmark": (14.30, 25.99, 5.05)}, 5: {"provided": (17.07, 23.40, 10.19), "optimized": (16.17, 21.55, 10.16), "benchmark": (14.09, 18.81, 9.16)}, 7: {"provided": (17.61, 25.91, 13.09), "optimized": (16.94, 22.58, 12.02), "benchmark": (14.20, 17.28, 12.09)}}
     parity_rows = []
