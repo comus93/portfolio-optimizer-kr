@@ -9,6 +9,7 @@ from .metrics import (
     monthly_returns_table,
     performance_summary,
     rolling_returns,
+    rolling_return_summary,
     trailing_returns,
 )
 
@@ -24,5 +25,6 @@ __all__ = [
     "monthly_returns_table",
     "performance_summary",
     "rolling_returns",
+    "rolling_return_summary",
     "trailing_returns",
 ]

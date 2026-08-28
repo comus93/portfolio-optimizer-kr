@@ -7,7 +7,7 @@ import pandas as pd
 from portfolio_optimizer_kr.analytics import (
     active_analytics, active_return_metrics, annual_returns, drawdown_episodes,
     monthly_returns_table, performance_summary, return_decomposition,
-    risk_contribution, rolling_returns, trailing_returns,
+    risk_contribution, rolling_return_summary, rolling_returns, trailing_returns,
 )
 from portfolio_optimizer_kr.data import (
     align_common_prices, convert_usd_price_to_krw, month_end_prices, to_monthly_returns,
@@ -151,5 +151,9 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     )
     result = canonical.to_dict()
     benchmark_table = pd.DataFrame(benchmark_summary).T.rename_axis("portfolio").reset_index() if benchmark_summary else pd.DataFrame()
-    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": benchmark_table, "rolling_returns": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame()}
+    rolling_summary = pd.DataFrame([{"roll_period_years": years, **{f"{name}_{metric}": value for name, path in paths.items() for metric, value in rolling_return_summary(path.returns, years).items()}} for years in (1, 3, 5, 7)])
+    def rolling_review(years: int) -> pd.DataFrame:
+        series = [rolling_returns(path.returns, years * 12).rename(f"{name}_annualized_return_pct") * 100 for name, path in paths.items()]
+        return pd.concat(series, axis=1).dropna(how="all").reset_index(names="date")
+    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": benchmark_table, "rolling_returns_raw": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "rolling_returns_summary": rolling_summary, "rolling_returns_3y": rolling_review(3), "rolling_returns_5y": rolling_review(5), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame()}
     return result

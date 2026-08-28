@@ -63,6 +63,16 @@ def main() -> None:
     result = analyze_prices(request, prices)
     result["configuration"]["risk_free"]["parity_derivation"] = {"method": "median(expected_return - sharpe * volatility) from PV Efficient Frontier Assets", "per_asset": implied}
     write_analysis_run(result, OUT)
+    rolling = pd.read_csv(OUT / "rolling_returns_summary.csv")
+    pv_rolling = {1: {"provided": (21.22, 81.63, -19.44), "optimized": (19.33, 46.78, -12.33), "benchmark": (15.78, 56.25, -18.17)}, 3: {"provided": (17.83, 39.07, 4.13), "optimized": (17.17, 35.98, 7.03), "benchmark": (14.30, 25.99, 5.05)}, 5: {"provided": (17.07, 23.40, 10.19), "optimized": (16.17, 21.55, 10.16), "benchmark": (14.09, 18.81, 9.16)}, 7: {"provided": (17.61, 25.91, 13.09), "optimized": (16.94, 22.58, 12.02), "benchmark": (14.20, 17.28, 12.09)}}
+    parity_rows = []
+    for _, row in rolling.iterrows():
+        years = int(row["roll_period_years"])
+        for portfolio, values in pv_rolling[years].items():
+            for metric, pv_value in zip(("average", "high", "low"), values):
+                internal = row[f"{portfolio}_{metric}_pct"]
+                parity_rows.append({"roll_period_years": years, "portfolio": portfolio, "metric": metric, "pv_pct": pv_value, "internal_pct": internal, "delta_pct_points": internal - pv_value})
+    pd.DataFrame(parity_rows).to_csv(OUT / "rolling_returns_parity.csv", index=False, encoding="utf-8")
     pv_covariance = pd.DataFrame(np.outer(pv_volatility, pv_volatility) * pv_correlation.to_numpy(), index=SYMBOLS, columns=SYMBOLS)
     solver_pv = maximum_sharpe(pv_expected, pv_covariance, dict(zip(SYMBOLS, [(0.0, value) for value in MAX])), rf)
     fdr_stats = result["asset_statistics"]

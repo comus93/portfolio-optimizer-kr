@@ -106,6 +106,13 @@ def rolling_returns(monthly_returns: pd.Series, months: int) -> pd.Series:
     return values if months <= 12 else (1.0 + values) ** (12.0 / months) - 1.0
 
 
+def rolling_return_summary(monthly_returns: pd.Series, years: int) -> dict[str, float | None]:
+    values = rolling_returns(monthly_returns, years * 12).dropna()
+    if values.empty:
+        return {"average_pct": None, "high_pct": None, "low_pct": None}
+    return {"average_pct": float(values.mean() * 100), "high_pct": float(values.max() * 100), "low_pct": float(values.min() * 100)}
+
+
 def active_return_metrics(portfolio: pd.Series, benchmark: pd.Series) -> dict[str, float]:
     joined = pd.concat([portfolio.rename("portfolio"), benchmark.rename("benchmark")], axis=1, join="inner").dropna()
     active = joined["portfolio"] - joined["benchmark"]
