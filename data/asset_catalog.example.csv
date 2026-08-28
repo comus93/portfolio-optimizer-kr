@@ -1,0 +1,6 @@
+symbol,name,market,country,currency,asset_type,listing_date
+140710,KODEX 운송,KRX,KR,KRW,ETF,
+QQQ,Invesco QQQ Trust,NASDAQ,US,USD,ETF,
+SPMO,Invesco S&P 500 Momentum ETF,NYSE Arca,US,USD,ETF,
+GLD,SPDR Gold Shares,NYSE Arca,US,USD,ETF,
+SPY,SPDR S&P 500 ETF Trust,NYSE Arca,US,USD,ETF,
