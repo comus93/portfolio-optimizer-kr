@@ -1,0 +1,72 @@
+{
+  "data_coverage": {
+    "benchmark_overlap": {
+      "end": "2026-07-31",
+      "observations": 120,
+      "start": "2016-08-31"
+    },
+    "optimization_monthly_returns": {
+      "end": "2026-07-31",
+      "observations": 120,
+      "start": "2016-08-31"
+    }
+  },
+  "frontier": {
+    "point_count": 100,
+    "return_max": 0.2617011636312132,
+    "return_min": 0.16217712247607527
+  },
+  "golden": {
+    "benchmark": "SPY",
+    "objective": "target_volatility",
+    "period": {
+      "end": "2026-07",
+      "start": "2016-08"
+    },
+    "published_weights": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": 0.3,
+      "PTF": 0.0,
+      "QLD": 0.0931,
+      "QQQ": 0.1419,
+      "SLV": 0.0,
+      "SPMO": 0.443,
+      "XLE": 0.022
+    },
+    "target_volatility": 0.15
+  },
+  "note": "FDR market-data diagnostic; public PV moments and weights are rounded.",
+  "optimizer": {
+    "expected_return": 0.18845584186160488,
+    "pv_published": {
+      "expected_return": 0.1876,
+      "sharpe": 1.1,
+      "volatility": 0.1489
+    },
+    "sharpe": 1.0990389713267845,
+    "volatility": 0.1499999965083924,
+    "weight_delta_vs_pv": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": -4.301782818849631e-09,
+      "PTF": 0.0,
+      "QLD": 0.00562969082306021,
+      "QQQ": -0.010370233236892706,
+      "SLV": 0.0,
+      "SPMO": 0.0069824780248070595,
+      "XLE": -0.002241953909447751
+    },
+    "weights": {
+      "AIA": 0.0,
+      "GDX": 0.0,
+      "GLD": 0.29999999569821717,
+      "PTF": 0.0,
+      "QLD": 0.09872969082306021,
+      "QQQ": 0.1315297667631073,
+      "SLV": 0.0,
+      "SPMO": 0.44998247802480706,
+      "XLE": 0.019758046090552248
+    }
+  }
+}

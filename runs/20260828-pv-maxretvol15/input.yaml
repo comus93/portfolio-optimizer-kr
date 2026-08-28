@@ -1,0 +1,72 @@
+run_id: 20260828-pv-maxretvol15
+
+analysis_period:
+  start: 2016-08-01
+  end: 2026-07-31
+
+assets:
+  - symbol: QQQ
+    currency: USD
+    provided_weight_pct: 20
+    min_weight_pct: 0
+    max_weight_pct: 50
+  - symbol: SPMO
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 50
+  - symbol: GDX
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: GLD
+    currency: USD
+    provided_weight_pct: 0
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: SLV
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: AIA
+    currency: USD
+    provided_weight_pct: 15
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: XLE
+    currency: USD
+    provided_weight_pct: 15
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: PTF
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: QLD
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+
+benchmark:
+  symbol: SPY
+  currency: USD
+
+optimization:
+  objective: target_volatility
+  target_volatility_pct: 15
+  frontier_points: 100
+
+portfolio:
+  rebalancing_period: monthly
+
+# Diagnostic fixed rate near the PV golden-implied U.S. 3M T-Bill level.
+# Target-volatility weights do not depend on RF; RF affects reported Sharpe only.
+risk_free:
+  mode: fixed
+  annual_rate_pct: 2.36
+
+fx: {}
