@@ -170,6 +170,10 @@ Experiment를 별도의 DB object나 중복 manifest로 관리하지 않는다.
 Experiment = executable YAML
 ```
 
+`run_id`는 experiment identity가 아니라 persisted execution identity다.
+
+Direct YAML은 기존처럼 explicit `run_id`를 가질 수 있다. Research experiment는 `run_id`를 생략할 수 있고, persistence boundary에서 unique run identity를 생성한다.
+
 YAML schema와 UI contract의 세부 사항은 `docs/input-ui-contract.md`를 따른다.
 
 ---
@@ -273,6 +277,8 @@ studies/<study-id>/experiments/<experiment>.yaml
 
 기존 YAML 실행 contract를 그대로 사용한다.
 
+Research experiment에서는 `run_id`를 생략할 수 있다. 동일 experiment를 여러 번 실행하면 각 실행은 별도 run identity와 output directory를 가진다.
+
 Revision이 필요하면 파일 단위로 관리한다.
 
 ```text
@@ -327,7 +333,7 @@ Study <-> Experiment <-> Run
 ```text
 Research meaning / interpretation   study.md
 Executable experiment              experiment YAML
-Exact executed input               runs/<run_id>/input.yaml
+Exact effective input              runs/<run_id>/input.yaml
 Calculated canonical result        runs/<run_id>/result.json
 Research provenance                runs/<run_id>/context.yaml
 Human/LLM-readable tables          runs/<run_id>/review/
@@ -338,9 +344,9 @@ Full-precision tables              runs/<run_id>/raw/
 
 ## 6. Execution Architecture
 
-### 6.1 Existing Direct YAML Flow
+### 6.1 YAML Execution Flow
 
-현재 runner의 실행 흐름은 다음과 같다.
+Runtime의 목표 실행 흐름은 다음과 같다.
 
 ```text
 config.yaml
@@ -348,6 +354,9 @@ config.yaml
 load_run_config()
    ↓
 RunConfig / OptimizationRequest
+   ↓
+resolve run_id
+(explicit or generated)
    ↓
 runner.execute_run()
    ↓
@@ -364,9 +373,13 @@ runs/<run_id>/
    └─ raw/
 ```
 
+Persisted `input.yaml`은 source YAML의 단순 복사본이 아니라 실제 실행에 사용된 effective configuration을 재현할 수 있어야 한다. 자동 생성된 `run_id`도 포함한다.
+
+기존 run directory를 silent overwrite하지 않는다.
+
 ### 6.2 Research Control Flow
 
-Research Interaction v0는 이 경로 앞에 target resolution만 추가한다.
+Research Interaction v0는 동일 실행 경로 앞에 target resolution과 뒤에 provenance persistence를 추가한다.
 
 ```text
 control/execute.yaml
@@ -375,7 +388,7 @@ resolve target experiment
         ↓
 studies/.../experiment.yaml
         ↓
-existing run_yaml()
+existing YAML execution path
         ↓
 runs/<run_id>/
         ↓
@@ -386,7 +399,7 @@ write context.yaml
 
 ```text
 Control-aware Executor
-      = target resolution + provenance persistence
+      = target resolution + research provenance persistence
 ```
 
 금융 계산, data loading, solver, analytics를 다시 구현하지 않는다.
@@ -415,6 +428,8 @@ runs/<run_id>/
 ├─ review/
 └─ raw/
 ```
+
+`run_id`는 실행 시점의 persisted instance identity다. Experiment file identity와 분리한다.
 
 ### System Documents
 
@@ -487,6 +502,7 @@ invalid YAML
 missing target
 nonexistent target
 non-experiment target
+path traversal outside repository
 ```
 
 ### Experiment validation failure
@@ -501,9 +517,15 @@ Market data, solver, analytics failure는 기존 runtime error boundary를 유�
 
 ### Persistence failure
 
-Required run artifact 저장이 완료되지 않으면 persisted run 완료로 취급하지 않는다.
+다음 경우 persisted research run 완료로 취급하지 않는다.
 
-`context.yaml` 생성 실패 역시 research execution 기준으로는 완료가 아니다.
+```text
+run_id collision
+required run artifact write failure
+context.yaml write failure
+```
+
+기존 run directory를 덮어써서 이전 연구 결과를 훼손하지 않는다.
 
 ---
 
