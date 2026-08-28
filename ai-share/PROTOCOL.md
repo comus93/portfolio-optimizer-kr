@@ -196,9 +196,9 @@ Codex 또는 Agent가 로컬 checkout에서 작업하는 경우, `ai-share`의 �
 사용자가 LLM/ChatGPT/GPT/지피티/챗지피티의 문의, 요청, 전달사항이 왔다고 알리거나 이를 확인하라고 요청하면 Agent는 다음 규칙을 따른다.
 
 1. 로컬 `ai-share/llm-to-agent.md`만 확인해서는 안 된다.
-2. 먼저 GitHub remote를 fetch하거나 GitHub의 해당 파일을 직접 조회하여 최신 `llm-to-agent.md`를 확인한다.
-3. 로컬 branch가 remote보다 뒤처져 있더라도 단순히 로컬 파일을 근거로 "문의 없음" 또는 "새 메시지 없음"이라고 판단하지 않는다.
-4. 안전하게 동기화할 수 있다면 local checkout을 최신 상태로 갱신한다. 미커밋 변경이나 branch divergence 때문에 동기화가 위험하면 remote의 파일을 직접 읽고 작업하며, 필요 시 그 상태를 사용자에게 알린다.
+2. **LLM 요건, 요청 또는 전달사항 확인을 시작할 때는 반드시 먼저 `git pull --ff-only origin <branch>`를 실행해 local checkout을 최신화한다.** pull이 성공하기 전의 로컬 파일을 근거로 요청 내용을 판단하지 않는다.
+3. 미커밋 변경이나 branch divergence 때문에 pull이 안전하게 완료되지 않으면, stale local 파일을 보지 않고 GitHub remote의 최신 `llm-to-agent.md`를 직접 조회한다. 이 경우 local 동기화가 보류된 사실을 사용자에게 알린다.
+4. local branch가 remote보다 뒤처져 있더라도 단순히 로컬 파일을 근거로 "문의 없음" 또는 "새 메시지 없음"이라고 판단하지 않는다.
 
 Agent가 답변 또는 작업 결과를 `agent-to-llm.md`에 기록한 경우, 로컬 파일 수정만으로 전달이 완료된 것으로 보지 않는다.
 
