@@ -31,8 +31,9 @@ def performance_summary(monthly_returns: pd.Series, annual_rf: float = 0.0) -> d
     ann_returns = annual_returns(monthly_returns)
     annualized_mean = float(monthly_returns.mean() * 12.0)
     annualized_vol = float(monthly_returns.std(ddof=1) * np.sqrt(12.0))
-    downside = monthly_returns[monthly_returns < 0]
-    downside_vol = float(downside.std(ddof=1) * np.sqrt(12.0)) if len(downside) > 1 else float("nan")
+    monthly_mar = (1.0 + annual_rf) ** (1.0 / 12.0) - 1.0
+    downside = np.minimum(monthly_returns.to_numpy(dtype=float) - monthly_mar, 0.0)
+    downside_vol = float(np.sqrt(np.mean(downside**2)) * np.sqrt(12.0)) if len(downside) else float("nan")
     return {
         "start_balance": 1.0,
         "end_balance": float((1.0 + monthly_returns).prod()),
