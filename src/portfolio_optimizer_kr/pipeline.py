@@ -41,6 +41,19 @@ def _asset_price(request: OptimizationRequest, symbol: str, price: pd.Series, cu
     return price
 
 
+def _completed_monthly_returns(
+    returns: pd.DataFrame, end: str | pd.Timestamp | None
+) -> pd.DataFrame:
+    """Exclude only the terminal calendar month when it is not yet complete."""
+    cutoff = pd.Timestamp(end).normalize() if end is not None else pd.Timestamp.today().normalize()
+    month_end = cutoff + pd.offsets.MonthEnd(0)
+    if cutoff != month_end:
+        returns = returns.loc[returns.index.to_period("M") < cutoff.to_period("M")]
+    if returns.empty:
+        raise DataValidationError("at least one completed monthly return is required")
+    return returns
+
+
 def prepare_monthly_returns(request: OptimizationRequest, prices: Mapping[str, pd.Series], usdkrw: pd.Series | None = None) -> pd.DataFrame:
     converted: dict[str, pd.Series] = {}
     for asset in request.assets:
@@ -49,7 +62,9 @@ def prepare_monthly_returns(request: OptimizationRequest, prices: Mapping[str, p
         converted[asset.symbol] = _asset_price(request, asset.symbol, prices[asset.symbol], asset.currency, usdkrw)
     # Keep the prior month-end as a warm-up price; the requested period denotes return rows.
     aligned = align_common_prices(converted, end=request.end)
-    returns = to_monthly_returns(month_end_prices(aligned))
+    returns = _completed_monthly_returns(
+        to_monthly_returns(month_end_prices(aligned)), request.end
+    )
     if request.start is not None:
         returns = returns.loc[pd.Timestamp(request.start):]
     return returns
@@ -63,7 +78,9 @@ def _benchmark_returns(request: OptimizationRequest, prices: Mapping[str, pd.Ser
         raise DataValidationError(f"missing benchmark price series: {benchmark.symbol}")
     price = _asset_price(request, benchmark.symbol, prices[benchmark.symbol], benchmark.currency, usdkrw)
     frame = align_common_prices({benchmark.symbol: price}, end=request.end)
-    returns = to_monthly_returns(month_end_prices(frame))
+    returns = _completed_monthly_returns(
+        to_monthly_returns(month_end_prices(frame)), request.end
+    )
     if request.start is not None:
         returns = returns.loc[pd.Timestamp(request.start):]
     return returns.iloc[:, 0].rename(benchmark.symbol)
@@ -106,6 +123,9 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
         expected["provided"] = portfolio_expected_return([request.provided_weights[s] for s in monthly_returns.columns], stats.expected_returns)
     benchmark_returns = _benchmark_returns(request, prices, usdkrw)
     if benchmark_returns is not None:
+        benchmark_returns = benchmark_returns.loc[
+            monthly_returns.index.min() : monthly_returns.index.max()
+        ]
         paths["benchmark"] = type("BenchmarkPath", (), {"returns": benchmark_returns})()
         expected["benchmark"] = float(benchmark_returns.mean() * 12.0)
     performance, performance_table = _performance_table(paths, rf, expected)
