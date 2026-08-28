@@ -1051,3 +1051,410 @@ Study search optimization
 ```
 
 Batch를 추가할 때도 experiment의 canonical contract는 YAML이고 optimizer calculation path는 기존 runner를 재사용한다.
+
+## 25. Interactive Research Report
+
+### 25.1 Purpose and Interaction Model
+
+각 persisted run은 사람이 결과를 시각적으로 검토할 수 있는 정적 interactive report를 제공해야 한다.
+
+사용자와 GPT는 동일한 `run_id`를 기준으로 서로 다른 representation을 본다.
+
+```text
+Canonical / review artifacts -> GPT analysis
+Same run presentation model  -> User report.html
+```
+
+사용자는 chart/table을 직접 확인하면서 GPT와 결과를 토론하고, GPT는 같은 run의 canonical structured output을 근거로 설명한다.
+
+HTML report는 금융 계산의 source of truth가 아니다.
+
+### 25.2 Golden Source Fidelity
+
+report의 정보 구조와 chart/table 구성은 현재 PV golden source를 기준으로 한다.
+
+```text
+tests/golden/pv/260828_PTF_maxsharpe.jpg
+tests/golden/pv/260828_PTF_maxsharpe.md
+```
+
+Golden Source를 기준으로 다음을 최대한 유지한다.
+
+- section 종류
+- section 순서
+- chart 종류
+- axis 의미
+- legend 의미
+- table column 의미
+- 주요 marker와 series
+- hover tooltip에서 필요한 분석 정보
+
+정확한 pixel clone은 요구하지 않는다. 데이터 의미와 시각적 정보 구조의 충실도가 우선이다.
+
+### 25.3 Report Artifact and Local Viewing
+
+각 run은 다음 artifact를 생성한다.
+
+```text
+runs/<run_id>/report.html
+```
+
+`report.html`은 self-contained static HTML이어야 한다.
+
+요구사항:
+
+- 로컬 HTTP server 없이 브라우저에서 `file://` 방식으로 직접 열 수 있어야 한다.
+- runtime에서 외부 JSON/CSV를 `fetch()`하지 않는다.
+- 외부 CDN, remote JavaScript, remote CSS 등 report 표시를 위해 network access를 요구하지 않는다.
+- chart/table rendering에 필요한 data, CSS, JavaScript dependency는 최종 HTML 안에 포함한다.
+- GitHub Pages 같은 static hosting에서도 같은 report rendering code를 사용할 수 있어야 한다.
+- report 생성 이후 브라우저가 금융 metric을 재계산하지 않는다.
+
+### 25.4 Presentation Data Boundary
+
+Viewer의 책임은 persisted engine output을 presentation model로 변환하고 표시하는 것이다.
+
+```text
+result.json / review/*.csv / raw/*.csv
+        ↓
+Presentation Model
+        ↓
+self-contained report.html
+```
+
+Presentation Model은 단위 변환, 이름 정리, table shaping, chart series shaping처럼 표시를 위한 변환은 할 수 있다.
+
+Expected Return, volatility, Sharpe, CAGR, drawdown, active return, tracking error, contribution 등 금융 의미를 가진 값을 원시 가격이나 return series에서 새로 계산해서는 안 된다.
+
+### 25.5 Golden Source Report Sections
+
+최종 report는 Golden Source의 다음 영역을 지원한다.
+
+1. Results period / objective overview
+2. Provided Portfolio table and allocation
+3. Optimized Portfolio table and allocation
+4. Performance Summary
+5. Portfolio Growth
+6. Annual Returns
+7. Trailing Returns
+8. Efficient Frontier Assets
+9. Asset Correlations
+10. Efficient Frontier
+11. Efficient Frontier Transition Map
+12. Efficient Frontier Portfolios
+13. Annualized Active Return
+14. Active Return Contribution
+15. Rolling Active Return / Tracking Error
+16. Up vs. Down Market Performance
+17. Portfolio Metrics
+18. Monthly Returns
+19. Drawdown Chart
+20. Historical Market Stress Periods
+21. Worst Drawdowns
+22. Portfolio Asset Performance
+23. Portfolio / Asset Correlations
+24. Return Decomposition
+25. Risk Decomposition
+26. Annual Asset Returns
+27. Rolling Returns Summary
+28. Rolling 3Y Returns
+29. Rolling 5Y Returns
+
+Optimized Portfolio의 표시 이름은 실행 objective에 따라 동적으로 결정한다.
+
+예:
+
+```text
+Maximum Sharpe Ratio
+Maximum Return at 13% Target Volatility
+```
+
+### 25.6 Additional Engine / Review Output Contracts
+
+Golden Source report를 Viewer의 재계산 없이 만들기 위해 기존 output에 없는 경우 다음 presentation-ready engine/review artifact를 추가한다.
+
+#### Portfolio Growth
+
+```text
+portfolio_growth.csv
+
+date
+provided_balance
+optimized_balance
+benchmark_balance
+```
+
+Balance는 historical portfolio calculation이 생성한 동일한 wealth/balance convention을 사용한다.
+
+#### Drawdown Series
+
+```text
+drawdown_series.csv
+
+date
+provided_drawdown_pct
+optimized_drawdown_pct
+benchmark_drawdown_pct
+```
+
+#### Annual Asset Returns
+
+long format을 기본 계약으로 한다.
+
+```text
+annual_asset_returns.csv
+
+year
+ticker
+return_pct
+```
+
+#### Active Return Contribution
+
+Provided / Optimized 각각 benchmark 대비 자산별 cumulative active contribution을 제공한다.
+
+```text
+active_return_contribution.csv
+
+date
+portfolio
+ticker
+cumulative_active_contribution_pct
+```
+
+#### Up vs. Down Market Performance
+
+```text
+up_down_market_performance.csv
+
+portfolio
+market_type
+portfolio_return_pct
+benchmark_return_pct
+active_return_pct
+occurrences
+```
+
+필요한 occurrence 세부 breakdown은 Golden Source 표 재현에 필요한 column을 추가할 수 있다.
+
+#### Historical Market Stress Periods
+
+```text
+stress_periods.csv
+
+stress_period
+start
+end
+provided_return_pct
+optimized_return_pct
+benchmark_return_pct
+```
+
+Stress period 정의는 engine/reporting 계층에서 명시적으로 관리하고 report가 임의로 구간을 정의하지 않는다.
+
+#### Portfolio Metrics
+
+현재 performance/benchmark metric에 Golden Source 재현을 위해 필요한 metric이 없으면 engine analytics에서 계산해 review output으로 제공한다.
+
+대상에는 다음이 포함될 수 있다.
+
+```text
+Beta
+Alpha
+R-squared
+Treynor Ratio
+Calmar Ratio
+Modigliani-Modigliani Measure
+Skewness
+Excess Kurtosis
+Historical Value-at-Risk
+```
+
+Viewer는 이 값을 계산하지 않는다.
+
+### 25.7 Chart Tooltip Contract
+
+Tooltip은 단순 장식이 아니라 사용자와 GPT가 chart의 특정 지점을 함께 검증하기 위한 분석 interface다.
+
+#### Portfolio Growth
+
+hover 시 다음을 표시한다.
+
+```text
+Date
+Provided Portfolio balance
+Optimized Portfolio balance
+Benchmark balance
+```
+
+Return %로 바꾸어 표시하지 않는다.
+
+#### Annual Returns
+
+hover 시 다음을 표시한다.
+
+```text
+Year
+Provided Portfolio annual return %
+Optimized Portfolio annual return %
+Benchmark annual return %
+```
+
+Balance 금액으로 표시하지 않는다.
+
+#### Efficient Frontier
+
+축:
+
+```text
+X = Standard Deviation %
+Y = Expected Return %
+```
+
+Frontier curve point hover:
+
+```text
+Standard Deviation %
+Expected Return %
+Sharpe Ratio
+Asset allocation list: ticker + weight %
+```
+
+Individual asset marker hover:
+
+```text
+Ticker / asset name
+Expected Return %
+Sharpe Ratio
+Standard Deviation %
+```
+
+Provided Portfolio, Optimized Portfolio, Benchmark marker도 해당 point의 risk/return 정보를 식별 가능하게 표시한다.
+
+#### Efficient Frontier Transition Map
+
+X축은 시간/연도가 아니라 frontier의 Standard Deviation이다.
+
+hover 시 다음을 표시한다.
+
+```text
+Standard Deviation %
+Expected Return %
+Asset allocation list: ticker + weight %
+```
+
+Efficient Frontier와 Transition Map은 가능한 한 동일한 frontier presentation data를 공유한다.
+
+#### Annualized Active Return
+
+hover 시 다음만 표시한다.
+
+```text
+Date
+Provided Portfolio Active Return %
+Optimized Portfolio Active Return %
+```
+
+Benchmark Active Return은 표시하지 않는다. Provided / Optimized 값 자체가 benchmark 대비 active return이기 때문이다.
+
+#### Active Return Contribution
+
+hover 시 다음을 표시한다.
+
+```text
+Date
+Portfolio identity: Provided or Optimized
+Asset cumulative active-return contribution % list
+```
+
+Allocation weight를 대신 표시하지 않는다.
+
+#### Rolling Active Return / Tracking Error
+
+각 portfolio chart/series에서 hover 시 다음을 표시한다.
+
+```text
+Date
+Active Return %
+Tracking Error %
+```
+
+#### Up vs. Down Market Performance
+
+hover 시 다음을 표시한다.
+
+```text
+Market type
+Portfolio return %
+Benchmark return %
+Active return %
+```
+
+Provided와 Optimized는 서로 구분 가능해야 한다.
+
+#### Drawdown Chart
+
+hover 시 다음을 표시한다.
+
+```text
+Date
+Provided Portfolio drawdown %
+Optimized Portfolio drawdown %
+Benchmark drawdown %
+```
+
+#### Annual Asset Returns
+
+hover 시 다음을 표시한다.
+
+```text
+Year
+Ticker / asset name
+Annual Return %
+```
+
+Allocation weight를 대신 표시하지 않는다.
+
+#### Rolling 3Y / 5Y Returns
+
+hover 시 다음을 표시한다.
+
+```text
+Date
+Provided Portfolio annualized return %
+Optimized Portfolio annualized return %
+Benchmark annualized return %
+```
+
+### 25.8 Static Publishing
+
+Local report와 GitHub Pages report는 동일한 presentation semantics를 사용한다.
+
+GitHub Pages의 역할은 static report를 웹 URL로 노출하는 것이며 Python, CVXPY 또는 금융 계산을 수행하지 않는다.
+
+```text
+Optimizer / Actions -> persisted run artifacts -> static report -> GitHub Pages
+```
+
+로컬 `report.html`과 Pages에서 보이는 report가 별도의 계산 또는 별도의 chart definition으로 갈라지지 않아야 한다.
+
+### 25.9 Acceptance Checks
+
+Interactive Research Report는 최소한 다음을 검증한다.
+
+1. persisted run으로부터 presentation model을 만들 수 있다.
+2. presentation model 생성 과정은 원시 가격에서 금융 metric을 재계산하지 않는다.
+3. `report.html`에 report data가 embed된다.
+4. `report.html`은 외부 JSON/CSV fetch 없이 동작한다.
+5. `report.html`은 외부 CDN/remote script 없이 로컬 file open이 가능하다.
+6. Golden Source에 대응하는 필수 section 구조가 존재한다.
+7. Efficient Frontier tooltip data에는 volatility, expected return, Sharpe, asset weights가 존재한다.
+8. Annualized Active Return tooltip data에는 Provided와 Optimized active return만 존재하며 benchmark active return field를 요구하지 않는다.
+9. Portfolio Growth tooltip은 balance를 사용한다.
+10. Annual Returns tooltip은 annual return %를 사용한다.
+11. Transition Map tooltip은 연도가 아닌 frontier risk/return과 allocation을 사용한다.
+12. Active Return Contribution과 Annual Asset Returns tooltip은 allocation이 아닌 각 chart의 실제 metric을 사용한다.
+13. objective에 따라 Optimized Portfolio 표시 이름이 동적으로 바뀐다.
+14. `portfolio-optimizer execute`로 생성된 최종 run에 `report.html`이 포함된다.
+15. 동일 report artifact 또는 동일 presentation path를 GitHub Pages에서 static publish할 수 있다.
+16. Interactive Report 추가 후 기존 전체 regression suite가 통과한다.
