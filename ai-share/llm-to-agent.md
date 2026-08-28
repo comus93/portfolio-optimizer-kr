@@ -1,410 +1,346 @@
 # AI Share
 
 state: active
-id: 20260828T122800+0900-llm
-created_at: 2026-08-28T12:28:00+09:00
+id: 20260828T124500+0900-llm
+created_at: 2026-08-28T12:45:00+09:00
 type: request
-reply_to: 20260828T120123+0900-agent
+reply_to: 20260828T122841+0900-agent
 
 ## Context
 
-Live FDR PV parity run과 JSON/CSV output은 성공했고 optimizer 결과는 PV와 매우 근접하다.
+직전 review/raw output 작업은 완료되었고 Agent 보고 기준 offline `28 passed`, live FDR run도 갱신되었다.
 
-확인된 주요 수치:
+사용자와 다음 architecture를 확정했다.
 
-- Max Sharpe ER: internal 17.2052% vs PV 17.21%
-- Volatility: internal 13.1025% vs PV 13.10%
-- Sharpe: internal 1.1333 vs PV 1.13
-- Weight delta: QQQ -0.225pp, SPMO +0.367pp, GLD ~0pp, XLE -0.131pp
-- Frontier expected-return range: internal 16.2177%~30.0039% vs PV 16.23%~30.08%
-- 120 monthly returns, Aug-2016~Jul-2026 coverage 확인
+```text
+Input UI / CLI / Agent
+        ↓
+      YAML
+        ↓
+YAML adapter + validator
+        ↓
+OptimizationRequest
+        ↓
+Optimizer core
+        ↓
+result.json + review/raw CSV
+        ↓
+Result Viewer
+```
 
-LLM이 실제 run CSV 전체를 검토한 결과 계산값은 대체로 충분하지만, 현재 CSV는 내부 DataFrame을 그대로 dump한 개발자용 산출물 성격이 강하다. 사용자가 육안으로 검토하거나 다른 LLM이 run 폴더만 받아 의미를 재구성하기에는 percentage 단위, column naming, table orientation, MultiIndex header, unlabeled row 등이 불친절하다.
+중요 원칙:
 
-`result.json`은 계속 full-precision canonical source of truth로 유지한다. CSV는 **사람/LLM review용 표현 계층과 machine/raw 계층을 분리**해 개선한다. Review 표현을 위해 원본 계산 precision이나 raw series를 잃으면 안 된다.
+- UI가 없어도 YAML/CLI로 optimizer를 완전히 독립 실행할 수 있어야 한다.
+- UI는 별도 optimizer API를 만들지 않고 반드시 YAML을 생성한 뒤 동일 runner를 호출한다.
+- Result Viewer는 금융 계산을 다시 하지 않는다. 기존 result/review/raw output만 읽어 표와 차트를 표현한다.
+- `result.json` full precision canonical, `raw/` full precision, `review/` human/LLM readable convention을 유지한다.
+
+LLM이 최신 main 위에 최소 skeleton과 contract tests를 직접 추가했다.
+
+### LLM 추가 코드
+
+```text
+configs/example.yaml
+data/asset_catalog.example.csv
+docs/input-ui-contract.md
+
+src/portfolio_optimizer_kr/config/
+  __init__.py
+  yaml.py
+src/portfolio_optimizer_kr/runner.py
+src/portfolio_optimizer_kr/cli.py
+src/portfolio_optimizer_kr/catalog.py
+src/portfolio_optimizer_kr/viewer/
+  __init__.py
+  loader.py
+ui/app.py
+```
+
+`pyproject.toml`에는 PyYAML, optional Streamlit UI dependency, `portfolio-optimizer` CLI entrypoint를 추가했다.
+
+### LLM 추가 contract tests
+
+```text
+tests/test_yaml_config.py
+tests/test_runner.py
+tests/test_catalog.py
+tests/test_viewer_loader.py
+tests/test_run_output_layers.py
+tests/test_cli.py
+```
+
+기존 28 tests에 12개 정도의 신규 test case가 추가되었으므로 구현 완료 시 전체 suite는 최소 약 40개 test가 예상된다. 정확한 개수 자체가 acceptance criterion은 아니다.
+
+`tests/test_run_output_layers.py`는 현재 의도적으로 기존 generic writer에서 실패할 가능성이 높다. 직전 review/raw 구현이 `scripts/run_pv_parity.py` 안에만 있기 때문이다. 아래 작업으로 generic run contract를 완성한다.
+
+## R&R
+
+### LLM
+
+- architecture / YAML schema / financial convention 정의
+- pytest contract 작성 및 유지
+- 최소 skeleton 작성
+- Agent 결과와 실제 output review
+
+### Agent
+
+- LLM skeleton을 실제 환경에서 실행 가능한 상태로 harden
+- dependency/lock 정리
+- LLM contract tests를 기준으로 구현 보강
+- Streamlit UI와 catalog 실제 동작 보강
+- end-to-end 실행/debug
+- 완료 전 full regression suite 실행
+
+**LLM이 만든 test를 통과시키기 위해 임의로 약화/삭제/의미 변경하지 않는다.** 계약 자체에 문제가 있으면 먼저 blocker를 남긴다.
 
 ## Message
 
-### 1. PV moments를 이용한 solver-only parity를 추가한다
+### 1. 먼저 최신 main과 새 skeleton을 검토한다
 
-Golden MD의 9 assets expected return, standard deviation, 9x9 correlation, bounds를 이용해 PV rounded moments를 재구성한다.
+특히 다음을 읽는다.
 
-```text
-PV covariance = diag(PV volatility) @ PV correlation @ diag(PV volatility)
-```
+- `AGENTS.md`
+- `docs/input-ui-contract.md`
+- `src/portfolio_optimizer_kr/config/yaml.py`
+- `src/portfolio_optimizer_kr/runner.py`
+- `src/portfolio_optimizer_kr/viewer/loader.py`
+- `src/portfolio_optimizer_kr/catalog.py`
+- `ui/app.py`
+- 신규 tests 6 files
 
-현재 golden-implied RF와 동일 bounds로 `maximum_sharpe()`를 FDR 없이 PV moments에 직접 적용한다.
+불필요한 framework 추상화나 별도 API server는 만들지 않는다.
 
-`parity.json`에 최소 다음 section을 추가한다.
+### 2. dependency와 lock을 정리한다
 
-```text
-moment_parity:
-  per_asset expected_return_delta
-  per_asset volatility_delta
-  correlation max_abs_delta
-  correlation mean_abs_delta
+`pyproject.toml` 변경에 맞춰 `uv.lock`을 갱신한다.
 
-solver_only_parity:
-  internal_weights_from_pv_moments
-  weight_delta_vs_pv
-  expected_return
-  volatility
-  sharpe
-  note_on_golden_rounding
-```
-
-최소 output:
+최소 확인:
 
 ```text
-moment_parity.csv
-solver_parity.csv
+uv lock --check
+uv sync --extra ui
 ```
 
-가능하면 golden 100-row frontier도 비교해 `frontier_parity.csv`를 추가한다. PV 공개값은 rounding된 값이므로 exact-equality pass/fail은 만들지 않는다.
+또는 현재 uv 버전에 맞는 동등 명령을 사용한다.
 
-### 2. P3-P6 신규 기능 synthetic tests를 확장한다
+### 3. YAML contract를 harden한다
 
-최소 다음 behavior를 독립적으로 검증한다.
+현재 LLM skeleton의 기본 계약을 유지한다.
 
-- benchmark history가 짧아도 optimization coverage를 truncate하지 않음
-- benchmark overlap start/end/observation count
-- mixed-currency benchmark normalization
-- trailing 3M/YTD/1Y 및 annualized 3Y/5Y/10Y/Full
-- insufficient-history -> None/null
-- Jan-Dec + YTD review table
-- drawdown episode start/bottom/recovery/rank
-- annual/cumulative/rolling active-return convention
-- rolling tracking error
-- Provided/Optimized return contribution terminal-gain invariant
-- Provided/Optimized risk contribution sum=1
-- full correlation universe = assets + provided + optimized + benchmark
-- canonical configuration input 보존
-- deterministic JSON output
-- expected review/raw CSV filenames 및 핵심 headers
-- PV moments parser 9 assets/correlation/frontier parsing
-- solver-only parity fixture는 offline/network-free
-- review 값이 raw 값의 display transform과 일치하고 raw precision이 보존됨
+- YAML percentage fields는 percentage-point 입력이다. `20` -> internal `0.20`.
+- `OptimizationRequest`는 canonical internal model이다.
+- provided weights는 전 asset 모두 명시하거나 모두 생략한다.
+- 제공 시 합계 100%를 검증한다.
+- duplicate symbol / infeasible min-max / invalid objective / invalid period를 실행 전에 차단한다.
+- target-vol objective는 `target_volatility_pct` 필수.
+- fixed RF는 `annual_rate_pct` 필수.
+- exact input YAML을 `runs/<run_id>/input.yaml`에 보존한다.
 
-기존 core tests를 약화하거나 삭제하지 않는다.
+필요한 validation 보강은 가능하나 schema 의미를 바꾸지 않는다.
 
-### 3. Sortino denominator convention을 명시적으로 고정한다
+### 4. generic run writer에 review/raw output을 이관한다
 
-```text
-monthly MAR = (1 + annual_rf) ** (1/12) - 1
-downside_i = min(monthly_return_i - monthly_MAR, 0)
-monthly downside deviation = sqrt(mean(downside_i ** 2))
-annual downside deviation = monthly downside deviation * sqrt(12)
-Sortino = (annualized arithmetic return - annual_rf) / annual downside deviation
-```
+현재 review/raw 변환 logic이 `scripts/run_pv_parity.py::write_review_and_raw_layers()`에 국한되어 있다.
 
-코드와 test에 반영한다. PV Sortino와 exact parity는 요구하지 않으며 정의 차이가 있으면 명시한다.
-
-### 4. 전체 run output을 Review Layer와 Raw Layer로 재설계한다
-
-특정 `rolling_returns.csv`만 수정하지 말고 **현재 생성되는 전체 CSV output을 사용자 인식성/검토 용이성 관점에서 검토하고 일관된 구조로 정리한다.**
-
-원칙:
-
-1. `result.json`은 canonical machine-readable source of truth이며 full precision을 유지한다.
-2. `raw/` CSV는 현재 계산 결과와 시계열을 full precision decimal로 보존한다.
-3. `review/` CSV는 사람이 직접 읽고 PV golden과 비교하기 쉬운 표 구조로 제공한다.
-4. PV에 대응 표가 있는 경우 가능한 한 PV의 orientation/metric grouping을 따른다. 단, PV를 맹목적으로 복제하지 않고 의미와 단위가 더 명확하면 개선 가능하다.
-5. Review 때문에 raw data나 precision을 삭제하지 않는다.
-6. MultiIndex CSV header, duplicate column name, unlabeled row, 단위가 불명확한 ratio column은 금지한다.
-7. percentage review value는 decimal fraction이 아니라 percentage-point 숫자를 사용한다. 예: raw `0.172052` -> review `17.2052`. 컬럼에 `_pct`를 붙이거나 `unit` column으로 단위를 명확히 한다.
-8. Sharpe/Sortino/correlation/IR 등 무차원 ratio는 `%`로 바꾸지 않는다.
-9. null/N/A와 실제 0을 구분한다.
-10. review용 rounding은 표시 계층에서만 수행하고 raw/result.json에는 적용하지 않는다.
-11. 날짜와 기간 표기는 파일별로 일관되게 한다.
-
-권장 디렉터리:
+이를 parity 전용 script 밖의 report layer로 이동/정리해서 **모든 `write_analysis_run()` 기반 run**이 기본적으로 다음을 만든다.
 
 ```text
 runs/<run_id>/
-├─ result.json
-├─ parity.json
-├─ README.md
-├─ review/
-│  ├─ optimization_results.csv
-│  ├─ performance_summary.csv
-│  ├─ trailing_returns.csv
-│  ├─ asset_statistics.csv
-│  ├─ correlations.csv
-│  ├─ efficient_frontier.csv
-│  ├─ annual_returns.csv
-│  ├─ monthly_returns.csv
-│  ├─ monthly_returns_calendar.csv
-│  ├─ drawdowns.csv
-│  ├─ return_decomposition.csv
-│  ├─ risk_decomposition.csv
-│  ├─ benchmark_summary.csv
-│  ├─ rolling_returns_summary.csv
-│  ├─ rolling_returns_3y.csv
-│  └─ rolling_returns_5y.csv
-└─ raw/
-   ├─ efficient_frontier.csv
-   ├─ asset_statistics.csv
-   ├─ correlations.csv
-   ├─ portfolio_performance.csv
-   ├─ annual_returns.csv
-   ├─ monthly_return_series.csv
-   ├─ monthly_returns_calendar.csv
-   ├─ drawdowns.csv
-   ├─ return_decomposition.csv
-   ├─ risk_decomposition.csv
-   ├─ benchmark_analytics.csv
-   ├─ active_returns.csv
-   └─ rolling_returns.csv
+  result.json
+  README.md
+  review/*.csv
+  raw/*.csv
 ```
 
-기존 top-level CSV 경로와의 backward compatibility가 필요하면 한 revision 동안 유지하거나 명확한 migration을 선택하되, 중복의 source of truth는 만들지 않는다. 최종 구조는 `README.md`에서 설명한다.
+원칙:
 
-### 5. Review CSV별 구체적 형태
+- raw는 `_tables`의 full precision decimal을 보존한다.
+- review는 기존 확정 convention을 적용한다.
+- review 변환 때문에 raw precision 손실 금지.
+- Sharpe/Sortino/correlation/IR 같은 ratio는 percent 변환 금지.
+- percentage-like columns는 review에서 `_pct` 명시.
+- parity script는 generic writer를 재사용하고 parity-specific JSON/CSV만 추가한다.
+- 동일 변환 logic을 parity script와 report layer에 중복 구현하지 않는다.
 
-#### optimization_results.csv
+`tests/test_run_output_layers.py`를 통과시켜야 한다.
 
-PV의 Provided Portfolio / Maximum Sharpe allocation을 한 번에 비교하기 쉽게 한다.
+기존 PV parity run의 review/raw 구조도 회귀되지 않아야 한다.
 
-예:
+### 5. Runner / CLI를 실제 실행 가능하게 검증한다
+
+Runner contract:
 
 ```text
-ticker,name,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
-QQQ,...,0.0,50.0,20.0,24.3845
-...
+YAML
+ → load_run_config
+ → prior-month warm-up 포함 FDR load
+ → optional FX load
+ → analyze_prices
+ → generic writer
+ → runs/<run_id>/
+ → input.yaml copy
 ```
 
-zero-weight asset도 universe 확인을 위해 유지한다.
+검증:
 
-#### performance_summary.csv
+```text
+uv run portfolio-optimizer validate configs/example.yaml
+uv run portfolio-optimizer run configs/example.yaml
+```
 
-현재 row-per-portfolio 구조보다 PV처럼 metric 중심으로 읽기 쉽게 한다.
+`configs/example.yaml`은 fixed RF + USD-only example이므로 별도 T-Bill provider 없이 실행 가능해야 한다.
+
+실제 run은 최소 다음을 가져야 한다.
+
+```text
+runs/example-max-sharpe/
+  input.yaml
+  result.json
+  README.md
+  review/
+  raw/
+```
+
+실제 validation output이므로 commit/push한다.
+
+#### Mixed currency
+
+- KRW/USD가 섞이면 YAML의 `fx.usdkrw_symbol`을 명시적으로 요구하는 현재 contract를 유지한다.
+- runner에서 FX series가 prior-month warm-up부터 로드되는지 확인한다.
+- 기존 pipeline의 benchmark base-currency 처리와 충돌/오류가 없는지도 점검한다. 발견 시 LLM test/financial convention을 약화하지 말고 구현을 수정하거나 blocker 보고한다.
+
+#### Risk-free
+
+`us_3m_tbill` provider가 아직 external boundary라면 억지로 새 provider를 만들지 않는다.
+- fixed mode는 정상 실행.
+- CLI `--annual-rf-pct` override 경로가 필요 시 동작.
+- UI에서 현재 지원되지 않는 RF mode를 선택했을 때 traceback 대신 이해 가능한 안내를 보여준다.
+
+### 6. Asset Catalog UI를 usable하게 만든다
+
+LLM skeleton은 `data/asset_catalog.example.csv`와 pure search service를 제공한다.
+
+v1 목표:
+
+- ticker/name 검색
+- 한국 숫자 ticker 문자열 보존
+- 검색 결과 선택 → asset table 추가
+- asset table에서 currency / provided / min / max 수정
+- manual row 추가도 가능
+
+실제 FDR listing API를 현재 설치 버전에서 확인해, 과도하지 않은 범위에서 local catalog 생성/갱신 경로를 추가한다.
 
 권장:
 
 ```text
-metric,unit,provided,optimized,benchmark
-Start Balance,balance,...
-End Balance,balance,...
-CAGR,pct,...
-Expected Return,pct,...
-Standard Deviation,pct,...
-Best Year,pct,...
-Worst Year,pct,...
-Maximum Drawdown,pct,...
-Sharpe Ratio (ex-post),ratio,...
-Sortino Ratio,ratio,...
-Active Return,pct,...
-Tracking Error,pct,...
-Information Ratio,ratio,...
+scripts/build_asset_catalog.py
 ```
 
-ex-ante/ex-post가 동시에 존재하면 이름으로 구분한다.
+또는 동등한 작은 command.
 
-#### trailing_returns.csv
+원칙:
 
-PV Trailing Returns 구조를 따라 portfolio가 row가 되도록 한다.
+- FDR가 실제 제공하는 listing API/market names를 확인하고 사용한다. 추측하지 않는다.
+- 거대한 catalog를 repository source로 무조건 commit하지 않는다.
+- 생성 catalog를 `data/asset_catalog.csv`에 둘 경우 필요하면 `.gitignore` 처리한다.
+- UI는 catalog가 없으면 example fallback + 명확한 안내를 제공한다.
 
-최소 columns:
+### 7. Streamlit UI를 harden한다
+
+`ui/app.py` skeleton의 execution boundary는 유지한다.
+
+Input page 최소 기능:
+
+- asset search/select
+- editable asset table
+- period
+- benchmark
+- objective: Max Sharpe / Target Volatility
+- rebalancing: monthly/yearly
+- RF
+- FX symbol when mixed currency
+- generated YAML preview
+- Save YAML
+- Run Optimization
+
+Validation error는 사용자에게 읽을 수 있는 메시지로 표시하고 raw traceback을 기본 UI에 노출하지 않는다.
+
+Result page 최소 기능:
+
+- 기존 run directory 열기
+- review table 선택/표시
+- 최소 chart:
+  - Efficient Frontier
+  - Annual Returns
+  - Drawdown
+  - Rolling Returns 3Y
+  - Rolling Returns 5Y
+
+차트는 existing review/raw output을 사용하며 금융 metric을 UI에서 다시 계산하지 않는다.
+
+Streamlit shell이 실제로 import/start 되는지 headless smoke validation을 수행한다.
+
+### 8. Viewer boundary를 유지한다
+
+`load_run_artifacts()`는 다음을 읽기만 한다.
+
+- `result.json`
+- optional `parity.json`
+- `review/*.csv`
+- `raw/*.csv`
+
+Viewer/Streamlit에서 Sharpe, CAGR, rolling returns, attribution 등을 새로 계산하지 않는다.
+단순 column selection, rename, sorting, chart mapping은 표현 작업으로 허용한다.
+
+### 9. README 사용법을 보강한다
+
+최소 실행 예를 추가한다.
 
 ```text
-portfolio,return_3m_pct,ytd_pct,return_1y_pct,annualized_3y_pct,annualized_5y_pct,annualized_10y_pct,full_period_cagr_pct,volatility_3y_pct,volatility_5y_pct
+uv run portfolio-optimizer validate configs/example.yaml
+uv run portfolio-optimizer run configs/example.yaml
+uv run --extra ui streamlit run ui/app.py
 ```
 
-#### asset_statistics.csv
+현재 uv 명령 문법에 맞게 실제 확인한 명령을 기록한다.
 
-PV Efficient Frontier Assets와 대응되도록 한다.
+YAML → CLI/UI → run outputs 구조도 짧게 설명한다.
 
-```text
-ticker,name,expected_return_pct,standard_deviation_pct,sharpe_ratio,min_weight_pct,max_weight_pct
-```
+### 10. Testing loop
 
-필요하면 trailing asset performance는 별도 `portfolio_asset_performance.csv`로 분리한다.
-
-#### correlations.csv
-
-row ticker/name + matrix 형태로 유지한다. correlation은 -1~1 ratio 그대로 둔다. assets + provided + optimized + benchmark가 포함됐는지 식별 가능해야 한다.
-
-#### efficient_frontier.csv
-
-100개 point를 유지하되 review에서는 단위를 명확히 한다.
-
-```text
-point,expected_return_pct,standard_deviation_pct,sharpe_ratio,weight_QQQ_pct,...
-```
-
-raw에는 기존 full precision decimal을 보존한다.
-
-#### annual_returns.csv
-
-```text
-year,provided_return_pct,optimized_return_pct,benchmark_return_pct
-```
-
-partial year임을 README/result configuration에서 알 수 있어야 한다.
-
-#### monthly_returns.csv
-
-PV의 월별 상세표에 가깝게 사람이 검토 가능한 long form을 제공한다.
+개발 중에는 신규/영향 범위 test를 우선 실행한다.
 
 예:
 
 ```text
-year,month,provided_return_pct,optimized_return_pct,benchmark_return_pct,QQQ_return_pct,SPMO_return_pct,...
+uv run pytest tests/test_yaml_config.py tests/test_runner.py tests/test_catalog.py tests/test_viewer_loader.py tests/test_run_output_layers.py tests/test_cli.py -q
 ```
 
-raw month-end series는 별도 유지한다.
-
-#### monthly_returns_calendar.csv
-
-현재 Jan-Dec+YTD 표는 useful하므로 별도 review table로 유지한다.
+그 후 작업 완료 전에는 반드시:
 
 ```text
-portfolio,year,Jan_pct,Feb_pct,...,Dec_pct,YTD_pct
+uv run pytest -q
 ```
 
-#### drawdowns.csv
+전체 regression suite를 실행한다.
 
-PV worst drawdown table에 가깝게 검토 가능하게 한다.
+기존 core/golden tests를 약화/삭제하지 않는다.
 
-최소:
+### 11. 완료 보고
 
-```text
-portfolio,rank,start,bottom,recovery,length_months,recovery_months,underwater_months,drawdown_pct
-```
+`agent-to-llm.md`에 최소 다음을 남긴다.
 
-필요하면 현재 internal `duration_months`와 PV의 Length/Recovery Time/Underwater Period 정의 차이를 명확히 분리한다. Review에는 우선 worst 10을 제공하고 raw에는 전체 episode를 보존해도 좋다.
+- 신규 contract tests pass count / 전체 regression pass count
+- generic writer review/raw 이관 여부
+- `configs/example.yaml` 실제 run 성공 여부와 run path
+- generated output file summary
+- CLI validate/run 결과
+- Streamlit headless smoke 결과
+- asset catalog refresh 방식
+- UI에서 구현된 input/result 기능 목록
+- 수정한 기존 core behavior가 있다면 이유
+- blocker/TODO
+- code commit SHA
+- validation run output commit SHA
 
-#### return_decomposition.csv
-
-현재 `asset=contribution_QQQ` 같은 구조는 수정한다.
-
-```text
-ticker,name,provided_contribution,optimized_contribution,unit
-```
-
-현재 계산이 initial portfolio value=1 기준 monetary contribution이라면 unit을 명시한다. 사용자/PV 검토용으로 initial balance 10,000 기준 contribution을 추가하는 것이 자연스럽다면 별도 columns로 제공하되 raw 정의를 바꾸지 않는다.
-
-#### risk_decomposition.csv
-
-```text
-ticker,name,provided_risk_contribution_pct,optimized_risk_contribution_pct
-```
-
-합계가 각각 100%가 되는지 test한다.
-
-#### benchmark_summary.csv
-
-현재 unlabeled rows를 제거한다.
-
-```text
-portfolio,active_return_pct,tracking_error_pct,information_ratio,overlap_start,overlap_end,observations
-optimized,...
-provided,...
-```
-
-coverage를 별도 row로 억지로 섞지 말고 portfolio row에 overlap metadata를 반복하거나 별도 `benchmark_coverage.csv`로 분리해도 된다.
-
-### 6. Rolling Returns는 PV summary + detail 시계열로 분리한다
-
-현재 `rolling_returns.csv`는 pandas MultiIndex 2단 header와 decimal 값을 그대로 써 사람이 검토하기 어렵다.
-
-Review summary:
-
-```text
-review/rolling_returns_summary.csv
-```
-
-```text
-roll_period_years,
-provided_average_pct,provided_high_pct,provided_low_pct,
-optimized_average_pct,optimized_high_pct,optimized_low_pct,
-benchmark_average_pct,benchmark_high_pct,benchmark_low_pct
-```
-
-rows: 1Y, 3Y, 5Y, 7Y.
-
-정의:
-- 1Y = 12-month compounded total return
-- 3Y/5Y/7Y = 해당 window compounded return의 annualized geometric return
-- Average/High/Low는 유효 rolling observations 기준
-
-Review detail:
-
-```text
-review/rolling_returns_3y.csv
-review/rolling_returns_5y.csv
-```
-
-```text
-date,provided_annualized_return_pct,optimized_annualized_return_pct,benchmark_annualized_return_pct
-```
-
-window가 차기 전 blank-only row는 review file에서 제외한다. 기존 full-precision raw 시계열은 `raw/rolling_returns.csv`에 유지한다.
-
-PV golden summary와 직접 비교한다.
-
-PV 3Y:
-- Provided Avg 17.83%, High 39.07%, Low 4.13%
-- Optimized Avg 17.17%, High 35.98%, Low 7.03%
-- Benchmark Avg 14.30%, High 25.99%, Low 5.05%
-
-PV 5Y:
-- Provided Avg 17.07%, High 23.40%, Low 10.19%
-- Optimized Avg 16.17%, High 21.55%, Low 10.16%
-- Benchmark Avg 14.09%, High 18.81%, Low 9.16%
-
-PV 1Y/7Y도 golden에서 parsing해 비교한다. 작은 delta는 FDR/optimized-weight 차이로 설명 가능하므로 exact tolerance pass/fail은 아직 만들지 않는다.
-
-### 7. Run README.md를 생성한다
-
-`runs/<run_id>/README.md`는 해당 run의 사람이 읽는 index 역할을 한다.
-
-최소 포함:
-
-- run_id / objective / analysis period / benchmark / RF convention
-- `result.json`과 `parity.json` 역할
-- `review/`와 `raw/` 차이
-- 각 review CSV의 한 줄 설명과 단위 convention
-- percentage-point review vs decimal raw convention
-- PV parity diagnostic 파일 설명
-- code revision / output revision
-
-다른 LLM이나 사용자가 이 README와 review 폴더만 보고 결과 구조를 이해할 수 있어야 한다.
-
-### 8. Review/Raw 무손실 invariant
-
-표현 개선 때문에 데이터가 손실되지 않았음을 검증한다.
-
-예:
-
-```text
-raw CAGR = 0.17645725759759445
-review CAGR = 17.6457 pct
-```
-
-처럼 review rounding 전 값이 raw/result.json에서 항상 복원 가능해야 한다.
-
-- review table 생성은 canonical/raw 데이터의 projection/formatting이어야 한다.
-- review table에서 제거한 detail은 반드시 raw/result.json에 남아 있어야 한다.
-- raw CSV에는 display rounding을 하지 않는다.
-- JSON과 raw CSV 사이 핵심 계산값 consistency를 테스트한다.
-
-### Verification / outputs
-
-변경 후 전체 offline suite를 다시 실행한다.
-
-Live FDR run도 다시 실행해서 `runs/20260828-pv-maxsharpe/`를 최신 code revision 기준으로 갱신한다.
-
-`agent-to-llm.md`에는 다음을 요약한다.
-
-- total offline test count/result
-- solver-only parity 주요 weight delta
-- moment parity 최대 ER/vol/correlation delta
-- Sortino convention 변경 여부
-- 전체 CSV review/raw 분리 완료 여부
-- review CSV 파일 목록
-- raw CSV 파일 목록
-- rolling summary 1Y/3Y/5Y/7Y PV 대비 주요 delta
-- README 생성 여부
-- code commit SHA와 output commit SHA
-- 남은 blocker
+모든 변경과 validation output을 commit/push하고 완료한다.
