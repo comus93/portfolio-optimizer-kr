@@ -819,3 +819,235 @@ v1 core는 최소한 다음을 자동 테스트한다.
 - **Traceable:** market data → monthly returns → statistics → optimization 결과를 추적할 수 있어야 한다.
 - **Minimal:** 실제 연구에 필요한 기능부터 구현하고 범용 금융 플랫폼으로 확장하지 않는다.
 - **Robust:** solver 결과와 constraints를 사후 검증하고 silent failure를 허용하지 않는다.
+
+## 24. Research Interaction Layer v0
+
+기존 optimizer runtime 위에 GPT/사용자 중심의 research interaction layer를 추가한다.
+
+이 layer의 첫 목표는 **하나의 연구를 정의하고, 하나의 experiment를 선택·실행하고, run 결과를 해석해 같은 연구 문서에 기록한 뒤 후속 experiment로 이어지는 loop**를 안정적으로 수행하는 것이다.
+
+Batch experiment는 이 single research loop가 검증된 뒤 확장한다.
+
+### 24.1 Research Artifacts
+
+연구 artifact의 최소 구조는 다음과 같다.
+
+```text
+studies/
+└─ <study-id>/
+   ├─ study.md
+   └─ experiments/
+      └─ <experiment>.yaml
+
+control/
+└─ execute.yaml
+
+runs/
+└─ <run_id>/
+   ├─ input.yaml
+   ├─ result.json
+   ├─ context.yaml
+   ├─ review/
+   └─ raw/
+```
+
+별도 research database나 state machine을 만들지 않는다. Git이 history를 담당한다.
+
+### 24.2 Study Contract
+
+하나의 연구는 다음 파일을 중심으로 관리한다.
+
+```text
+studies/<study-id>/study.md
+```
+
+연구 질문과 결과 분석을 별도 파일로 나누지 않는다.
+
+`study.md`에는 연구를 다시 이어가기 위해 필요한 다음 정보가 한 문서 안에 있어야 한다.
+
+```text
+Research question / purpose
+Relevant hypothesis or background
+Executed experiment and run references
+Observed result facts
+GPT + user interpretation
+Current conclusion
+Follow-up question or next experiment
+```
+
+문서의 목적은 strict machine parsing이 아니라 사람과 LLM이 최소 read로 연구 상태를 복원하는 것이다. 따라서 불필요한 metadata schema나 immutable report version 규칙을 만들지 않는다.
+
+### 24.3 Experiment Contract
+
+Experiment는 별도의 registry object가 아니라 기존 optimizer YAML contract 자체다.
+
+```text
+studies/<study-id>/experiments/<experiment>.yaml
+```
+
+Experiment revision이 필요한 경우 파일 revision으로 구분한다.
+
+```text
+003-gld-max30-r01.yaml
+003-gld-max30-r02.yaml
+```
+
+Research experiment YAML에서 `run_id`는 생략할 수 있다.
+
+`run_id`는 experiment identity가 아니라 persisted execution instance identity다.
+
+기존 YAML처럼 `run_id`가 명시된 경우에도 지원한다.
+
+### 24.4 Run ID and Persistence
+
+Persisted run에는 unique `run_id`가 반드시 존재한다.
+
+규칙:
+
+1. YAML에 `run_id`가 있으면 해당 값을 사용한다.
+2. YAML에 `run_id`가 없으면 runner가 실행 시 unique `run_id`를 생성한다.
+3. 이미 존재하는 `runs/<run_id>/`를 silent overwrite하지 않는다.
+4. 자동 생성된 `run_id`를 포함한 실제 실행 configuration을 `runs/<run_id>/input.yaml`에 저장한다.
+5. 같은 experiment YAML을 여러 번 실행할 수 있으며 각각 별도의 run으로 보존할 수 있다.
+
+자동 생성 `run_id`의 세부 formatting은 한 구현에서 일관되고 사람이 식별 가능해야 한다. 특정 format 자체는 research contract의 핵심 의미론으로 고정하지 않는다.
+
+### 24.5 Execution Pointer Contract
+
+현재 실행할 research experiment는 tracked control file에 기록한다.
+
+```text
+control/execute.yaml
+```
+
+v0 schema:
+
+```yaml
+target: studies/gld-cap-sensitivity/experiments/003-gld-max30-r01.yaml
+```
+
+`target`은 repository root 기준 relative path다.
+
+v0에서는 다음 조건을 만족해야 한다.
+
+- target이 존재한다.
+- target은 YAML file이다.
+- target은 `studies/<study-id>/experiments/` 아래에 있다.
+- path traversal로 repository 밖을 참조할 수 없다.
+
+Batch를 위한 `mode`, experiment list 등의 필드는 v0에 넣지 않는다.
+
+### 24.6 Research Execute Command
+
+Research execution entrypoint는 다음이다.
+
+```text
+portfolio-optimizer execute
+```
+
+동작 순서:
+
+```text
+1. control/execute.yaml read
+2. target resolve / validate
+3. target experiment YAML load / validate
+4. effective run_id resolve
+5. existing optimizer runner 실행
+6. canonical run artifacts 저장
+7. context.yaml 저장
+8. run path 반환
+```
+
+`execute`는 새로운 optimization path가 아니다.
+
+Financial calculation, market-data loading, solver, analytics는 기존 YAML runner와 동일한 코드 경로를 사용한다.
+
+### 24.7 Run Context Contract
+
+Research run에는 다음 provenance artifact를 추가한다.
+
+```text
+runs/<run_id>/context.yaml
+```
+
+v0 최소 schema:
+
+```yaml
+run_id: 20260828-0007
+study: studies/gld-cap-sensitivity/study.md
+experiment: studies/gld-cap-sensitivity/experiments/003-gld-max30-r01.yaml
+```
+
+`context.yaml`의 역할은 다음 linkage를 유지하는 것이다.
+
+```text
+Study <-> Experiment <-> Run
+```
+
+`context.yaml`에는 계산 결과, GPT reasoning, 사용자 결론을 복제하지 않는다.
+
+Source of truth는 다음처럼 분리한다.
+
+```text
+Research meaning / interpretation   study.md
+Experiment definition              experiment YAML
+Exact effective executed input     runs/<run_id>/input.yaml
+Canonical calculated result        runs/<run_id>/result.json
+Research provenance                runs/<run_id>/context.yaml
+```
+
+### 24.8 Single Research Loop
+
+v0에서 반드시 가능한 end-to-end 흐름:
+
+```text
+1. 사용자와 GPT가 연구 질문을 정의한다.
+2. study.md를 생성하거나 기존 study를 선택한다.
+3. 실행 가능한 experiment YAML을 생성한다.
+4. control/execute.yaml이 해당 experiment를 가리킨다.
+5. 사용자는 동일한 `portfolio-optimizer execute` command를 실행한다.
+6. 기존 optimizer runtime이 experiment를 실행한다.
+7. run output과 context.yaml이 생성된다.
+8. GPT가 study.md와 linked run output을 읽는다.
+9. 사용자와 GPT가 결과를 해석한다.
+10. 결과 사실, 해석, 결론, follow-up을 같은 study.md에 반영한다.
+11. 후속 experiment가 필요하면 새 YAML을 만들고 control target을 변경한다.
+```
+
+사용자는 experiment file path나 YAML filename을 기억해서 command argument로 직접 전달할 필요가 없어야 한다.
+
+### 24.9 Research Interaction Acceptance Checks
+
+v0는 최소한 다음을 자동 테스트한다.
+
+1. valid `control/execute.yaml`의 target이 정확한 experiment YAML로 resolve된다.
+2. control file이 없으면 optimizer core 호출 전에 명시적으로 실패한다.
+3. `target`이 없으면 명시적으로 실패한다.
+4. 존재하지 않는 target은 명시적으로 실패한다.
+5. `studies/<study-id>/experiments/` 밖의 target은 거부된다.
+6. repository 밖으로 나가는 path traversal target은 거부된다.
+7. invalid experiment YAML은 기존 YAML validation contract로 실패한다.
+8. `portfolio-optimizer execute`는 direct YAML 실행과 동일한 optimizer calculation path를 사용한다.
+9. `run_id`가 없는 experiment는 unique persisted run_id를 얻는다.
+10. 같은 run_id의 기존 run directory를 silent overwrite하지 않는다.
+11. persisted `input.yaml`은 실제 effective run_id를 포함한 실행 configuration을 재현할 수 있다.
+12. research run에는 `context.yaml`이 생성된다.
+13. `context.yaml.run_id`는 실제 output directory의 run_id와 일치한다.
+14. `context.yaml.study`와 `context.yaml.experiment`는 실행된 research artifact를 정확히 가리킨다.
+15. 동일 experiment를 두 번 실행할 경우 distinct run_id를 사용해 두 결과를 별도로 보존할 수 있다.
+16. 기존 `portfolio-optimizer run <yaml>` 경로는 계속 동작한다.
+17. Research Interaction 추가 후 기존 전체 regression suite가 통과한다.
+
+### 24.10 Deferred Extensions
+
+다음은 single research loop가 실제 연구에서 검증된 뒤 확장한다.
+
+```text
+Batch experiment execution
+Study navigation index
+Cross-run comparison aggregation
+Remote execution / notification
+Study search optimization
+```
+
+Batch를 추가할 때도 experiment의 canonical contract는 YAML이고 optimizer calculation path는 기존 runner를 재사용한다.
