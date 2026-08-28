@@ -64,7 +64,7 @@ Benchmark가 있을 때 다음을 구현한다.
 - 최소 section은 specification의 `configuration`, `data_coverage`, `asset_statistics`, `optimization_result`, `efficient_frontier`, `portfolio_performance`, `benchmark_analytics`, `correlations`, `return_decomposition`, `risk_decomposition`을 유지한다.
 - deterministic한 JSON writer를 구현한다.
 - research/validation run은 `runs/<run_id>/result.json`에 저장한다.
-- 큰 frontier/correlation table을 CSV로 분리하는 것은 필요할 때만 한다.
+- **이번 validation run에서 사람이 직접 검토할 핵심 tabular 결과는 CSV로도 반드시 저장한다. JSON 안에만 넣고 끝내지 않는다.**
 - ordinary pytest의 임시 output은 commit하지 않는다.
 
 ### 6. PV golden 실제 parity validation
@@ -87,15 +87,32 @@ Golden source:
 - data-source 차이와 optimizer 차이를 가능한 한 분리해서 `parity.json`에 기록한다.
 - normal offline pytest가 network에 의존하지 않게 유지한다. live FDR parity test/run은 별도 marker 또는 명시적 command로 분리한다.
 
-첫 실제 validation output은 다음에 저장한다.
+첫 실제 validation output은 **최소한** 다음 파일을 모두 생성하고 GitHub remote에 commit/push한다.
 
 ```text
 runs/20260828-pv-maxsharpe/
 ├─ result.json
-└─ parity.json
+├─ parity.json
+├─ efficient_frontier.csv
+├─ asset_statistics.csv
+├─ correlations.csv
+├─ portfolio_performance.csv
+├─ annual_returns.csv
+├─ monthly_returns.csv
+├─ drawdowns.csv
+├─ return_decomposition.csv
+└─ risk_decomposition.csv
 ```
 
-필요한 경우 동일 디렉터리에 frontier/correlation CSV를 추가할 수 있다.
+Benchmark/active/rolling 결과가 별도 table로 자연스럽게 분리되는 경우 아래 CSV도 추가한다.
+
+```text
+benchmark_analytics.csv
+rolling_returns.csv
+active_returns.csv
+```
+
+CSV는 LLM과 사용자가 바로 읽고 비교할 수 있도록 header 포함 UTF-8로 저장한다. 동일 정보를 여러 CSV에 중복 복제하지 말고, 각 파일은 하나의 명확한 table 역할을 갖게 한다.
 
 ### Verification
 
@@ -105,6 +122,7 @@ runs/20260828-pv-maxsharpe/
 - 신규 synthetic/offline tests 추가
 - 전체 offline suite pass
 - 별도로 live FDR PV parity run 수행
+- 위 validation JSON/CSV 산출물 실제 생성 확인
 
 완료 후 모든 코드/테스트/run output을 GitHub remote에 commit/push하고 `agent-to-llm.md`에 다음만 요약한다.
 
@@ -112,6 +130,7 @@ runs/20260828-pv-maxsharpe/
 - 전체 offline test pass/fail count
 - live parity run 성공 여부
 - `runs/20260828-pv-maxsharpe/` 경로
+- 생성한 JSON/CSV 파일 목록
 - PV 대비 주요 delta 요약
 - blocker/TODO
 - commit SHA
