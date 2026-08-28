@@ -1,0 +1,38 @@
+run_id: example-max-sharpe
+
+analysis_period:
+  start: 2019-01-01
+  end: 2025-12-31
+
+assets:
+  - symbol: QQQ
+    name: Invesco QQQ Trust
+    currency: USD
+    provided_weight_pct: 50
+    min_weight_pct: 0
+    max_weight_pct: 80
+
+  - symbol: GLD
+    name: SPDR Gold Shares
+    currency: USD
+    provided_weight_pct: 50
+    min_weight_pct: 0
+    max_weight_pct: 80
+
+benchmark:
+  symbol: SPY
+  currency: USD
+
+optimization:
+  objective: max_sharpe
+  frontier_points: 100
+
+portfolio:
+  rebalancing_period: monthly
+
+risk_free:
+  mode: fixed
+  annual_rate_pct: 2.0
+
+# Mixed KRW/USD runs must additionally provide an explicit FDR FX series symbol.
+fx: {}
