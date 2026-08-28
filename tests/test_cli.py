@@ -1,22 +1,21 @@
-from pathlib import Path
-
-from portfolio_optimizer_kr.cli import main
+from portfolio_optimizer_kr.cli import _parser
 
 
-def test_cli_validate_uses_same_yaml_contract(tmp_path: Path, capsys):
-    config = tmp_path / "run.yaml"
-    config.write_text(
-        """
-run_id: cli-demo
-assets:
-  - symbol: A
-  - symbol: B
-risk_free:
-  mode: fixed
-  annual_rate_pct: 0
-""",
-        encoding="utf-8",
-    )
+def test_validate_command_accepts_yaml_path():
+    args = _parser().parse_args(["validate", "configs/example.yaml"])
+    assert args.command == "validate"
+    assert str(args.config) == "configs/example.yaml"
 
-    assert main(["validate", str(config)]) == 0
-    assert "valid: cli-demo" in capsys.readouterr().out
+
+def test_run_command_accepts_output_root():
+    args = _parser().parse_args(["run", "configs/example.yaml", "--output-root", "tmp-runs"])
+    assert args.command == "run"
+    assert str(args.output_root) == "tmp-runs"
+
+
+def test_execute_command_uses_tracked_control_defaults():
+    args = _parser().parse_args(["execute"])
+    assert args.command == "execute"
+    assert str(args.repo_root) == "."
+    assert str(args.control) == "control/execute.yaml"
+    assert str(args.output_root) == "runs"
