@@ -14,7 +14,16 @@
 
 ## Background / Hypothesis
 
-첫 정식 Research Interaction Layer E2E 연구다. 이전 PV parity 진단에서 사용한 2016-08 ~ 2026-07 기간, SPY benchmark, 100-point Efficient Frontier와 동일한 기본 조건을 사용해 실행 파이프와 분석 파이프를 함께 검증한다.
+첫 정식 Research Interaction Layer E2E 연구다.
+
+사용자가 확정한 실행 조건은 다음과 같다.
+
+- Optimization objective: Maximum Sharpe
+- Rebalancing: Monthly
+- Analysis period: QQQ, SPMO, GDX, GLD, SLV, AIA, XLE 7개 자산의 실제 데이터가 모두 존재하는 공통 교집합 전체 기간
+- Benchmark: SPY
+- Efficient Frontier: 100 points
+- Risk-free: fixed 2.35595% (기존 PV parity 진단과의 연결을 위한 기본값)
 
 가설은 미리 KEEP/DROP을 정하지 않는다. 각 자산의 단독 성과가 아니라 portfolio marginal utility와 frontier 상의 지속적 역할을 중심으로 판정한다.
 
@@ -34,7 +43,8 @@ Total = 100%.
 
 ## Experiment / Run References
 
-- Experiment: `experiments/001-base-r01.yaml`
+- Draft experiment, not executed: `experiments/001-base-r01.yaml`
+- Confirmed experiment: `experiments/001-base-r02.yaml`
 - Run: pending
 
 ## Observed Facts
