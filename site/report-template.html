@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portfolio Optimization Report</title>
+  <style>
+    :root { font-family: Arial, Helvetica, sans-serif; color: #222; background: #fff; }
+    body { margin: 0; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    section { margin: 0 0 32px; }
+    .chart, .table-slot { min-height: 120px; }
+  </style>
+</head>
+<body>
+  <main id="report-root">
+    <section id="results-overview"><h1>Portfolio Optimization</h1></section>
+    <section id="provided-portfolio"><h2>Provided Portfolio</h2><div class="table-slot"></div></section>
+    <section id="optimized-portfolio"><h2>Optimized Portfolio</h2><div class="table-slot"></div></section>
+    <section id="performance-summary"><h2>Performance Summary</h2><div class="table-slot"></div></section>
+    <section id="portfolio-growth"><h2>Portfolio Growth</h2><div class="chart"></div></section>
+    <section id="annual-returns"><h2>Annual Returns</h2><div class="chart"></div></section>
+    <section id="trailing-returns"><h2>Trailing Returns</h2><div class="table-slot"></div></section>
+    <section id="efficient-frontier-assets"><h2>Efficient Frontier Assets</h2><div class="table-slot"></div></section>
+    <section id="asset-correlations"><h2>Asset Correlations</h2><div class="table-slot"></div></section>
+    <section id="efficient-frontier"><h2>Efficient Frontier</h2><div class="chart"></div></section>
+    <section id="frontier-transition"><h2>Efficient Frontier Transition Map</h2><div class="chart"></div></section>
+    <section id="frontier-portfolios"><h2>Efficient Frontier Portfolios</h2><div class="table-slot"></div></section>
+    <section id="annualized-active-return"><h2>Annualized Active Return</h2><div class="chart"></div></section>
+    <section id="active-return-contribution"><h2>Active Return Contribution</h2><div class="chart"></div><div class="table-slot"></div></section>
+    <section id="rolling-active-return"><h2>Rolling Active Return / Tracking Error</h2><div class="chart"></div></section>
+    <section id="up-down-market"><h2>Up vs. Down Market Performance</h2><div class="chart"></div><div class="table-slot"></div></section>
+    <section id="portfolio-metrics"><h2>Portfolio Metrics</h2><div class="table-slot"></div></section>
+    <section id="monthly-returns"><h2>Monthly Returns</h2><div class="table-slot"></div></section>
+    <section id="drawdown-chart"><h2>Drawdowns</h2><div class="chart"></div></section>
+    <section id="stress-periods"><h2>Historical Market Stress Periods</h2><div class="table-slot"></div></section>
+    <section id="worst-drawdowns"><h2>Worst Drawdowns</h2><div class="table-slot"></div></section>
+    <section id="asset-performance"><h2>Portfolio Asset Performance</h2><div class="table-slot"></div></section>
+    <section id="portfolio-asset-correlations"><h2>Portfolio / Asset Correlations</h2><div class="table-slot"></div></section>
+    <section id="return-decomposition"><h2>Return Decomposition</h2><div class="table-slot"></div></section>
+    <section id="risk-decomposition"><h2>Risk Decomposition</h2><div class="table-slot"></div></section>
+    <section id="annual-asset-returns"><h2>Annual Asset Returns</h2><div class="chart"></div></section>
+    <section id="rolling-returns-summary"><h2>Rolling Returns Summary</h2><div class="table-slot"></div></section>
+    <section id="rolling-returns-3y"><h2>Rolling 3Y Returns</h2><div class="chart"></div></section>
+    <section id="rolling-returns-5y"><h2>Rolling 5Y Returns</h2><div class="chart"></div></section>
+  </main>
+  <script id="report-data" type="application/json">__REPORT_DATA_JSON__</script>
+  <script>
+    window.PORTFOLIO_REPORT_DATA = JSON.parse(document.getElementById('report-data').textContent);
+  </script>
+</body>
+</html>
