@@ -1,6 +1,6 @@
 # portfolio-optimizer-kr
 
-Mean-variance portfolio research toolkit with first-class support for Korean investment assets such as individual stocks, ETFs, and ETNs. Portfolio Visualizer is a golden reference, not an implementation target.
+Mean-variance portfolio research toolkit with first-class support for Korean investment assets such as individual stocks, ETFs, and ETNs. Portfolio Visualizer is a reference, not an implementation target.
 
 ## Development
 
@@ -9,7 +9,22 @@ uv sync --extra dev
 uv run pytest
 ```
 
-The financial conventions, research interpretation contract, and acceptance criteria are defined in `docs/specification.md`. Agent workflow rules are in `AGENTS.md`.
+The financial conventions are defined in `docs/specification.md`.
+
+The canonical user research operation flow is defined in `docs/research-operation-pipeline.md`:
+
+```text
+User <-> ChatGPT
+-> Experiment
+-> GitHub Actions
+-> Run / Result
+-> GitHub Pages + ChatGPT interpretation
+-> User discussion
+-> Confirmed Analysis
+-> Repository
+```
+
+Agent workflow rules for development and validation are in `AGENTS.md`.
 
 ## Current skeleton
 
@@ -23,4 +38,4 @@ The initial skeleton contains:
 - monthly/yearly historical rebalancing
 - basic performance, benchmark, and decomposition analytics
 - structured result model
-- synthetic pytest suite plus PV golden-reference smoke tests
+- synthetic pytest suite plus external-reference smoke tests
