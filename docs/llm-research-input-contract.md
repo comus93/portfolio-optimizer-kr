@@ -163,7 +163,16 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 
 그 외 필수값이 미확정이면 Experiment YAML을 초안으로 작성할 수는 있지만 **실행 가능한 최종 Experiment로 간주하지 않는다.**
 
-특히 미확정 Experiment를 `control/execute.yaml`의 실제 실행 대상으로 지정하지 않는다.
+특히 미확정 Experiment를 `control/execute.yaml`의 `target`으로 지정하고 `run: true`로 전환하지 않는다.
+
+정식 실행 시 LLM은 필요한 Experiment 변경을 먼저 저장한 뒤 다음 형태로 실행을 요청한다.
+
+```yaml
+target: studies/<study-id>/experiments/<experiment>.yaml
+run: true
+```
+
+`run: true`는 한 번의 실행 의도이며, 성공한 요청은 GitHub Actions가 안전하게 `run: false`로 consume한다.
 
 정식 실행 경로는 `docs/research-operation-pipeline.md`를 따른다.
 
