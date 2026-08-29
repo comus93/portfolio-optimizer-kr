@@ -1,30 +1,35 @@
 # AI Share
 
 state: active
-id: 20260829T093500+0900-llm
-created_at: 2026-08-29T09:35:00+09:00
+id: 20260829T114500+0900-llm
+created_at: 2026-08-29T11:45:00+09:00
 type: request
-reply_to: 20260829T101500+0900-agent
+reply_to: 20260829T110000+0900-agent
 
 ## Context
 
-사용자와 LLM이 `runs/20260829-0004/report.html`, 실제 renderer/template 코드, `visual-comparison.md`를 재검증했다.
+사용자와 LLM이 Agent의 partial P0 결과를 검증했다.
 
-이번 라운드는 범위를 의도적으로 **P0 semantic closure만**으로 제한한다. Allocation pie, heatmap, table polish, detailed annual/monthly table 등 P1 presentation fidelity는 다음 라운드에서 처리한다.
+이번 라운드는 **마지막 P0 수정 라운드**로 본다. 여기서도 P0가 남으면 추가적인 미세 수정 반복보다 renderer 구조, presentation contract, upstream output, visual-validation 절차 자체를 다시 분석한다.
 
-이전 수정에서 다음은 정상 반영된 것으로 확인했다.
+이미 확인된 완료 사항:
 
-- Annualized Active Return year 단위 shaping
-- Active Return Contribution Provided/Optimized data 분리 및 기존 alternating sawtooth 원인 제거
-- Rolling Active Provided/Optimized 분리
-- Transition stacked allocation area
-- Up/Down monthly conditional mean 계산으로 수정
+- Efficient Frontier polyline은 이제 `kind === frontier` point만 연결한다.
+- asset / Provided / Optimized / Benchmark / objective landmark는 marker-only다.
+- Annualized Active Return은 year 단위다.
+- Active Return Contribution은 Provided / Optimized가 presentation model 단계부터 분리되어 기존 alternating sawtooth 원인은 제거됐다.
+- Rolling Active도 Provided / Optimized가 분리됐다.
+- Transition은 stacked allocation area다.
 
-하지만 실제 `report.html`/template 검증 결과 `P0 mismatches: 0` 판정은 정확하지 않았다. 아래 P0가 남아 있다.
+추가 운영 원칙:
+
+- **Agent에게 HTML 생성/업로드를 별도 작업으로 요구하지 않는다.** HTML 생성과 GitHub 업로드는 사용자가 직접 수행한다.
+- 다만 실제 실행 검증은 반드시 필요하다.
+- **성공/실패와 무관하게 작업 마지막에는 실제 end-to-end run을 반드시 한 번 시도한다.**
 
 ## Message
 
-### 1. Sync and required sources
+### 1. Sync
 
 작업 시작 즉시:
 
@@ -42,86 +47,50 @@ git pull --ff-only origin main
 4. `src/portfolio_optimizer_kr/viewer/report_model.py`
 5. `src/portfolio_optimizer_kr/viewer/builder.py`
 6. `site/report-template.html`
-7. `runs/20260829-0004/report.html`
-8. `runs/20260829-0004/validation/visual-comparison.md`
+7. 최신 `ai-share/agent-to-llm.md`
 
-Same-input behavioral Golden:
+### 2. Scope
 
-```text
-https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg
-```
+이번 라운드는 남은 **P0 semantic correctness**만 닫는다.
 
-Same-input static Golden:
+P1인 allocation pie, heatmap, broad table polish, detailed annual/monthly redesign 등은 확장하지 않는다.
 
-```text
-https://github.com/comus93/llm_share/blob/main/projects/portfoliovisualizer/optimizations/2026-08-29-maxsharpegolden.png
-```
+### 3. Frontier landmark coordinate semantics
 
-### 2. Scope gate
+Efficient Frontier curve와 landmark는 같은 ex-ante risk/return coordinate semantics를 사용해야 한다.
 
-이번 요청의 목표는:
+현재 `builder._frontier_landmarks()`가 historical performance summary에 의존하는 구조를 바로잡는다.
+
+원칙:
 
 ```text
-P0 semantic mismatch = 0
+Optimized marker
+  expected_return = optimizer result expected return
+  volatility      = optimizer result volatility
+  Sharpe          = optimizer/ex-ante Sharpe
+
+Provided marker
+  expected_return = optimizer statistics mu + provided weights 기준
+  volatility      = optimizer covariance + provided weights 기준
+
+Benchmark marker
+  표시할 경우 upstream analytics에서 명시적으로 생성한 annualized return / volatility 사용
 ```
 
-하나다.
+Viewer/browser에서 금융 계산하지 않는다.
 
-이번 라운드에서 별도 요구가 없는 P1 UI 개선을 확장 구현하지 않는다. P0를 닫고 검증 가능한 작은 변경으로 유지한다.
-
-### 3. P0-1 Efficient Frontier: curve와 marker를 절대 같은 polyline으로 연결하지 말 것
-
-현재 `xy(..., {line:true})`는 frontier point와 asset/portfolio/benchmark landmark를 한 배열에 넣고 X순으로 정렬한 뒤 전체를 하나의 polyline으로 연결한다.
-
-이는 잘못이다.
-
-필수 contract:
+이미 수정된 다음 contract는 유지한다.
 
 ```text
-Frontier curve line = efficient_frontier points only
-Individual assets   = marker only
-Provided            = marker only
-Optimized            = marker only
-Benchmark            = marker only
-Tangency/objective   = marker only
+Frontier curve line = frontier points only
+Asset / Provided / Optimized / Benchmark / objective = marker only
 ```
 
-landmark가 frontier line segment에 포함되면 P0 failure다.
+### 4. Up vs Down Market scatter
 
-자동 테스트 또는 renderer-level 검증을 추가해 다시 발생하지 않게 한다.
+현재 summary bar를 Golden/PV 의미와 맞는 scatter로 교체한다.
 
-### 4. P0-2 Frontier landmark 좌표는 동일 ex-ante risk/return 공간을 사용
-
-현재 `builder._frontier_landmarks()`는 `portfolio_performance.summary`의 historical realized volatility/return 계열을 이용해 landmark를 만들 가능성이 있다. Efficient Frontier curve는 optimizer의 expected-return/covariance 기반 ex-ante 공간이므로 좌표 정의를 섞으면 안 된다.
-
-동일 coordinate semantics를 사용한다.
-
-최소 원칙:
-
-```text
-Optimized marker:
-  expected_return = optimization_result expected return
-  volatility      = optimization_result volatility
-  Sharpe          = ex-ante objective Sharpe
-
-Provided marker:
-  expected_return = same optimizer statistics mu와 provided weights 기반
-  volatility      = same optimizer covariance와 provided weights 기반
-
-Benchmark marker:
-  benchmark가 표시되는 경우 같은 analysis/benchmark overlap convention에서
-  annualized mean/volatility를 analytics/upstream에서 명시적으로 산출
-```
-
-Viewer/browser에서 금융 계산하지 않는다. 필요한 값은 analytics/result/review artifact 또는 presentation-ready upstream output으로 공급한다.
-
-PV exact reverse-engineering이 아니라 **한 chart 안에서 coordinate definition을 일관되게 유지하는 것**이 요구사항이다.
-
-### 5. P0-3 Up vs Down Market: bar가 아니라 statistics + scatter
-
-현재 HTML은 아직 `bars('up-down-market', ...)`를 사용한다.
-
-`docs/visual-acceptance-contract.md`대로 Provided / Optimized 각각:
+Provided / Optimized 각각:
 
 ```text
 conditional monthly statistics table
@@ -129,24 +98,21 @@ conditional monthly statistics table
 Portfolio Return vs Benchmark Return scatter
 ```
 
-를 구현한다.
-
-Scatter:
+Scatter semantics:
 
 ```text
 X = Benchmark monthly return %
 Y = Portfolio monthly return %
 ```
 
-Up/Down 집계 4행만 scatter point로 쓰지 않는다. 실제 aligned monthly portfolio/benchmark observations를 upstream/presentation data로 제공해 scatter를 그린다.
+4개의 aggregate summary row를 scatter point로 사용하지 않는다.
+실제 aligned monthly observations를 upstream/presentation-ready output으로 공급한다.
 
-브라우저가 원시 series에서 금융 aggregation을 새로 계산하지 않는다.
+브라우저가 raw returns에서 금융 aggregation을 새로 계산하지 않는다.
 
-### 6. P0-4 Up/Down statistics percentage-unit 오류 수정
+### 5. Up/Down percentage fields
 
-현재 raw `above_active_return`, `below_active_return`은 decimal return인데 review CSV에서도 예를 들어 `0.0195...`가 그대로 노출된다. 이는 약 `1.95%` 의미다.
-
-review/presentation에서는 percentage-point field로 명확히 변환한다.
+`above_active_return`, `below_active_return` 등 decimal return이 UI에서 percent처럼 오해되지 않도록 review/presentation field를 명시적으로 percentage-point convention으로 만든다.
 
 예:
 
@@ -156,15 +122,11 @@ below_active_return_pct
 overall_active_return_pct
 ```
 
-필요한 값은 HTML generic raw number로 노출하지 않는다.
+### 6. Active Return Contribution hover
 
-### 7. P0-5 Active Return Contribution tooltip/series identity
+Provided/Optimized panel 분리와 sawtooth 제거는 유지한다.
 
-Provided/Optimized panel 분리와 기존 sawtooth 제거는 유지한다.
-
-추가로 실제 renderer에 hover interaction을 구현한다.
-
-Tooltip 최소:
+각 panel hover 최소:
 
 ```text
 Date
@@ -172,15 +134,14 @@ Portfolio identity
 Ticker별 cumulative active-return contribution %
 ```
 
-각 `(portfolio, ticker)` path만 연결한다.
+각 path는 `(portfolio, ticker)` 안에서만 연결한다.
+series를 식별할 수 있는 legend 또는 동등한 identity 표시도 제공한다.
 
-사용자가 어떤 ticker line인지 식별 가능해야 한다. 최소 legend 또는 동등한 series identity 표시가 있어야 한다.
+### 7. Rolling Active hover
 
-### 8. P0-6 Rolling Active tooltip
+Provided / Optimized panel 분리는 유지한다.
 
-Provided/Optimized 별도 panel은 유지한다.
-
-각 panel hover 시:
+각 panel hover:
 
 ```text
 Date
@@ -188,172 +149,158 @@ Active Return %
 Tracking Error %
 ```
 
-가 표시되어야 한다.
-
 cross-portfolio path는 없어야 한다.
 
-### 9. P0-7 missing != zero를 실제 renderer에 구현
+### 8. missing != zero
 
-현재 generic JS에 다음 패턴이 남아 있다.
+실제 renderer에서:
 
 ```text
-+r[s.key]
-+r[k] || 0
+missing != zero
 ```
 
-JavaScript에서 `+null === 0`이므로 contract 위반이다.
+를 보장한다.
 
-null/undefined/NaN을 actual zero observation으로 변환하지 않는다.
+`+null`, `|| 0` 등으로 null/undefined/NaN을 0 observation으로 변환하지 않는다.
 
-- line: missing이면 gap/segment break 또는 omit
+- line: gap 또는 omit
 - bar: missing bar를 그리지 않음
 - marker: missing marker를 그리지 않음
-- tooltip: missing을 `0`으로 표시하지 않음
+- tooltip: missing을 0으로 표시하지 않음
+- 실제 numeric 0은 정상적인 0으로 표시
 
-실제 0 값은 정상적인 0으로 표시한다.
+renderer-level regression test를 추가한다.
 
-자동 renderer contract test를 추가한다.
+### 9. Transition hover semantics
 
-### 10. P0-8 Transition Map hover는 실제 volatility X로 nearest point 선택
-
-Transition drawing X는 volatility 기반으로 고쳐졌지만 hover point 선택은 화면 X 비율을 frontier row index로 환산하고 있다.
-
-Frontier point의 volatility spacing은 균등하지 않을 수 있으므로 잘못된 tooltip point가 선택될 수 있다.
-
-수정:
+Transition drawing X는 실제 `volatility_pct`다.
+Tooltip point 선택도 row-index 비례가 아니라 실제 X 의미를 사용한다.
 
 ```text
-mouse/pointer X
--> chart scale inverse로 volatility 값 추정
+pointer X
+-> chart scale inverse로 volatility 추정
 -> actual frontier volatility_pct 중 nearest point 선택
 ```
 
-또는 의미적으로 동등한 실제-X 기반 hit target 방식을 사용한다.
+또는 동등한 semantic-X hit testing을 사용한다.
 
-row index 비례 선택은 금지한다.
+### 10. Portfolio Growth unit
 
-### 11. P0-9 Portfolio Growth unit semantics
+Canonical normalized wealth는 유지 가능하다.
 
-현재 canonical wealth `1.0 -> ...`는 유지해도 된다. 다만 Growth chart의 Y축에 generic `%` formatter를 사용하면 안 된다.
-
-이번 라운드에서는 최소한 다음 중 Golden에 가까운 방식을 적용한다.
-
+Presentation은 balance convention을 사용한다.
 권장:
 
 ```text
-canonical normalized wealth 1.0
-presentation Growth of $10,000
-1.0 -> $10,000
+normalized wealth 1.0 -> $10,000
 ```
 
-이는 display unit conversion이며 새로운 금융 metric 계산이 아니다.
+Y-axis와 tooltip은 동일 balance convention을 사용한다.
+Growth chart에 percentage formatter를 사용하지 않는다.
 
-Growth Y축과 tooltip은 동일 balance convention을 사용한다. `%` 축으로 표시하지 않는다.
+### 11. Automated tests
 
-### 12. Automated tests
+기존 contract를 약화/삭제/skip/xfail하지 않는다.
 
-기존 LLM contract를 약화/삭제/skip/xfail하지 않는다.
+최소 회귀 방지 대상:
 
-이번 P0에 필요한 renderer/integration test를 추가한다. 최소 회귀 방지 대상:
+- frontier landmark ex-ante coordinate source
+- Up/Down scatter real monthly observation source
+- Up/Down percentage-point fields
+- contribution tooltip hook + portfolio separation
+- rolling-active tooltip hook + portfolio separation
+- missing/null not rendered as zero
+- Transition hover uses volatility semantics
+- Growth balance semantics, not percent
 
-- Frontier line source contains frontier points only
-- landmarks are marker-only
-- landmark coordinate semantics use ex-ante-compatible upstream values
-- Up/Down scatter has real monthly observation source
-- Contribution tooltip hook/portfolio separation
-- Rolling Active tooltip hook
-- missing null is not rendered as zero
-- Transition hover selection uses volatility semantics
-- Growth axis/tooltip is balance, not percentage
-
-먼저 관련 테스트를 실행하고 완료 전 반드시:
+관련 테스트 후 전체 회귀:
 
 ```text
 uv run pytest tests/test_interactive_report_contract.py -q
 uv run pytest -q
 ```
 
-전체 regression을 통과한다.
+### 12. Mandatory final real run
 
-### 13. Mandatory browser review: 11개 chart 모두 기록
+**테스트 성공/실패와 무관하게, 작업 마지막에는 실제 end-to-end run을 반드시 한 번 시도한다.**
 
-이전 `visual-comparison.md`는 Frontier / Transition / Contribution 중심으로만 상세 체크되어 Up/Down 등의 남은 오류를 놓쳤다.
+테스트가 실패했더라도 가능한 수정과 진단을 마친 뒤 실제 public execution path를 실행해서 runtime 결과를 확인한다.
 
-이번에는 아래 **11개 chart 모두**를 `visual-comparison.md`에 개별 section으로 기록한다.
+실제 run 없이 테스트 결과만으로 회신하면 안 된다.
 
-1. Portfolio Growth
-2. Annual Returns
-3. Efficient Frontier
-4. Efficient Frontier Transition Map
-5. Annualized Active Return
-6. Active Return Contribution
-7. Rolling Active Return / Tracking Error
-8. Up vs Down Market
-9. Drawdown
-10. Annual Asset Returns
-11. Rolling 3Y / 5Y Returns
-
-각 section 최소 체크:
+가능하면 behavioral Golden과 비교 가능한 다음 조건으로 실행한다.
 
 ```text
-chart type
-X semantic
-Y semantic
-X/Y unit
-ticks/domain
-series identity/count
-panel separation where applicable
-legend/marker where applicable
-tooltip
-missing behavior
-P0 PASS/FAIL
+Analysis period: 2016-08-01 ~ 2026-07-31
+Objective: Maximum Sharpe Ratio
+Benchmark: SPY
+Rebalancing: Monthly
+Risk-free annual fixed rate: 2.35595%
+Frontier points: 100
+Assets / provided weights / bounds: 기존 seven-asset validation input과 동일
 ```
 
-이번 라운드에서 아직 수정하지 않는 P1 차이는 `remaining P1`로 적되 P0와 섞지 않는다.
+직전처럼 `analysis_period: {}`인 full-common-period run을 `same-input`이라고 부르지 않는다.
 
-PV live URL을 직접 열고 generated report와 다시 비교한다.
+repository의 정상 실행 경로를 사용한다. renderer-only shortcut으로 대체하지 않는다.
 
-### 14. New validation run and GitHub HTML artifact: 필수
-
-기존 `runs/20260829-0004/`를 수정하지 않는다.
-
-P0 수정 완료 후 **새 run_id**로 same-input validation run을 생성한다.
-
-최종 생성 HTML:
+Run 성공 시 `agent-to-llm.md`에:
 
 ```text
-runs/<new_run_id>/report.html
+Final real run: PASS
+Executed command: ...
+Effective input/period: ...
+Generated run_id/path: ...
+Runtime warnings: ...
 ```
 
-을 포함한 validation run 전체를 GitHub `main`에 **commit + push**한다.
-
-로컬 파일 경로만 회신하면 완료가 아니다.
-
-### 15. `agent-to-llm.md`에 HTML GitHub 경로를 반드시 공유
-
-작업 완료 후 `ai-share/agent-to-llm.md`를 최신 result 하나로 교체하고 commit/push한다.
-
-반드시 아래를 명시한다.
+Run 실패 시에도 반드시:
 
 ```text
-Validation run_id: <new_run_id>
-Validation run repository path: runs/<new_run_id>/
-Result HTML repository path: runs/<new_run_id>/report.html
-Result HTML GitHub URL: https://github.com/comus93/portfolio-optimizer-kr/blob/main/runs/<new_run_id>/report.html
-Visual comparison path: runs/<new_run_id>/validation/visual-comparison.md
+Final real run: FAIL
+Executed command: ...
+Failure stage: ...
+Error/exception summary: ...
+Relevant log/trace: ...
+Likely cause: ...
 ```
 
-그리고 반드시 포함:
+를 남긴다.
+
+즉 PASS/FAIL 어느 쪽이든 **final real run attempt가 존재해야 한다.**
+
+### 13. HTML artifact ownership
+
+이번 요청에서 Agent에게 다음을 요구하지 않는다.
+
+```text
+별도 report.html 생성 작업
+HTML GitHub commit/push
+HTML GitHub URL 작성
+visual-validation HTML artifact 업로드
+```
+
+사용자가 직접 HTML을 생성하고 GitHub에 올린 뒤 LLM이 결과를 검증한다.
+
+단, 정상 end-to-end run의 부수효과로 local report/artifact가 생성되는 것은 막지 않는다. 별도 publish 작업만 하지 않는다.
+
+### 14. Completion report
+
+`ai-share/agent-to-llm.md`를 최신 메시지 하나로 교체하고 commit/push한다.
+
+반드시 포함:
 
 - sync/pull 결과 및 시작 HEAD
-- 수정한 각 P0의 결과
-- targeted/full test 결과
-- PV live 직접 비교 여부
-- 11개 chart 검수 완료 여부
-- `P0 mismatch count`
+- 각 P0 수정 결과
+- targeted test 결과
+- full regression 결과
+- `Final real run: PASS | FAIL`
+- 실제 실행 command
+- effective input/period
+- 생성된 run_id/path 또는 실패 stage
+- remaining P0 목록
 - remaining P1 목록
 - code commit SHA
-- validation artifact commit SHA
 - blocker/warning
 
-**P0 mismatch count가 0이 아니면 완료(result)로 보고하지 말고 blocker 또는 incomplete result로 회신한다.**
+P0가 남아 있어도 이번에는 결과를 숨기지 말고 그대로 보고한다. 이번 라운드 이후에도 P0가 남으면 추가 미세 수정보다 구조적 원인 분석으로 전환한다.
