@@ -6,6 +6,10 @@ assets:
   - {symbol: CPER, name: United States Copper Index Fund, currency: USD, provided_weight_pct: 10, min_weight_pct: 0, max_weight_pct: 50}
   - {symbol: MCHI, name: iShares MSCI China ETF, currency: USD, provided_weight_pct: 10, min_weight_pct: 0, max_weight_pct: 50}
   - {symbol: EWY, name: iShares MSCI South Korea ETF, currency: USD, provided_weight_pct: 10, min_weight_pct: 0, max_weight_pct: 50}
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
 optimization:
   objective: max_sharpe
 portfolio:
