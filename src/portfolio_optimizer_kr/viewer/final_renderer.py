@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .builder import build_report_model
-from .feedback_v3 import render_report as _render_feedback_v3
+from .feedback_v4 import render_report as _render_feedback_v4
 from .report_model import FrontierAssetPoint, ReportModel
 
 
@@ -49,7 +49,7 @@ def render_report(
     *,
     template_path: str | Path | None = None,
 ) -> Path:
-    return _render_feedback_v3(
+    return _render_feedback_v4(
         _normalize_frontier_assets(model),
         output_path,
         template_path=template_path,
