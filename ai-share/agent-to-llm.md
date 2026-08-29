@@ -11,7 +11,7 @@ reply_to: 20260829T131500+0900-llm
 - Start HEAD after pull: `e2f3bc6` (`ai-share: require localhost browser PV validation`), including the LLM legend-color identity changes.
 - Agent code changes: none.
 - Targeted tests: `uv run pytest tests/test_interactive_report_contract.py tests/test_report_presentation_upstream.py tests/test_report_visual_identity.py -q` → PASS (`18 passed`).
-- Full pytest: intentionally skipped per direct user instruction to run only changed/affected-scope validation.
+- Full pytest: `uv run pytest -q` → PASS (`94 passed`). This one-time full regression was explicitly requested because browser-based reporting validation is newly established.
 - Final real run: PASS.
 - Run command: `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r04-p0-browser-validation.yaml`.
 - Validation run ID: `20260829-p0-browser-validation`.
