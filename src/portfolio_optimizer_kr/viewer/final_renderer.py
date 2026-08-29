@@ -132,13 +132,69 @@ _SERIES_CONTRAST_SCRIPT = r"""
     svg.appendChild(overlay);
   };
 
+  const annotatePartialYears = () => {
+    const data = window.PORTFOLIO_REPORT_DATA || {};
+    const rows = data.tables?.monthly_returns_calendar || [];
+    if (!rows.length) return;
+
+    const months = [
+      ['Jan','Jan_pct'], ['Feb','Feb_pct'], ['Mar','Mar_pct'], ['Apr','Apr_pct'],
+      ['May','May_pct'], ['Jun','Jun_pct'], ['Jul','Jul_pct'], ['Aug','Aug_pct'],
+      ['Sep','Sep_pct'], ['Oct','Oct_pct'], ['Nov','Nov_pct'], ['Dec','Dec_pct'],
+    ];
+    const representativeByYear = new Map();
+    rows.forEach(row => {
+      const year = Number(row.year);
+      if (Number.isFinite(year) && !representativeByYear.has(year)) {
+        representativeByYear.set(year, row);
+      }
+    });
+
+    const partial = [...representativeByYear.entries()]
+      .sort((a,b) => a[0] - b[0])
+      .map(([year,row]) => {
+        const available = months
+          .map(([label,key],index) => ({label,key,index}))
+          .filter(item => finite(row[item.key]));
+        if (!available.length || available.length === 12) return null;
+
+        const first = available[0];
+        const last = available[available.length - 1];
+        const contiguous = available.every(
+          (item,index) => item.index === first.index + index
+        );
+        let span;
+        if (available.length === 1) span = `${first.label} only`;
+        else if (contiguous) span = `${first.label}-${last.label}`;
+        else span = available.map(item => item.label).join(', ');
+        return `${year} is based on ${span}`;
+      })
+      .filter(Boolean);
+
+    document.querySelectorAll('.final-partial-year-note').forEach(node => node.remove());
+    if (!partial.length) return;
+
+    const text = `Partial-year results: ${partial.join('; ')}. ` +
+      'Returns for those years use only the available completed months.';
+    ['annual-returns','monthly-returns'].forEach(id => {
+      const host = document.getElementById(id);
+      if (!host) return;
+      const note = document.createElement('div');
+      note.className = 'muted final-partial-year-note';
+      note.style.marginTop = '10px';
+      note.textContent = text;
+      host.appendChild(note);
+    });
+  };
+
   const applyFinalPresentationFixes = () => {
     recolor();
     fixPortfolioGrowthHover();
+    annotatePartialYears();
   };
 
   // feedback_v4 performs a delayed final render. Run this pass afterward so
-  // the hover overlay belongs to the final DOM rather than an intermediate SVG.
+  // final interaction and explanatory notes belong to the final DOM.
   if (document.readyState === 'complete') setTimeout(applyFinalPresentationFixes, 90);
   else window.addEventListener(
     'load',
