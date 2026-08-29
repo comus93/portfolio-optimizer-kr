@@ -23,8 +23,9 @@ User <-> ChatGPT
 Study + Experiment YAML
         |
         | ChatGPT persists the experiment/run conditions
+        | and commits explicit run intent
         v
-control/execute.yaml
+GitHub push (`run:` commit)
         |
         | GitHub Actions
         v
@@ -56,7 +57,7 @@ user-facing report      result/review source
              Repository
 ```
 
-사용자가 `run 해줘`, `이 조건으로 최적화해줘` 등 명시적으로 실행을 요청했을 때 ChatGPT가 해당 Asset Universe의 Experiment를 찾거나 새로 만들고, 실행 조건을 반영한 뒤 시스템 실행 경로로 넘긴다.
+사용자가 `run 해줘`, `이 조건으로 최적화해줘` 등 명시적으로 실행을 요청했을 때 ChatGPT가 해당 Asset Universe의 Experiment를 찾거나 새로 만들고, 실행 조건을 반영한 뒤 `run:` 커밋으로 실행 의도를 명시한다.
 
 실행 요청 전 연구 조건 확정 규칙은 `docs/llm-research-input-contract.md`를 따른다.
 
@@ -192,21 +193,58 @@ target: studies/<study-id>/experiments/<experiment>.yaml
 
 일반 research run의 실행 주체는 GitHub Actions다.
 
+파일 저장과 실행 의도는 분리한다.
+
 ```text
-Experiment / execution pointer persisted in GitHub
-  -> .github/workflows/run-optimization.yml
+Experiment YAML 일반 commit
+  -> 연구 정의만 저장
+  -> optimizer 실행 안 함
+
+Experiment YAML 또는 control pointer 변경
++ head commit message가 `run:`으로 시작
+  -> GitHub Actions 실행
   -> portfolio-optimizer execute
-  -> runs/<run_id>/ generated
-  -> generated run committed to main
+  -> runs/<run_id>/ 생성
 ```
 
-`portfolio-optimizer execute`는 기존 `control/execute.yaml` pointer를 resolve하고 기존 runner / analysis pipeline을 호출한다.
+Canonical 실행 commit 예:
 
-별도 GPT 전용 optimizer path를 만들지 않는다.
+```text
+run: QQQ SPMO GLD target-vol-15
+```
 
-같은 Experiment에서 조건만 변경한 새 Run도 자연스럽게 실행할 수 있도록 GitHub Actions trigger 방식은 이 identity rule과 일치해야 한다. 세부 trigger plumbing은 시스템 구현 책임이며 Experiment 모델에 별도의 `request_id` 같은 식별자를 추가하지 않는다.
+`.github/workflows/run-optimization.yml`은 `main`의 다음 경로 변경을 감시한다.
 
-`workflow_dispatch`는 명시적 재실행, 복구, 운영 점검에도 사용할 수 있다.
+```text
+studies/**/experiments/*.yaml
+studies/**/experiments/*.yml
+control/execute.yaml
+```
+
+Push 이벤트가 발생해도 마지막 commit message가 `run:`으로 시작하지 않으면 execution job은 수행하지 않는다.
+
+따라서 같은 Experiment에서 조건만 바꾸는 경우:
+
+```text
+Experiment YAML 수정
+-> `run:` commit
+-> 새 Run
+```
+
+새 Asset Universe인 경우:
+
+```text
+새 Experiment 파일 저장
+-> control/execute.yaml을 새 Experiment로 변경
+-> 마지막 변경을 `run:` commit
+-> 새 Run
+```
+
+이 구조에서 파일은 사람이 읽을 수 있는 연구 인터페이스이고, commit message는 해당 변경을 실제로 실행하겠다는 가벼운 command signal이다. 별도의 request ID나 GPT 전용 API는 사용하지 않는다.
+
+`workflow_dispatch`는 사람이 GitHub UI/CLI에서 명시적으로 재실행하거나 복구/운영 점검할 때 사용할 수 있는 보조 경로로 유지한다. ChatGPT의 canonical 실행 경로는 `run:` commit이다.
+
+`portfolio-optimizer execute`는 `control/execute.yaml` pointer를 resolve하고 기존 runner / analysis pipeline을 호출한다. 별도 GPT 전용 optimizer path를 만들지 않는다.
 
 ---
 
@@ -377,7 +415,7 @@ Asset Universe 변경 -> 새 Experiment
 Canonical user research execution은 다음 한 줄로 요약한다.
 
 ```text
-User <-> ChatGPT -> Study/Experiment -> GitHub Actions -> Run/Result -> GitHub Pages + ChatGPT Interpretation -> User -> Confirmed Analysis -> Repo
+User <-> ChatGPT -> Study/Experiment -> `run:` commit -> GitHub Actions -> Run/Result -> GitHub Pages + ChatGPT Interpretation -> User -> Confirmed Analysis -> Repo
 ```
 
 GPT와 시스템의 통합은 repository 파일을 공유하는 수준으로 유지한다. 중간 과정에서 opaque request state나 과도한 tight coupling을 만들지 않는다.
