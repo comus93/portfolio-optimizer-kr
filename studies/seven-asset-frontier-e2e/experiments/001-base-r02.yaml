@@ -57,5 +57,4 @@ portfolio:
   rebalancing_period: monthly
 
 risk_free:
-  mode: fixed
-  annual_rate_pct: 2.35595
+  mode: us_3m_tbill
