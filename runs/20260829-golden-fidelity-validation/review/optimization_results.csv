@@ -1,0 +1,8 @@
+ticker,name,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
+QQQ,Invesco QQQ Trust,0.0,50.0,40.0,24.384467136256497
+SPMO,Invesco S&P 500 Momentum ETF,0.0,50.0,10.0,41.08658528764807
+GDX,VanEck Gold Miners ETF,0.0,30.0,10.0,0.0
+GLD,SPDR Gold Shares,0.0,30.0,0.0,30.0
+SLV,iShares Silver Trust,0.0,30.0,10.0,0.0
+AIA,iShares Asia 50 ETF,0.0,30.0,15.0,0.0
+XLE,Energy Select Sector SPDR Fund,0.0,30.0,15.0,4.528947576095434
