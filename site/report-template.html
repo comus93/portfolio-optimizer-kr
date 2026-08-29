@@ -99,5 +99,362 @@
     svgChart('rolling-returns-5y',data.rolling_returns_5y||[],[{name:'provided',key:'provided_return_pct'},{name:'optimized',key:'optimized_return_pct'},{name:'benchmark',key:'benchmark_return_pct'}],r=>`<b>Date: ${esc(r.date)}</b><br>Provided annualized return: ${pct(r.provided_return_pct)}<br>Optimized annualized return: ${pct(r.optimized_return_pct)}<br>Benchmark annualized return: ${pct(r.benchmark_return_pct)}`);
   })();
   </script>
+<script id="report-p1-polish">
+(() => {
+  const run = () => {
+    const data = window.PORTFOLIO_REPORT_DATA || {};
+    const BLUE = '#2563eb';
+    const RED = '#e11d48';
+    const GRAY = '#64748b';
+    const NS = 'h' + 'ttp://www.w3.org/2000/svg';
+    const section = id => document.querySelector(`#${id}`);
+    const tableSlot = id => section(id)?.querySelector('.table-slot');
+    const finite = value => value !== null && value !== undefined && Number.isFinite(Number(value));
+    const number = value => finite(value) ? Number(value) : null;
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    }[c]));
+    const pct = value => finite(value) ? `${Number(value).toFixed(2)}%` : 'N/A';
+    const ratio = value => finite(value) ? Number(value).toFixed(2) : 'N/A';
+    const decimal = value => finite(value) ? Number(value).toLocaleString(undefined,{maximumFractionDigits:2}) : 'N/A';
+    const money = value => finite(value) ? Number(value).toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}) : 'N/A';
+    const date = value => value ? String(value).slice(0,10) : 'N/A';
+    const titleCase = value => String(value ?? '')
+      .replace(/_pct$/,'')
+      .replaceAll('_',' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .purpose-table th,.purpose-table td{font-variant-numeric:tabular-nums}
+      .purpose-table td:first-child,.purpose-table th:first-child{text-align:left}
+      .subtable-grid{display:grid;grid-template-columns:1fr;gap:14px}
+      .subtable-card{border:1px solid #e4eaf3;border-radius:8px;padding:10px;background:#fff}
+      .subtable-card h3{margin:0 0 8px}
+      .heatmap{border-collapse:separate;border-spacing:2px;font-size:11px;min-width:680px}
+      .heatmap th{position:sticky;top:0;background:#f1f5fb;z-index:1}
+      .heatmap td{min-width:48px;text-align:center;border:0;border-radius:3px;padding:7px 5px;font-variant-numeric:tabular-nums}
+      .heatmap td.row-name{background:#f8fafc;color:#334155;text-align:left;font-weight:600;position:sticky;left:0;z-index:1}
+      .section-note{font-size:11px;color:#64748b;margin:6px 0 10px}
+    `;
+    document.head.appendChild(style);
+
+    const renderTable = (id, rows, columns, note='') => {
+      const slot = tableSlot(id);
+      if (!slot) return;
+      if (!rows?.length) { slot.innerHTML = '<div class="empty">N/A</div>'; return; }
+      slot.style.display = '';
+      slot.innerHTML = `${note ? `<div class="section-note">${esc(note)}</div>` : ''}<table class="purpose-table"><thead><tr>${
+        columns.map(col => `<th>${esc(col.label)}</th>`).join('')
+      }</tr></thead><tbody>${rows.map(row => `<tr>${columns.map(col => {
+        const raw = typeof col.value === 'function' ? col.value(row) : row[col.key];
+        const shown = col.format ? col.format(raw,row) : esc(raw ?? '');
+        return `<td>${shown}</td>`;
+      }).join('')}</tr>`).join('')}</tbody></table>`;
+    };
+
+    const metricValue = (value, unit) => {
+      if (unit === 'pct' || unit === 'percent') return pct(value);
+      if (unit === 'balance') return finite(value) ? money(Number(value) * 10000) : 'N/A';
+      return ratio(value);
+    };
+
+    const renderReadableTables = () => {
+      renderTable('performance-summary', data.tables?.performance_summary || [], [
+        {key:'metric',label:'Metric'},
+        {key:'provided',label:'Provided',format:(v,row)=>metricValue(v,row.unit)},
+        {key:'optimized',label:'Optimized',format:(v,row)=>metricValue(v,row.unit)},
+        {key:'benchmark',label:'Benchmark',format:(v,row)=>metricValue(v,row.unit)},
+      ]);
+
+      const trailing = [
+        ['portfolio','Portfolio',v=>titleCase(v)],['return_3m_pct','3M',pct],['return_1y_pct','1Y',pct],
+        ['annualized_3y_pct','3Y Ann.',pct],['annualized_5y_pct','5Y Ann.',pct],['annualized_10y_pct','10Y Ann.',pct],
+        ['ytd_pct','YTD',pct],['full_period_cagr_pct','Full Period CAGR',pct],
+        ['volatility_3y_pct','3Y Vol.',pct],['volatility_5y_pct','5Y Vol.',pct],
+      ].map(([key,label,format])=>({key,label,format}));
+      renderTable('trailing-returns', data.tables?.trailing_returns || [], trailing);
+
+      const metrics = data.tables?.portfolio_metrics || [];
+      renderTable('portfolio-metrics', metrics, [
+        {key:'metric',label:'Metric',format:v=>titleCase(v)},
+        {key:'provided',label:'Provided',format:(v,row)=>metricValue(v,row.unit)},
+        {key:'optimized',label:'Optimized',format:(v,row)=>metricValue(v,row.unit)},
+      ]);
+
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      renderTable('monthly-returns', data.tables?.monthly_returns_calendar || [], [
+        {key:'portfolio',label:'Portfolio',format:v=>titleCase(v)},
+        {key:'year',label:'Year'},
+        ...months.map(month=>({key:`${month}_pct`,label:month,format:pct})),
+        {key:'YTD_pct',label:'YTD',format:pct},
+      ]);
+
+      renderTable('stress-periods', data.tables?.stress_periods || [], [
+        {key:'stress_period',label:'Stress Period'},
+        {key:'start',label:'Start',format:date},{key:'end',label:'End',format:date},
+        {key:'provided_return_pct',label:'Provided',format:pct},
+        {key:'optimized_return_pct',label:'Optimized',format:pct},
+        {key:'benchmark_return_pct',label:'Benchmark',format:pct},
+      ]);
+
+      renderTable('return-decomposition', data.tables?.return_decomposition || [], [
+        {key:'ticker',label:'Ticker'},
+        {key:'provided_contribution',label:'Provided Contribution',format:decimal},
+        {key:'optimized_contribution',label:'Optimized Contribution',format:decimal},
+      ], 'Contribution is expressed on an initial portfolio value of 1.');
+
+      renderTable('risk-decomposition', data.tables?.risk_decomposition || [], [
+        {key:'ticker',label:'Ticker'},
+        {key:'provided_risk_contribution_pct',label:'Provided Risk Contribution',format:pct},
+        {key:'optimized_risk_contribution_pct',label:'Optimized Risk Contribution',format:pct},
+      ]);
+
+      renderTable('rolling-returns-summary', data.tables?.rolling_returns_summary || [], [
+        {key:'roll_period_years',label:'Window',format:v=>`${v}Y`},
+        {key:'provided_average_pct',label:'Provided Avg',format:pct},{key:'provided_high_pct',label:'Provided High',format:pct},{key:'provided_low_pct',label:'Provided Low',format:pct},
+        {key:'optimized_average_pct',label:'Optimized Avg',format:pct},{key:'optimized_high_pct',label:'Optimized High',format:pct},{key:'optimized_low_pct',label:'Optimized Low',format:pct},
+        {key:'benchmark_average_pct',label:'Benchmark Avg',format:pct},{key:'benchmark_high_pct',label:'Benchmark High',format:pct},{key:'benchmark_low_pct',label:'Benchmark Low',format:pct},
+      ]);
+
+      const frontierRows = data.tables?.efficient_frontier || [];
+      const weightKeys = frontierRows.length ? Object.keys(frontierRows[0]).filter(key=>key.startsWith('weight_') && key.endsWith('_pct')) : [];
+      renderTable('frontier-portfolios', frontierRows, [
+        {key:'point',label:'Point'}, {key:'volatility_pct',label:'Std Dev',format:pct},
+        {key:'expected_return_pct',label:'Expected Return',format:pct},{key:'sharpe',label:'Sharpe',format:ratio},
+        ...weightKeys.map(key=>({key,label:key.slice(7,-4),format:pct})),
+      ]);
+    };
+
+    const renderPurposeSpecificAssetTables = () => {
+      const rows = data.tables?.asset_statistics || [];
+      renderTable('efficient-frontier-assets', rows, [
+        {key:'ticker',label:'Asset'},
+        {key:'expected_return_pct',label:'Expected Return',format:pct},
+        {key:'volatility_pct',label:'Std Dev',format:pct},
+        {key:'sharpe_ex_post',label:'Sharpe',format:ratio},
+      ], 'Risk/return fields used to position the individual assets on the efficient frontier.');
+
+      renderTable('asset-performance', rows, [
+        {key:'ticker',label:'Asset'},
+        {key:'cagr_pct',label:'CAGR',format:pct},
+        {key:'annualized_volatility_pct',label:'Volatility',format:pct},
+        {key:'max_drawdown_pct',label:'Max Drawdown',format:pct},
+        {key:'sharpe_ex_post',label:'Sharpe',format:ratio},
+        {key:'3m',label:'3M',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+        {key:'1y',label:'1Y',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+        {key:'3y',label:'3Y',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+        {key:'5y',label:'5Y',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+        {key:'10y',label:'10Y',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+        {key:'ytd',label:'YTD',format:v=>finite(v)?pct(Number(v)*100):'N/A'},
+      ], 'Historical asset performance and risk statistics.');
+    };
+
+    const corrColor = value => {
+      if (!finite(value)) return 'transparent';
+      const v = Math.max(-1,Math.min(1,Number(value)));
+      const alpha = 0.10 + Math.abs(v) * 0.55;
+      return v < 0 ? `rgba(225,29,72,${alpha})` : `rgba(37,99,235,${alpha})`;
+    };
+
+    const renderHeatmap = (id, names) => {
+      const slot = tableSlot(id);
+      const allRows = data.tables?.correlations || [];
+      if (!slot || !allRows.length || !names.length) return;
+      const byName = new Map(allRows.map(row=>[String(row.series),row]));
+      slot.innerHTML = `<div class="section-note">Blue = positive correlation, red = negative correlation. Darker cells indicate stronger absolute correlation.</div><table class="heatmap"><thead><tr><th></th>${
+        names.map(name=>`<th>${esc(titleCase(name))}</th>`).join('')
+      }</tr></thead><tbody>${names.map(rowName=>{
+        const row = byName.get(String(rowName)) || {};
+        return `<tr><td class="row-name">${esc(titleCase(rowName))}</td>${names.map(colName=>{
+          const value = row[colName];
+          return `<td style="background:${corrColor(value)}">${finite(value)?Number(value).toFixed(2):'N/A'}</td>`;
+        }).join('')}</tr>`;
+      }).join('')}</tbody></table>`;
+    };
+
+    const renderCorrelationHeatmaps = () => {
+      const assetNames = (data.tables?.optimization_results || []).map(row=>String(row.ticker));
+      renderHeatmap('asset-correlations', assetNames);
+      const allRows = data.tables?.correlations || [];
+      const allNames = allRows.map(row=>String(row.series));
+      renderHeatmap('portfolio-asset-correlations', allNames);
+    };
+
+    const renderWorstDrawdowns = () => {
+      const target = section('worst-drawdowns');
+      const slot = tableSlot('worst-drawdowns');
+      const rows = data.tables?.drawdowns || [];
+      if (!target || !slot || !rows.length) return;
+      const order = ['provided','optimized','benchmark'];
+      const cards = order.map(portfolio => {
+        const subset = rows.filter(row=>row.portfolio===portfolio).sort((a,b)=>Number(a.rank)-Number(b.rank)).slice(0,10);
+        if (!subset.length) return '';
+        return `<div class="subtable-card"><h3>${esc(titleCase(portfolio))}</h3><table class="purpose-table"><thead><tr><th>Rank</th><th>Start</th><th>Bottom</th><th>Recovery</th><th>Months</th><th>Max Drawdown</th></tr></thead><tbody>${subset.map(row=>`<tr><td>${esc(row.rank)}</td><td>${date(row.start)}</td><td>${date(row.bottom)}</td><td>${row.recovery?date(row.recovery):'Ongoing'}</td><td>${esc(row.duration_months)}</td><td>${pct(row.maximum_drawdown_pct)}</td></tr>`).join('')}</tbody></table></div>`;
+      }).join('');
+      slot.innerHTML = `<div class="subtable-grid">${cards}</div>`;
+    };
+
+    const niceStep = raw => {
+      if (!Number.isFinite(raw) || raw <= 0) return 1;
+      const power = Math.pow(10,Math.floor(Math.log10(raw)));
+      const fraction = raw / power;
+      const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 2.5 ? 2.5 : fraction <= 5 ? 5 : 10;
+      return niceFraction * power;
+    };
+    const niceTicks = (min,max,target=5) => {
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
+      if (min === max) return [min];
+      const step = niceStep((max-min)/Math.max(1,target-1));
+      const start = Math.ceil((min-1e-10)/step)*step;
+      const end = Math.floor((max+1e-10)/step)*step;
+      const ticks=[];
+      for(let value=start; value<=end+step*1e-6 && ticks.length<20; value+=step) ticks.push(Number(value.toFixed(10)));
+      return ticks.length>=2 ? ticks : [min,max];
+    };
+    const svgEl = (tag,attrs={},text='') => {
+      const el=document.createElementNS(NS,tag);
+      Object.entries(attrs).forEach(([key,value])=>el.setAttribute(key,String(value)));
+      if(text!=='') el.textContent=String(text);
+      return el;
+    };
+    const cleanFrame = svg => {
+      svg.querySelectorAll('.grid-line,.tick-label').forEach(node=>node.remove());
+      const seen = new Set();
+      [...svg.querySelectorAll('.axis-line,.axis-label')].reverse().forEach(node=>{
+        const key = `${node.tagName}|${node.getAttribute('x1')}|${node.getAttribute('y1')}|${node.getAttribute('x2')}|${node.getAttribute('y2')}|${node.getAttribute('x')}|${node.getAttribute('y')}|${node.getAttribute('transform')}|${node.textContent}`;
+        if(seen.has(key)) node.remove(); else seen.add(key);
+      });
+    };
+    const addTicks = (svg,{xTicks=[],yTicks=[],xScale,yScale,left,right,top,bottom,width,height,xFormat=String,yFormat=String}) => {
+      yTicks.forEach(value=>{
+        const y=yScale(value);
+        const line=svgEl('line',{x1:left,y1:y,x2:width-right,y2:y,class:'grid-line'});
+        svg.insertBefore(line,svg.firstChild);
+        svg.appendChild(svgEl('text',{x:left-7,y:y+3,'text-anchor':'end',class:'tick-label'},yFormat(value)));
+      });
+      xTicks.forEach(item=>{
+        const value=typeof item==='object'?item.value:item;
+        const label=typeof item==='object'?(item.label ?? xFormat(value)):xFormat(value);
+        const x=xScale(value);
+        const line=svgEl('line',{x1:x,y1:top,x2:x,y2:height-bottom,class:'grid-line'});
+        svg.insertBefore(line,svg.firstChild);
+        svg.appendChild(svgEl('text',{x,y:height-bottom+16,'text-anchor':'middle',class:'tick-label'},label));
+      });
+    };
+
+    const polishGroupedBars = (id, rows, seriesKeys) => {
+      const svg=section(id)?.querySelector('.chart svg');
+      if(!svg || !rows.length) return;
+      cleanFrame(svg);
+      const values=seriesKeys.flatMap(key=>rows.map(row=>number(row[key])).filter(v=>v!==null));
+      let min=Math.min(0,...values),max=Math.max(0,...values);
+      if(min===max){min-=1;max+=1;}
+      const width=1000,height=300,left=58,right=24,top=16,bottom=48;
+      const groupWidth=(width-left-right)/Math.max(rows.length,1);
+      const xScale=index=>left+groupWidth*(index+0.5);
+      const yScale=value=>top+(max-value)*(height-top-bottom)/(max-min||1);
+      const allYears = rows.length <= 15;
+      const stride=allYears?1:Math.ceil(rows.length/12);
+      const xTicks=rows.map((row,index)=>({row,index})).filter(({index})=>index%stride===0 || index===rows.length-1).map(({row,index})=>({value:index,label:String(row.year)}));
+      addTicks(svg,{xTicks,yTicks:niceTicks(min,max,8),xScale,yScale,left,right,top,bottom,width,height,yFormat:value=>`${value.toFixed(Math.abs(value)<10?1:0)}%`});
+    };
+
+    const polishGrowthAxes = () => {
+      const rows=(data.portfolio_growth || []).filter(row=>row.date);
+      const svg=section('portfolio-growth')?.querySelector('.chart svg');
+      if(!svg || !rows.length) return;
+      cleanFrame(svg);
+      const series=['provided_balance','optimized_balance','benchmark_balance'];
+      const shaped=rows.map(row=>({...row,time:new Date(`${row.date}T00:00:00`).getTime()}));
+      const values=series.flatMap(key=>rows.map(row=>finite(row[key])?Number(row[key])*10000:null).filter(v=>v!==null));
+      let min=Math.min(...values),max=Math.max(...values); const pad=Math.max((max-min)*0.04,100);min-=pad;max+=pad;
+      const times=shaped.map(row=>row.time),minTime=Math.min(...times),maxTime=Math.max(...times);
+      const width=1000,height=300,left=66,right=24,top=16,bottom=48;
+      const xScale=value=>left+(value-minTime)*(width-left-right)/(maxTime-minTime||1);
+      const yScale=value=>top+(max-value)*(height-top-bottom)/(max-min||1);
+      const years=[...new Set(shaped.map(row=>new Date(row.time).getFullYear()))];
+      const stride=years.length<=12?1:Math.ceil(years.length/12);
+      const xTicks=years.filter((_,i)=>i%stride===0 || i===years.length-1).map(year=>({value:new Date(`${year}-01-01T00:00:00`).getTime(),label:String(year)})).filter(t=>t.value>=minTime&&t.value<=maxTime);
+      addTicks(svg,{xTicks,yTicks:niceTicks(min,max,8),xScale,yScale,left,right,top,bottom,width,height,yFormat:money});
+    };
+
+    const polishFrontierAxes = () => {
+      const svg=section('efficient-frontier')?.querySelector('.chart svg');
+      const frontier=(data.efficient_frontier || []).filter(r=>finite(r.volatility_pct)&&finite(r.expected_return_pct)).map(r=>({x:Number(r.volatility_pct),y:Number(r.expected_return_pct)}));
+      const assets=(data.frontier_assets || []).filter(r=>finite(r.standard_deviation_pct)&&finite(r.expected_return_pct)).map(r=>({x:Number(r.standard_deviation_pct),y:Number(r.expected_return_pct)}));
+      const landmarks=(data.frontier_landmarks || []).filter(r=>finite(r.volatility_pct)&&finite(r.expected_return_pct)).map(r=>({x:Number(r.volatility_pct),y:Number(r.expected_return_pct)}));
+      const all=[...frontier,...assets,...landmarks]; if(!svg || !all.length) return;
+      cleanFrame(svg);
+      let minX=Math.min(...all.map(r=>r.x)),maxX=Math.max(...all.map(r=>r.x)),minY=Math.min(...all.map(r=>r.y)),maxY=Math.max(...all.map(r=>r.y));
+      const xPad=Math.max((maxX-minX)*0.03,0.2),yPad=Math.max((maxY-minY)*0.05,0.2);minX-=xPad;maxX+=xPad;minY-=yPad;maxY+=yPad;
+      const width=1000,height=320,left=64,right=24,top=16,bottom=50;
+      const xScale=value=>left+(value-minX)*(width-left-right)/(maxX-minX||1),yScale=value=>top+(maxY-value)*(height-top-bottom)/(maxY-minY||1);
+      addTicks(svg,{xTicks:niceTicks(minX,maxX,6).map(value=>({value,label:`${value.toFixed(1)}%`})),yTicks:niceTicks(minY,maxY,6),xScale,yScale,left,right,top,bottom,width,height,yFormat:value=>`${value.toFixed(1)}%`});
+    };
+
+    const polishTransitionAxes = () => {
+      const rows=(data.efficient_frontier || []).filter(r=>finite(r.volatility_pct));
+      const svg=section('frontier-transition')?.querySelector('.chart svg'); if(!svg || !rows.length) return;
+      cleanFrame(svg);
+      const minX=Math.min(...rows.map(r=>Number(r.volatility_pct))),maxX=Math.max(...rows.map(r=>Number(r.volatility_pct)));
+      const width=1000,height=320,left=64,right=24,top=16,bottom=50;
+      const xScale=value=>left+(value-minX)*(width-left-right)/(maxX-minX||1),yScale=value=>top+(100-value)*(height-top-bottom)/100;
+      addTicks(svg,{xTicks:niceTicks(minX,maxX,6).map(value=>({value,label:`${value.toFixed(1)}%`})),yTicks:[0,25,50,75,100],xScale,yScale,left,right,top,bottom,width,height,yFormat:value=>`${value.toFixed(0)}%`});
+    };
+
+    const polishUpDownAxes = () => {
+      const panels=[data.up_down_scatter_provided || [],data.up_down_scatter_optimized || []];
+      const svgs=[...section('up-down-market')?.querySelectorAll('.golden-panel svg') || []];
+      svgs.forEach((svg,index)=>{
+        const rows=panels[index]?.filter(r=>finite(r.benchmark_return_pct)&&finite(r.portfolio_return_pct)) || [];
+        if(!rows.length) return;
+        cleanFrame(svg);
+        const values=rows.flatMap(r=>[Number(r.benchmark_return_pct),Number(r.portfolio_return_pct)]);
+        let min=Math.min(...values),max=Math.max(...values);const pad=Math.max((max-min)*0.05,0.5);min-=pad;max+=pad;
+        const width=1000,height=280,left=60,right=24,top=16,bottom=48;
+        const xScale=value=>left+(value-min)*(width-left-right)/(max-min||1),yScale=value=>top+(max-value)*(height-top-bottom)/(max-min||1);
+        const ticks=niceTicks(min,max,6);
+        addTicks(svg,{xTicks:ticks.map(value=>({value,label:`${value.toFixed(0)}%`})),yTicks:ticks,xScale,yScale,left,right,top,bottom,width,height,yFormat:value=>`${value.toFixed(0)}%`});
+      });
+    };
+
+    const resolveFrontierLabelCollisions = () => {
+      const svg=section('efficient-frontier')?.querySelector('.chart svg'); if(!svg) return;
+      const labels=[...svg.querySelectorAll('.point-label')];
+      const placed=[];
+      const overlaps=(a,b)=>!(a.x+a.width+3<b.x || b.x+b.width+3<a.x || a.y+a.height+2<b.y || b.y+b.height+2<a.y);
+      labels.forEach(label=>{
+        const x0=Number(label.getAttribute('x')||0),y0=Number(label.getAttribute('y')||0);
+        const offsets=[0,-12,12,-24,24,-36,36,48,-48];
+        let accepted=null;
+        for(const dy of offsets){
+          label.setAttribute('y',Math.max(12,Math.min(265,y0+dy)));
+          const box=label.getBBox();
+          if(!placed.some(other=>overlaps(box,other))){accepted=box;break;}
+        }
+        if(!accepted){label.setAttribute('x',Math.min(940,x0+12));accepted=label.getBBox();}
+        placed.push(accepted);
+      });
+    };
+
+    renderReadableTables();
+    renderPurposeSpecificAssetTables();
+    renderCorrelationHeatmaps();
+    renderWorstDrawdowns();
+    polishGrowthAxes();
+    polishGroupedBars('annual-returns', data.annual_returns || [], ['provided_return_pct','optimized_return_pct','benchmark_return_pct']);
+    polishGroupedBars('annualized-active-return', data.annualized_active_returns || [], ['provided_active_return_pct','optimized_active_return_pct']);
+    const assetReturnRows=(data.annual_asset_returns || []).map(point=>({year:point.year,...(point.returns_pct||{})}));
+    const assetReturnKeys=[...new Set((data.annual_asset_returns || []).flatMap(point=>Object.keys(point.returns_pct||{})))];
+    polishGroupedBars('annual-asset-returns', assetReturnRows, assetReturnKeys);
+    polishFrontierAxes();
+    polishTransitionAxes();
+    polishUpDownAxes();
+    requestAnimationFrame(resolveFrontierLabelCollisions);
+  };
+  if (document.readyState === 'complete') run(); else window.addEventListener('load', run, {once:true});
+})();
+</script>
 </body>
 </html>
