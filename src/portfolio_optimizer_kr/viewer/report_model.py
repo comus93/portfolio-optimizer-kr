@@ -124,6 +124,7 @@ class ReportModel:
     objective_name: str
     benchmark_symbol: str | None = None
     benchmark_name: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
     tables: Mapping[str, tuple[JSONRecord, ...]] = field(default_factory=dict)
     portfolio_growth: tuple[PortfolioGrowthPoint, ...] = ()
     annual_returns: tuple[AnnualReturnPoint, ...] = ()

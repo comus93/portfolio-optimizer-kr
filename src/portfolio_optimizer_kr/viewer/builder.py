@@ -406,6 +406,10 @@ def build_report_model_from_artifacts(
         objective_name=objective_name,
         benchmark_symbol=benchmark_symbol,
         benchmark_name=benchmark_name,
+        metadata={
+            "configuration": dict(artifacts.result.get("configuration") or {}),
+            "data_coverage": dict(artifacts.result.get("data_coverage") or {}),
+        },
         tables=tables,
         portfolio_growth=_portfolio_growth(review.get("portfolio_growth")),
         annual_returns=_annual_returns(review.get("annual_returns")),

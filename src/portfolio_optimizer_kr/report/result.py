@@ -209,5 +209,8 @@ def _write_review_summaries(result: dict[str, Any], tables: dict[str, pd.DataFra
             ),
         )
         is_percentage = metrics["metric"].isin(percentage_metrics)
-        metrics.loc[is_percentage, ["provided", "optimized"]] *= 100
+        value_columns = [
+            column for column in ("provided", "optimized", "benchmark") if column in metrics
+        ]
+        metrics.loc[is_percentage, value_columns] *= 100
         metrics.to_csv(directory / "portfolio_metrics.csv", index=False)

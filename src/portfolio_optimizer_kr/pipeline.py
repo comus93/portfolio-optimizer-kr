@@ -46,6 +46,26 @@ def _asset_price(request: OptimizationRequest, symbol: str, price: pd.Series, cu
     return price
 
 
+
+def _asset_price_coverage(
+    request: OptimizationRequest, prices: Mapping[str, pd.Series]
+) -> dict[str, dict[str, object]]:
+    coverage: dict[str, dict[str, object]] = {}
+    for asset in request.assets:
+        series = prices.get(asset.symbol)
+        if series is None:
+            continue
+        observed = series.dropna()
+        if observed.empty:
+            continue
+        coverage[asset.symbol] = {
+            "name": asset.name,
+            "start": str(pd.Timestamp(observed.index.min()).date()),
+            "end": str(pd.Timestamp(observed.index.max()).date()),
+            "observations": int(len(observed)),
+        }
+    return coverage
+
 def _completed_monthly_returns(
     returns: pd.DataFrame, end: str | pd.Timestamp | None
 ) -> pd.DataFrame:
@@ -311,6 +331,8 @@ def _portfolio_metrics_table(paths: dict[str, object], benchmark: pd.Series | No
         for name, path in paths.items()
         if name in {"provided", "optimized"}
     }
+    if benchmark is not None:
+        by_portfolio["benchmark"] = portfolio_metrics(benchmark, benchmark, rf)
     metric_names = sorted({metric for values in by_portfolio.values() for metric in values})
     return pd.DataFrame([
         {"metric": metric, **{name: values.get(metric) for name, values in by_portfolio.items()}}
@@ -381,9 +403,10 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     frontier_landmarks = _frontier_landmarks_table(request, stats, optimized, benchmark_returns, rf)
     stress_periods = _stress_periods_table(paths)
     metrics_table = _portfolio_metrics_table(paths, benchmark_returns, rf)
+    asset_price_coverage = _asset_price_coverage(request, prices)
     canonical = CanonicalResult(
         configuration={"run_id": request.run_id, "market_data_source": "FinanceDataReader", "analysis_period": {"start": str(request.start) if request.start else None, "end": str(request.end) if request.end else None}, "assets": [{"symbol": a.symbol, "name": a.name, "currency": a.currency, "min_weight": a.min_weight, "max_weight": a.max_weight} for a in request.assets], "provided_weights": dict(request.provided_weights) if request.provided_weights else None, "benchmark": ({"symbol": request.benchmark.symbol, "name": request.benchmark.name, "currency": request.benchmark.currency} if request.benchmark else None), "objective": request.objective, "target_volatility": request.target_volatility, "rebalancing_period": request.rebalancing, "risk_free": {"requested_mode": request.risk_free.mode, "effective_annual_rate": rf}, "frontier_points": request.frontier_points, "solver_routing": {"qp": "OSQP", "socp": "CLARABEL"}},
-        data_coverage={"optimization_monthly_returns": {"start": str(monthly_returns.index.min().date()), "end": str(monthly_returns.index.max().date()), "observations": len(monthly_returns)}, "benchmark_overlap": benchmark_summary.get("coverage")},
+        data_coverage={"optimization_monthly_returns": {"start": str(monthly_returns.index.min().date()), "end": str(monthly_returns.index.max().date()), "observations": len(monthly_returns)}, "benchmark_overlap": benchmark_summary.get("coverage"), "asset_prices": asset_price_coverage},
         asset_statistics={"expected_returns": stats.expected_returns.to_dict(), "volatility": stats.volatility.to_dict(), "correlation": stats.correlation.to_dict(), "asset_performance": asset_performance},
         optimization_result={"weights": optimized.weights.to_dict(), "expected_return": optimized.expected_return, "volatility": optimized.volatility, "sharpe": optimized.sharpe, "solver": optimized.solver, "status": optimized.status},
         efficient_frontier=frontier.to_dict(orient="records"),
