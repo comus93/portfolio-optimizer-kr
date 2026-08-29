@@ -23,6 +23,17 @@ _SERIES_CONTRAST_SCRIPT = r"""
     'rolling-returns-3y',
     'rolling-returns-5y',
   ];
+  const NS = 'h' + 'ttp://www.w3.org/2000/svg';
+
+  const finite = value => value !== null && value !== undefined && Number.isFinite(Number(value));
+  const moneyFromCanonicalBalance = value => finite(value)
+    ? (Number(value) * 10000).toLocaleString(undefined, {
+        style:'currency', currency:'USD', maximumFractionDigits:0,
+      })
+    : 'N/A';
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 
   const recolor = () => {
     TARGET_SECTIONS.forEach(id => {
@@ -45,10 +56,95 @@ _SERIES_CONTRAST_SCRIPT = r"""
     });
   };
 
-  // feedback_v4 renders after window.load with a short delay. Apply this
-  // corrective presentation pass afterward so the final DOM owns the color.
-  if (document.readyState === 'complete') setTimeout(recolor, 60);
-  else window.addEventListener('load', () => setTimeout(recolor, 60), {once:true});
+  const fixPortfolioGrowthHover = () => {
+    const data = window.PORTFOLIO_REPORT_DATA || {};
+    const rows = (data.portfolio_growth || []).filter(row => row.date);
+    const host = document.querySelector('#portfolio-growth .chart');
+    const svg = host?.querySelector('svg');
+    const tip = document.querySelector('.tooltip');
+    if (!svg || !tip || !rows.length) return;
+
+    // The legacy renderer placed hover circles on the first available series
+    // (normally Provided), so hovering the Optimized line could miss every hit
+    // target. Disable those point targets and use one plot-wide overlay instead.
+    svg.querySelectorAll('circle[fill="transparent"]').forEach(node => {
+      node.setAttribute('pointer-events', 'none');
+    });
+    svg.querySelectorAll('.final-growth-hover-overlay').forEach(node => node.remove());
+
+    const viewBox = svg.viewBox?.baseVal;
+    const width = viewBox?.width || 1000;
+    const height = viewBox?.height || 300;
+    const left = 66;
+    const right = 24;
+    const top = 16;
+    const bottom = 48;
+
+    const shaped = rows.map(row => ({
+      ...row,
+      time: new Date(`${row.date}T00:00:00`).getTime(),
+    })).filter(row => Number.isFinite(row.time));
+    if (!shaped.length) return;
+
+    const minTime = Math.min(...shaped.map(row => row.time));
+    const maxTime = Math.max(...shaped.map(row => row.time));
+    const overlay = document.createElementNS(NS, 'rect');
+    overlay.setAttribute('class', 'final-growth-hover-overlay');
+    overlay.setAttribute('x', String(left));
+    overlay.setAttribute('y', String(top));
+    overlay.setAttribute('width', String(width - left - right));
+    overlay.setAttribute('height', String(height - top - bottom));
+    overlay.setAttribute('fill', 'transparent');
+    overlay.setAttribute('pointer-events', 'all');
+
+    const show = (event, row) => {
+      const optimizedLabel = data.objective_name || 'Optimized Portfolio';
+      const benchmarkLabel = data.benchmark_name || data.benchmark_symbol || 'Benchmark';
+      const lines = [
+        `<b>${esc(row.date)}</b>`,
+        `Provided Portfolio: ${moneyFromCanonicalBalance(row.provided_balance)}`,
+        `${esc(optimizedLabel)}: ${moneyFromCanonicalBalance(row.optimized_balance)}`,
+      ];
+      if (finite(row.benchmark_balance)) {
+        lines.push(`${esc(benchmarkLabel)}: ${moneyFromCanonicalBalance(row.benchmark_balance)}`);
+      }
+      tip.innerHTML = lines.join('<br>');
+      tip.style.display = 'block';
+      tip.style.left = `${event.clientX + 14}px`;
+      tip.style.top = `${event.clientY + 14}px`;
+    };
+
+    overlay.addEventListener('mousemove', event => {
+      const bounds = svg.getBoundingClientRect();
+      if (!bounds.width) return;
+      const localX = (event.clientX - bounds.left) * width / bounds.width;
+      const ratio = Math.min(1, Math.max(0,
+        (localX - left) / Math.max(width - left - right, 1)
+      ));
+      const targetTime = minTime + ratio * (maxTime - minTime);
+      const nearest = shaped.reduce((best, row) =>
+        Math.abs(row.time - targetTime) < Math.abs(best.time - targetTime) ? row : best,
+        shaped[0]
+      );
+      show(event, nearest);
+    });
+    overlay.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    svg.appendChild(overlay);
+  };
+
+  const applyFinalPresentationFixes = () => {
+    recolor();
+    fixPortfolioGrowthHover();
+  };
+
+  // feedback_v4 performs a delayed final render. Run this pass afterward so
+  // the hover overlay belongs to the final DOM rather than an intermediate SVG.
+  if (document.readyState === 'complete') setTimeout(applyFinalPresentationFixes, 90);
+  else window.addEventListener(
+    'load',
+    () => setTimeout(applyFinalPresentationFixes, 90),
+    {once:true},
+  );
 })();
 </script>
 """
