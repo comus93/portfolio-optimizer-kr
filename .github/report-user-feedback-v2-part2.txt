@@ -1,0 +1,40 @@
+      .correlation-name{min-width:205px;max-width:260px;white-space:normal!important;text-align:left!important}
+      .feedback-table th,.feedback-table td{font-variant-numeric:tabular-nums}
+      .feedback-table th:first-child,.feedback-table td:first-child{text-align:left}
+      .frontier-hidden{margin-top:14px}.frontier-hidden h3{margin-bottom:6px}
+      .ud-panel{margin:12px 0 24px}.ud-panel h3{margin:0 0 10px}.ud-panel .table-slot{margin-bottom:10px}
+      .ud-panel svg{height:300px}.chart-axis-label{fill:#334155;font-size:11px}.chart-tick{fill:#64748b;font-size:10px}.chart-grid{stroke:#e5eaf2;stroke-width:1}.chart-axis{stroke:#94a3b8;stroke-width:1}
+    `;
+    document.head.appendChild(style);
+
+    const niceStep=(span,target=5)=>{ if(!(span>0))return 1; const raw=span/Math.max(target,1), power=10**Math.floor(Math.log10(raw)), n=raw/power; const nice=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10; return nice*power; };
+    const niceTicks=(min,max,target=5)=>{ if(!finite(min)||!finite(max))return[]; if(min===max)return[min]; const step=niceStep(max-min,target), start=Math.floor(min/step)*step, end=Math.ceil(max/step)*step, out=[]; for(let v=start;v<=end+step*0.2;v+=step)out.push(Math.abs(v)<1e-10?0:v); return out; };
+    const frame=(svg,{width,height,left=64,right=24,top=18,bottom=48,xTicks=[],yTicks=[],xScale,yScale,xFmt=v=>String(v),yFmt=v=>String(v),xTitle='',yTitle=''})=>{
+      const x0=left,x1=width-right,y0=height-bottom,y1=top;
+      yTicks.forEach(v=>{const y=yScale(v);svg.appendChild(svgEl('line',{x1:x0,y1:y,x2:x1,y2:y,class:'chart-grid'}));svg.appendChild(svgEl('text',{x:x0-7,y:y+3,'text-anchor':'end',class:'chart-tick'},yFmt(v)));});
+      xTicks.forEach(t=>{const x=xScale(t.value);svg.appendChild(svgEl('line',{x1:x,y1:y1,x2:x,y2:y0,class:'chart-grid'}));svg.appendChild(svgEl('text',{x,y:y0+17,'text-anchor':'middle',class:'chart-tick'},t.label ?? xFmt(t.value)));});
+      svg.appendChild(svgEl('line',{x1:x0,y1:y0,x2:x1,y2:y0,class:'chart-axis'}));svg.appendChild(svgEl('line',{x1:x0,y1:y1,x2:x0,y2:y0,class:'chart-axis'}));
+      if(xTitle)svg.appendChild(svgEl('text',{x:(x0+x1)/2,y:height-5,'text-anchor':'middle',class:'chart-axis-label'},xTitle));
+      if(yTitle)svg.appendChild(svgEl('text',{x:14,y:(y0+y1)/2,transform:`rotate(-90 14 ${(y0+y1)/2})`,'text-anchor':'middle',class:'chart-axis-label'},yTitle));
+    };
+
+    // 1. Overview title: always reflect the effective completed-month period.
+    const overview=section('results-overview');
+    if(overview){
+      const h1=overview.querySelector('h1');
+      if(h1) h1.textContent=`Portfolio Optimization · ${data.run_id}${period?` (${period})`:''}`;
+      const old=overview.querySelector('.period-constraint-note'); if(old)old.remove();
+      const requested=configMeta.analysis_period||{};
+      const effective=coverageMeta.optimization_monthly_returns||{};
+      const assetCoverage=coverageMeta.asset_prices||{};
+      const reqStart=requested.start?new Date(`${requested.start}T00:00:00`):null;
+      const reqEnd=requested.end?new Date(`${requested.end}T00:00:00`):null;
+      const effStart=effective.start?new Date(`${effective.start}T00:00:00`):null;
+      const effEnd=effective.end?new Date(`${effective.end}T00:00:00`):null;
+      const startConstrained=reqStart&&effStart&&(effStart.getFullYear()*12+effStart.getMonth()>reqStart.getFullYear()*12+reqStart.getMonth());
+      const reqEndMonthComplete=reqEnd&&reqEnd.getDate()===new Date(reqEnd.getFullYear(),reqEnd.getMonth()+1,0).getDate();
+      const endConstrained=reqEndMonthComplete&&effEnd&&(effEnd.getFullYear()*12+effEnd.getMonth()<reqEnd.getFullYear()*12+reqEnd.getMonth());
+      if((startConstrained||endConstrained)&&Object.keys(assetCoverage).length){
+        const entries=Object.entries(assetCoverage).filter(([,v])=>v&&v.start&&v.end);
+        if(entries.length){
+          const boundary=startConstrained?'start':'end';
