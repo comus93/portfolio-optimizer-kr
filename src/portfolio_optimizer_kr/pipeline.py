@@ -169,10 +169,22 @@ def _up_down_market_table(paths: dict[str, object], benchmark: pd.Series | None)
             selected = joined.loc[selector]
             if selected.empty:
                 continue
-            portfolio_return = float(selected["portfolio"].mean() * 12.0)
-            benchmark_return = float(selected["benchmark"].mean() * 12.0)
-            rows.append({"portfolio": name, "market_type": market_type, "portfolio_return": portfolio_return, "benchmark_return": benchmark_return, "active_return": portfolio_return - benchmark_return, "occurrences": len(selected)})
-    return pd.DataFrame(rows, columns=["portfolio", "market_type", "portfolio_return", "benchmark_return", "active_return", "occurrences"])
+            active = selected["portfolio"] - selected["benchmark"]
+            above = active > 0
+            below = active < 0
+            rows.append({
+                "portfolio": name, "market_type": market_type,
+                "portfolio_return": float(selected["portfolio"].mean()),
+                "benchmark_return": float(selected["benchmark"].mean()),
+                "active_return": float(active.mean()), "occurrences": len(selected),
+                "above_benchmark_count": int(above.sum()),
+                "below_benchmark_count": int(below.sum()),
+                "total_count": len(selected),
+                "pct_above_benchmark": float(above.mean() * 100),
+                "above_active_return": float(active.loc[above].mean()) if above.any() else None,
+                "below_active_return": float(active.loc[below].mean()) if below.any() else None,
+            })
+    return pd.DataFrame(rows)
 
 
 def _stress_periods_table(paths: dict[str, object]) -> pd.DataFrame:

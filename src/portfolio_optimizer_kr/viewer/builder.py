@@ -15,6 +15,7 @@ from .report_model import (
     AnnualReturnPoint,
     DrawdownPoint,
     FrontierAssetPoint,
+    FrontierLandmark,
     FrontierPoint,
     PortfolioGrowthPoint,
     ReportModel,
@@ -321,6 +322,25 @@ def _frontier_assets(frame: pd.DataFrame | None) -> tuple[FrontierAssetPoint, ..
     )
 
 
+def _frontier_landmarks(artifacts: RunArtifacts, config: Mapping[str, Any]) -> tuple[FrontierLandmark, ...]:
+    result = artifacts.result
+    performance = result.get("portfolio_performance", {}) if isinstance(result, Mapping) else {}
+    summary = performance.get("summary", {}) if isinstance(performance, Mapping) else {}
+    optimization = result.get("optimization_result", {}) if isinstance(result, Mapping) else {}
+    provided_weights = {str(a.get("symbol")): float(a.get("provided_weight_pct", 0)) for a in config.get("assets", []) if isinstance(a, Mapping)}
+    optimized_weights = {str(k): float(v) * 100 for k, v in optimization.get("weights", {}).items()} if isinstance(optimization, Mapping) else {}
+    items = (("provided", "Provided Portfolio", provided_weights, summary.get("provided", {})), ("optimized", _objective_name(config), optimized_weights, summary.get("optimized", {})), ("benchmark", "Benchmark", {}, summary.get("benchmark", {})))
+    points = []
+    for kind, label, weights, values in items:
+        if not isinstance(values, Mapping):
+            continue
+        vol, ret = values.get("annualized_volatility"), values.get("expected_return")
+        if vol is None or ret is None:
+            continue
+        points.append(FrontierLandmark(kind, label, float(vol) * 100, float(ret) * 100, values.get("sharpe_ex_post"), weights))
+    return tuple(points)
+
+
 def build_report_model_from_artifacts(
     artifacts: RunArtifacts, config: Mapping[str, Any] | None = None
 ) -> ReportModel:
@@ -341,6 +361,7 @@ def build_report_model_from_artifacts(
         frontier_assets=_frontier_assets(
             review.get("efficient_frontier_assets", review.get("asset_statistics"))
         ),
+        frontier_landmarks=_frontier_landmarks(artifacts, config),
         annualized_active_returns=_annualized_active_returns(review.get("active_returns")),
         active_return_contribution_provided=_active_contribution(
             review.get("active_return_contribution"), "provided"
