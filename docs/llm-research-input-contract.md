@@ -149,7 +149,7 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 
 ## 4. Execution Gate
 
-다음 조건이 모두 충족되기 전에는 LLM이 정식 experiment 실행을 Agent/Codex에 요청하지 않는다.
+다음 조건이 모두 충족되기 전에는 LLM이 정식 Experiment를 GitHub Actions 실행 대상으로 지정하지 않는다.
 
 - Asset universe 확정
 - 필요한 경우 Provided Portfolio 확정 및 합계 검증
@@ -161,9 +161,11 @@ Frontier point count는 해석을 위한 sampling density이며, 연구 질문 �
 
 사용자가 Analysis Period를 별도로 지정하지 않은 것은 미확정 상태가 아니다. 이 경우 **공통 데이터 교집합 전체 기간이 자동으로 확정값**이 된다.
 
-그 외 필수값이 미확정이면 experiment YAML을 초안으로 작성할 수는 있지만 **실행 가능한 최종 experiment로 간주하지 않는다.**
+그 외 필수값이 미확정이면 Experiment YAML을 초안으로 작성할 수는 있지만 **실행 가능한 최종 Experiment로 간주하지 않는다.**
 
-특히 미확정 experiment를 `control/execute.yaml`의 실제 실행 대상으로 넘기거나 Agent에게 실행 요청하지 않는다.
+특히 미확정 Experiment를 `control/execute.yaml`의 실제 실행 대상으로 지정하지 않는다.
+
+정식 실행 경로는 `docs/research-operation-pipeline.md`를 따른다.
 
 ---
 
