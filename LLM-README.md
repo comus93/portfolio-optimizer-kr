@@ -12,23 +12,44 @@ comus93/portfolio-optimizer-kr의 LLM-README.md 읽고 이어가자
 
 ---
 
-## 1. 가장 먼저 할 일
+## 1. Bootstrap 시 반드시 숙지할 문서
 
-이 문서를 읽은 뒤 현재 repository의 다음 문서를 함께 읽고 최신 규칙을 확인한다.
+이 문서만 읽고 바로 연구를 진행하지 않는다.
+
+새로운 대화에서 Research Frontend 역할을 수행하기 전에 다음 문서를 **반드시 실제 repository에서 읽고 숙지한다.** 과거 채팅 기억이나 요약으로 대체하지 않는다.
 
 ```text
+MUST
 1. docs/research-operation-pipeline.md
-2. docs/llm-research-input-contract.md
-3. docs/specification.md
-4. docs/architecture.md
-5. docs/report-ui-specification.md        # report/UI 작업 또는 결과 화면 해석 시
-6. AGENTS.md                              # 시스템 개발/수정 작업 시
+2. docs/llm-analysis-framework.md
+3. docs/llm-research-input-contract.md
+4. docs/specification.md
+5. docs/architecture.md
+
+CONDITIONAL
+6. docs/report-ui-specification.md        # report/UI 작업 또는 결과 화면 검토 시
+7. AGENTS.md                              # 시스템 개발/수정 작업 시
 ```
+
+특히 다음 두 문서는 Research Frontend의 핵심 operating contract다.
+
+```text
+docs/research-operation-pipeline.md
+= 사용자 대화에서 Study / Experiment / Run을 만들고
+  GitHub Actions로 실행하며 Result / Analysis까지 연결하는 운영 방식
+
+docs/llm-analysis-framework.md
+= optimizer 결과를 어떤 순서와 관점으로 검증하고 해석하며
+  사용자에게 어떤 형태의 insight를 제시할지 정의하는 분석 방식
+```
+
+따라서 새 대화에서 사용자가 단순히 `LLM-README.md 읽고 이어가자`라고 해도 위 MUST 문서를 함께 읽은 뒤 응답한다.
 
 역할별 source of truth는 다음과 같다.
 
 ```text
 연구 운영 흐름             docs/research-operation-pipeline.md
+결과 분석/해석 프레임워크  docs/llm-analysis-framework.md
 사용자 <-> LLM 입력 계약   docs/llm-research-input-contract.md
 금융 계산 의미론           docs/specification.md
 시스템 구조                docs/architecture.md
@@ -36,7 +57,7 @@ Report UI                  docs/report-ui-specification.md
 개발/검증 운영             AGENTS.md 및 ai-share/
 ```
 
-이 문서는 bootstrap 문서다. 세부 규칙이 canonical 문서와 충돌하면 canonical 문서를 따른다.
+이 문서는 bootstrap 문서다. 세부 규칙이 canonical 문서와 충돌하면 해당 canonical 문서를 따른다.
 
 ---
 
@@ -268,6 +289,22 @@ Result interpretation source priority:
 
 HTML을 눈으로 전사하거나 HTML에서 금융 수치를 다시 계산해서 canonical result를 만들지 않는다.
 
+그리고 **결과 해석 자체는 반드시 `docs/llm-analysis-framework.md`를 따른다.**
+
+최소한 다음 흐름을 지킨다.
+
+```text
+Study question 정의
+-> Data Validity Gate
+-> Provided Portfolio의 Efficiency Gap
+-> Efficient Frontier 중심 해석
+-> Supporting Evidence
+-> Marginal Utility / Robustness
+-> Role / Decision / Confidence 구분
+```
+
+모든 metric을 나열하는 보고서를 만들지 않는다. 현재 Study 질문에 답하는 evidence를 우선한다.
+
 Run 완료 후 가능하면 다음을 사용자에게 제공한다.
 
 ```text
@@ -277,6 +314,7 @@ Run 완료 후 가능하면 다음을 사용자에게 제공한다.
 - 핵심 optimized allocation
 - frontier / performance에서 중요한 변화
 - 데이터 또는 계산상 주의할 점
+- 연구 질문에 대한 현재 판단
 - 다음 검증 아이디어
 ```
 
@@ -344,6 +382,8 @@ Experiment 이름만으로 실행 조건을 추정하지 않는다.
 
 금융 계산 의미론은 반드시 `docs/specification.md`를 따른다.
 
+분석과 사용자-facing 해석 방식은 반드시 `docs/llm-analysis-framework.md`를 따른다.
+
 특히 외부 시스템인 Portfolio Visualizer(PV)와 다른 결과가 나왔을 때:
 
 - PV와 다르다는 이유만으로 자동으로 defect라고 판단하지 않는다.
@@ -388,15 +428,16 @@ Agent의 PASS/FAIL 문구 자체를 검증 권위로 취급하지 않는다. 실
 
 이 문서를 읽었다고 장황하게 다시 설명하지 않는다.
 
-Repository와 canonical docs를 확인한 뒤 현재 사용자의 요청에 바로 대응한다.
+Repository와 MUST canonical docs를 실제로 확인한 뒤 현재 사용자의 요청에 바로 대응한다.
 
 예:
 
 ```text
-파이프라인 확인했어.
+파이프라인과 분석 프레임워크 확인했어.
 Asset Universe가 같으면 같은 Experiment의 새 Run,
 종목이 바뀌면 새 Experiment로 처리하고,
 실행 요청 시 control/execute.yaml의 run:true로 GitHub Actions를 트리거할게.
+결과는 llm-analysis-framework에 따라 검증하고 해석할게.
 
 어떤 연구부터 이어갈까?
 ```
@@ -413,7 +454,7 @@ User <-> ChatGPT research frontend
 -> control/execute.yaml (run:true)
 -> GitHub Actions
 -> Run / Result / Pages
--> ChatGPT interpretation
+-> llm-analysis-framework 기반 ChatGPT interpretation
 -> User discussion
 -> Confirmed research insight
 ```
