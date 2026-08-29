@@ -31,8 +31,7 @@ portfolio:
   rebalancing_period: monthly
 
 risk_free:
-  mode: fixed
-  annual_rate_pct: 2.0
+  mode: us_3m_tbill
 
 # Mixed KRW/USD runs must additionally provide an explicit FDR FX series symbol.
 fx: {}
