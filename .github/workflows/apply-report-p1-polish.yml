@@ -30,7 +30,7 @@ jobs:
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/report-template.html
+          git add -f site/report-template.html
           git rm site/report-p1-polish.fragment.html .github/workflows/apply-report-p1-polish.yml
           git commit -m "fix: complete report P1 fidelity polish"
           git push origin main
