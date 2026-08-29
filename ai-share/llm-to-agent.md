@@ -1,44 +1,42 @@
 # AI Share
 
 state: active
-id: 20260829T114500+0900-llm
-created_at: 2026-08-29T11:45:00+09:00
+id: 20260829T124000+0900-llm
+created_at: 2026-08-29T12:40:00+09:00
 type: request
-reply_to: 20260829T140000+0900-agent
+reply_to: 20260829T150000+0900-agent
 
 ## Context
 
-LLM이 사용자가 업로드한 primary static Golden을 직접 확인하고, 직전 report의 visual mismatch를 수정했다.
+LLM이 Static Golden 직접 비교 후 남아 있던 report P1을 모두 수정했다. Finance/optimizer/data semantics는 변경하지 않았다.
 
-Main commits:
-
-```text
-4a5a3c29ce8894417697e35565d0aa634724cb90  fix: align report visuals with golden reference
-723b4892f88127efcb5d81791d655616693f5fc9  test: lock golden report fidelity fixes
-```
-
-이번 변경은 finance/data semantics가 아니라 report rendering만 대상이다.
-
-Severity 기준:
+검증 기준 main commit:
 
 ```text
-P0 = 정보 의미/series identity/chart structure가 손상되어 잘못 읽거나 필요한 정보를 읽을 수 없음
-P1 = 의미는 보존되지만 Golden 대비 axis/tick/format/layout/readability가 유의미하게 부족함
+745492bf81f680e17ddc00a3838305326b865ad0  fix: complete report P1 fidelity polish
 ```
+
+추가 contract test:
+
+```text
+tests/test_report_p1_polish.py
+```
+
+Screenshot capture 안정화 문제는 별도 안건이며 이번 작업의 blocker/수정 범위가 아니다.
 
 ## Message
 
-1. `git pull --ff-only origin main` 후 HEAD가 `723b4892` 이후인지 확인한다.
+1. 먼저 `git pull --ff-only origin main`을 실행하고 HEAD가 `745492bf` 이상인지 확인한다.
 
-2. 전체 회귀는 실행하지 않는다. 변경 영향 범위만 검증한다.
+2. 전체 회귀는 실행하지 않는다. 아래 변경 영향 테스트만 실행한다.
 
 ```text
-uv run pytest tests/test_interactive_report_contract.py tests/test_report_presentation_upstream.py tests/test_report_visual_identity.py tests/test_report_golden_fidelity.py -q
+uv run pytest tests/test_interactive_report_contract.py tests/test_report_presentation_upstream.py tests/test_report_visual_identity.py tests/test_report_golden_fidelity.py tests/test_report_p1_polish.py -q
 ```
 
-기존 테스트를 약화/삭제/skip/xfail하지 않는다.
+테스트를 약화/삭제/skip/xfail하지 않는다.
 
-3. 직전 Golden validation과 동일 입력으로 실제 run을 새 run_id로 1회 수행한다. 기존 run을 덮어쓰지 않는다.
+3. 직전 Golden validation과 동일 입력으로 새 run_id를 사용해 실제 run을 1회 수행하고 report를 재생성한다.
 
 ```text
 Period: 2016-08-01 ~ 2026-07-31
@@ -51,33 +49,25 @@ Risk-free: fixed 2.35595% annual
 Efficient Frontier: 100 points
 ```
 
-4. generated report는 `file://`이 아니라 localhost HTTP로 실제 브라우저 렌더한다.
+4. generated report를 localhost HTTP로 실제 브라우저 렌더한다. 이번에는 screenshot 저장 성공 여부와 무관하게 화면 검증만 수행한다.
 
-5. 이번 visual 검증 범위는 변경 영향 섹션만이다.
-
-```text
-Provided Portfolio
-Optimized Portfolio
-Portfolio Growth
-Annual Returns
-Annualized Active Return
-Annual Asset Returns
-Efficient Frontier
-Efficient Frontier Transition Map
-Up vs. Down Market Performance
-```
-
-특히 확인:
+5. 아래 P1 수정사항을 집중 검증한다.
 
 ```text
-- allocation summary: 0% asset 숨김, readable %, donut + table
-- Portfolio Growth: year ticks + multiple balance ticks
-- Annual Returns: year labels + Y ticks + 3 series identity
-- Annual Asset Returns: year X축 + ticker별 distinct series/legend/color
-- Efficient Frontier: readable intermediate X/Y ticks, curve/assets/landmarks identity
-- Transition Map: X risk ticks + Y 0/25/50/75/100%, ticker identity
-- Up/Down: numeric X/Y ticks, Provided/Optimized panels, blue/red identity, readable table headers/units
+P1-01 Transition Map: axis/grid/tick 중복이 없어야 함.
+P1-02 generic table: 주요 표에 human-readable header, unit-aware formatting, raw precision 제거.
+P1-03 Correlation: Asset Correlations가 asset-only matrix heatmap으로 표시.
+P1-04 Worst Drawdowns: Provided / Optimized / Benchmark 독립 table로 표시.
+P1-05 Purpose separation:
+  - Efficient Frontier Assets = risk/return positioning 용 focused schema
+  - Portfolio Asset Performance = historical performance/risk schema
+  - Portfolio / Asset Correlations = portfolio/benchmark 포함 확장 heatmap
+P1-06 주요 chart axis가 사람이 읽기 좋은 nice tick 간격을 사용.
+P1-07 약 10년 annual chart는 2016~2026 각 연도 label을 모두 표시.
+P1-08 Efficient Frontier asset/landmark label이 의미 있게 겹치지 않아야 함.
 ```
+
+추가로 기존 P0 fix가 회귀하지 않았는지 Annual Asset Returns ticker identity, allocation summary, Frontier/Transition semantics를 sanity check한다.
 
 6. Static Golden:
 
@@ -91,34 +81,24 @@ Behavioral reference:
 https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg
 ```
 
-Pixel-perfect 복제가 아니라 동일 정보를 같은 의미로 읽을 수 있는지 판정한다.
+Pixel clone이 아니라 같은 정보를 같은 의미로 읽을 수 있는지 판정한다.
 
-7. Agent는 추가 redesign을 하지 않는다. 작은 syntax/integration blocker만 최소 수정 가능하다. Finance/data semantics는 변경하지 않는다.
+7. Agent는 redesign하지 않는다. 작은 syntax/integration blocker만 최소 수정 가능하며 finance/data semantics는 변경하지 않는다.
 
-8. 가능하면 changed-section screenshot을 `runs/<run_id>/validation/`에 저장하고 commit/push한다. 최소 우선순위:
-
-```text
-report-allocation.png
-report-growth.png
-report-annual-returns.png
-report-annual-asset-returns.png
-report-frontier.png
-report-transition.png
-report-up-down.png
-```
-
-9. `agent-to-llm.md`에는 최소 다음을 회신한다.
+8. run artifact와 `validation/visual-comparison.md`를 commit/push하고 `ai-share/agent-to-llm.md`를 최신 result로 교체한다. 회신에는 다음을 포함한다.
 
 ```text
 Start HEAD
-Targeted tests: PASS | FAIL + count
+Targeted tests result + count
 Real run: PASS | FAIL
 run_id / report path
 Browser rendered report: YES | NO
-Changed-section review: 각 PASS/FAIL
-P0 mismatch count + list
+P1-01 ~ P1-08 각각 PASS | FAIL
+P0 regression: NONE | list
 Remaining P1 list
 Agent code fix SHA if any
 Artifact commit SHA
-Screenshot paths or screenshot blocker
+Warnings/blockers
 ```
+
+Screenshot capture 실패는 이번 결과에서 blocker로 취급하지 않는다.
