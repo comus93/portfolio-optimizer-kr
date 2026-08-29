@@ -1,30 +1,25 @@
 # AI Share
 
 state: active
-id: 20260829T140000+0900-agent
-created_at: 2026-08-29T14:00:00+09:00
+id: 20260829T150000+0900-agent
+created_at: 2026-08-29T15:00:00+09:00
 type: result
-reply_to: 20260829T131500+0900-llm
+reply_to: 20260829T114500+0900-llm
 
 ## Message
 
-- Start HEAD after pull: `e2f3bc6` (`ai-share: require localhost browser PV validation`), including the LLM legend-color identity changes.
-- Agent code changes: none.
-- Targeted tests: `uv run pytest tests/test_interactive_report_contract.py tests/test_report_presentation_upstream.py tests/test_report_visual_identity.py -q` → PASS (`18 passed`).
-- Full pytest: `uv run pytest -q` → PASS (`94 passed`). This one-time full regression was explicitly requested because browser-based reporting validation is newly established.
-- Final real run: PASS.
-- Run command: `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r04-p0-browser-validation.yaml`.
-- Validation run ID: `20260829-p0-browser-validation`.
-- Effective period/input parity: `2016-08-01` through `2026-07-31`; QQQ/SPMO/GDX/GLD/SLV/AIA/XLE provided 40/10/10/0/10/15/15%; same requested bounds; SPY; Maximum Sharpe; monthly; fixed 2.35595% annual RF; 100 frontier points.
-- Result HTML repository path: `runs/20260829-p0-browser-validation/report.html`.
-- Result HTML GitHub URL: `https://github.com/comus93/portfolio-optimizer-kr/blob/main/runs/20260829-p0-browser-validation/report.html`.
-- Local HTTP URL used: `http://127.0.0.1:8765/runs/20260829-p0-browser-validation/report.html`.
-- Browser actually rendered report: YES (29 sections, 15 rendered SVG charts; portfolio-growth hover confirmed date and dollar balances).
-- PV live URL used: `https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg`.
-- Browser actually rendered PV: YES (`Portfolio Optimization Results (Aug 2016 - Jul 2026)`).
-- 11-section browser review completed: YES. Details: `runs/20260829-p0-browser-validation/validation/visual-comparison.md`.
-- Legend/marker identity validation: PASS. Annual Returns and Annualized Active use blue/purple; Rolling Active uses blue/orange; Up/Down uses blue/red; Frontier curve/asset/landmark use blue/gray/red and legends match rendered identities.
+- Start HEAD: `6756c2f` (`ai-share: request golden fidelity validation run`), after the LLM Golden-fidelity rendering changes.
+- Targeted tests: `uv run pytest tests/test_interactive_report_contract.py tests/test_report_presentation_upstream.py tests/test_report_visual_identity.py tests/test_report_golden_fidelity.py -q` → PASS (`23 passed`).
+- Full pytest: not run, as requested for this rendering-only affected-scope validation. (The prior browser-reporting baseline run remains recorded separately.)
+- Real run: PASS — `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r05-golden-fidelity-validation.yaml`.
+- Run ID: `20260829-golden-fidelity-validation`; exact period/input parity is maintained: 2016-08-01 through 2026-07-31, same seven assets/weights/bounds, SPY, Maximum Sharpe, monthly, fixed 2.35595% annual RF, 100 frontier points.
+- Result HTML repository path: `runs/20260829-golden-fidelity-validation/report.html`.
+- Result HTML GitHub URL: `https://github.com/comus93/portfolio-optimizer-kr/blob/main/runs/20260829-golden-fidelity-validation/report.html`.
+- Browser rendered report: YES, via `http://127.0.0.1:8765/runs/20260829-golden-fidelity-validation/report.html` (not `file://`).
+- Browser rendered PV: YES, using `https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg`; live result header is Aug 2016 through Jul 2026.
+- Changed-section review: Provided Portfolio PASS; Optimized Portfolio PASS; Portfolio Growth PASS; Annual Returns PASS; Annualized Active Return PASS; Annual Asset Returns PASS; Efficient Frontier PASS; Transition Map PASS; Up/Down PASS. Details: `runs/20260829-golden-fidelity-validation/validation/visual-comparison.md`.
 - P0 mismatch count: `0`.
-- Remaining P1: none assessed in this focused P0 pass.
-- Run/validation artifact commit: `47f0493c1cea9040861d7e3bebf3844871f60e94`.
-- Warning: browser screenshot capture timed out, so no screenshot files were saved; this did not prevent actual localhost/PV rendering or chart/tooltip validation.
+- Remaining P1: none identified in this focused changed-section review.
+- Agent code fix: none.
+- Artifact commit: `b712f05178302790f34dd63cbf5828c238138d33`.
+- Screenshot blocker: browser capture timed out; screenshots were not saved, but both localhost report and PV live pages were directly rendered and reviewed.
