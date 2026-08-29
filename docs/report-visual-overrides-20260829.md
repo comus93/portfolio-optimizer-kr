@@ -72,6 +72,25 @@ Tracking Error = right-axis line
 - Performance Summary 필수 metrics를 축소하지 않는다.
 - Asset Performance에 Annualized Return과 trailing returns를 유지한다.
 
+### Partial calendar years
+
+PV reference는 분석 시작/종료 때문에 calendar year가 일부 월만 포함되는 경우에도 해당 year를 제거하지 않는다.
+
+예:
+
+```text
+2016 result period = Aug-Dec 2016
+2026 result period = Jan-Jul 2026
+```
+
+우리 report도 같은 원칙으로 partial year를 숨기거나 0으로 채우지 않는다.
+
+- Annual Returns에 실제 available completed months의 compounded return을 표시한다.
+- Monthly Returns에서 unavailable months는 `N/A`로 유지한다.
+- Annual Returns와 Monthly Returns 양쪽에 partial year가 어느 completed months를 기반으로 하는지 note를 표시한다.
+- partial year 포함 여부 때문에 canonical historical series 자체를 잘라내지 않는다.
+- Best/Worst Year가 partial year를 포함해야 하는지는 이 PV reference만으로 확정하지 않고 별도 validation 대상으로 남긴다.
+
 ## Static golden
 
 Latest same-input full-page static golden은 report-review v4 완료 후 사용자 refresh를 기다린다.
