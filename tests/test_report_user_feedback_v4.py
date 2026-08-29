@@ -65,3 +65,15 @@ def test_final_renderer_growth_hover_uses_plot_wide_nearest_date_overlay():
     assert "circle[fill=\"transparent\"]" in script
     assert "Provided Portfolio" in script
     assert "data.objective_name" in script
+
+
+def test_final_renderer_explains_partial_years_without_dropping_them():
+    script = final_renderer._SERIES_CONTRAST_SCRIPT
+    assert "annotatePartialYears" in script
+    assert "monthly_returns_calendar" in script
+    assert "Partial-year results:" in script
+    assert "Returns for those years use only the available completed months." in script
+    assert "Jan_pct" in script and "Dec_pct" in script
+    assert "annual-returns" in script
+    assert "monthly-returns" in script
+    assert "only" in script
