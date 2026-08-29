@@ -10,9 +10,12 @@ import pandas as pd
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.errors import DataValidationError
-from portfolio_optimizer_kr.models import AssetSpec
-from portfolio_optimizer_kr.pipeline import analyze_prices
+from portfolio_optimizer_kr.models import AssetSpec, RiskFreeMode
+from portfolio_optimizer_kr.pipeline import analyze_prices, prepare_monthly_returns
 from portfolio_optimizer_kr.report import write_analysis_run
+
+
+US_3M_TBILL_SERIES = "FRED:TB3MS"
 
 
 def _warmup_start(start: str | pd.Timestamp | None) -> str | None:
@@ -34,6 +37,54 @@ def _requires_usdkrw(spec: RunConfig) -> bool:
     if spec.request.benchmark is not None:
         currencies.add(spec.request.benchmark.currency.upper())
     return "KRW" in currencies and "USD" in currencies
+
+
+def _tbill_effective_annual_rate(
+    series: pd.Series, observation_index: pd.Index
+) -> float:
+    """Arithmetic mean of monthly FRED TB3MS percentage-point observations."""
+    values = pd.to_numeric(series, errors="coerce").dropna().astype(float)
+    if values.empty:
+        raise DataValidationError("U.S. 3-Month T-Bill series has no numeric observations")
+
+    values.index = pd.DatetimeIndex(values.index)
+    by_month = values.groupby(values.index.to_period("M")).mean()
+    required_months = pd.DatetimeIndex(observation_index).to_period("M").unique().sort_values()
+    missing = required_months.difference(by_month.index)
+    if len(missing):
+        preview = ", ".join(str(month) for month in missing[:6])
+        suffix = "..." if len(missing) > 6 else ""
+        raise DataValidationError(
+            f"U.S. 3-Month T-Bill coverage is missing required months: {preview}{suffix}"
+        )
+
+    # TB3MS is quoted in annual percentage points. Preserve that annual-rate
+    # convention and convert only the unit from percentage points to decimal.
+    return float(by_month.reindex(required_months).mean() / 100.0)
+
+
+def _resolve_annual_rf(
+    spec: RunConfig,
+    loader: FDRLoader,
+    prices: dict[str, pd.Series],
+    usdkrw: pd.Series | None,
+    supplied_annual_rf: float | None,
+) -> float | None:
+    request = spec.request
+    if request.risk_free.mode is RiskFreeMode.FIXED:
+        return supplied_annual_rf
+
+    # Keep the explicit argument only as a compatibility/debug injection.
+    # Normal canonical execution reaches this branch with None and loads TB3MS.
+    if supplied_annual_rf is not None:
+        return float(supplied_annual_rf)
+
+    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
+    observation_index = monthly_returns.index
+    start = observation_index.min().to_period("M").start_time.date().isoformat()
+    end = observation_index.max().to_period("M").end_time.date().isoformat()
+    tbill = loader.load_economic_series(US_3M_TBILL_SERIES, start=start, end=end)
+    return _tbill_effective_annual_rate(tbill, observation_index)
 
 
 def execute_run(
@@ -67,7 +118,12 @@ def execute_run(
             )
         usdkrw = loader.load_series(spec.usdkrw_symbol, start=load_start, end=request.end)
 
-    result = analyze_fn(request, prices, usdkrw=usdkrw, annual_rf=annual_rf)
+    effective_annual_rf = _resolve_annual_rf(
+        spec, loader, prices, usdkrw, annual_rf
+    )
+    result = analyze_fn(
+        request, prices, usdkrw=usdkrw, annual_rf=effective_annual_rf
+    )
     output_dir.mkdir(parents=True, exist_ok=False)
     writer(result, output_dir)
     return output_dir
