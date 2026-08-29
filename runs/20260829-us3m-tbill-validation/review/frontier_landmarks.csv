@@ -1,0 +1,4 @@
+kind,label,sharpe,expected_return_pct,volatility_pct,weight_QQQ_pct,weight_SPMO_pct,weight_GDX_pct,weight_GLD_pct,weight_SLV_pct,weight_AIA_pct,weight_XLE_pct
+provided,Provided Portfolio,0.9170847292297287,17.483036837229875,16.475617089296176,40.0,10.0,10.0,0.0,10.0,15.0,15.0
+optimized,Optimized Portfolio,1.1319750554086332,17.205825559820486,13.10304983219453,24.397652728632345,41.08251374969416,0.0,30.0,0.0,0.0,4.5198335216735
+benchmark,Benchmark,0.832525223410097,15.137783022200368,15.332007563586764,,,,,,,
