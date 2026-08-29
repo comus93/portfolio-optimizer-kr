@@ -23,7 +23,7 @@
 - Analysis period: QQQ, SPMO, GDX, GLD, SLV, AIA, XLE 7개 자산의 실제 데이터가 모두 존재하는 공통 교집합 전체 기간
 - Benchmark: SPY
 - Efficient Frontier: 100 points
-- Risk-free: fixed 2.35595% (기존 PV parity 진단과의 연결을 위한 기본값)
+- Risk-free: U.S. 3-Month Treasury Bill (`us_3m_tbill`)
 
 가설은 미리 KEEP/DROP을 정하지 않는다. 각 자산의 단독 성과가 아니라 portfolio marginal utility와 frontier 상의 지속적 역할을 중심으로 판정한다.
 
