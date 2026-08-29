@@ -12,6 +12,7 @@ from portfolio_optimizer_kr.viewer.report_model import (
     FrontierLandmark,
     FrontierPoint,
     ReportModel,
+    UpDownScatterPoint,
 )
 from portfolio_optimizer_kr.viewer.renderer import generate_report
 
@@ -68,6 +69,36 @@ optimization:
                 "volatility_pct": 13.5,
                 "weight_QQQ_pct": 75.0,
                 "weight_GLD_pct": 25.0,
+            },
+        ],
+    )
+    _write_csv(
+        review / "frontier_landmarks.csv",
+        [
+            {
+                "kind": "provided",
+                "label": "Provided Portfolio",
+                "expected_return_pct": 15.0,
+                "volatility_pct": 11.0,
+                "sharpe": 1.0,
+                "weight_QQQ_pct": 60.0,
+                "weight_GLD_pct": 40.0,
+            },
+            {
+                "kind": "optimized",
+                "label": "Optimized Portfolio",
+                "expected_return_pct": 16.5,
+                "volatility_pct": 12.8,
+                "sharpe": 1.2,
+                "weight_QQQ_pct": 72.0,
+                "weight_GLD_pct": 28.0,
+            },
+            {
+                "kind": "benchmark",
+                "label": "Benchmark",
+                "expected_return_pct": 13.0,
+                "volatility_pct": 14.0,
+                "sharpe": 0.75,
             },
         ],
     )
@@ -172,7 +203,43 @@ optimization:
                 "benchmark_return_pct": 1.5,
                 "active_return_pct": 0.5,
                 "occurrences": 10,
+                "above_benchmark_count": 6,
+                "below_benchmark_count": 4,
+                "total_count": 10,
+                "pct_above_benchmark": 60.0,
+                "above_active_return_pct": 1.2,
+                "below_active_return_pct": -0.8,
+                "overall_active_return_pct": 0.5,
             }
+        ],
+    )
+    _write_csv(
+        review / "up_down_market_scatter.csv",
+        [
+            {
+                "date": "2025-01-31",
+                "portfolio": "provided",
+                "market_type": "up",
+                "benchmark_return_pct": 1.0,
+                "portfolio_return_pct": 1.4,
+                "active_return_pct": 0.4,
+            },
+            {
+                "date": "2025-02-28",
+                "portfolio": "provided",
+                "market_type": "down",
+                "benchmark_return_pct": -2.0,
+                "portfolio_return_pct": -1.5,
+                "active_return_pct": 0.5,
+            },
+            {
+                "date": "2025-01-31",
+                "portfolio": "optimized",
+                "market_type": "up",
+                "benchmark_return_pct": 1.0,
+                "portfolio_return_pct": 1.2,
+                "active_return_pct": 0.2,
+            },
         ],
     )
     rolling = [
@@ -219,13 +286,27 @@ def test_frontier_landmark_contract_supports_asset_portfolio_and_benchmark_marke
     }
 
 
-def test_report_model_forces_active_contribution_portfolio_separation():
+def test_up_down_scatter_contract_uses_real_monthly_xy_points():
+    names = {field.name for field in fields(UpDownScatterPoint)}
+    assert names == {
+        "date",
+        "portfolio",
+        "market_type",
+        "benchmark_return_pct",
+        "portfolio_return_pct",
+        "active_return_pct",
+    }
+
+
+def test_report_model_forces_active_contribution_and_scatter_portfolio_separation():
     names = {field.name for field in fields(ReportModel)}
     assert "active_return_contribution" not in names
     assert "active_return_contribution_provided" in names
     assert "active_return_contribution_optimized" in names
     assert "rolling_active_provided" in names
     assert "rolling_active_optimized" in names
+    assert "up_down_scatter_provided" in names
+    assert "up_down_scatter_optimized" in names
 
 
 def test_active_contribution_point_keeps_portfolio_identity():
@@ -271,6 +352,26 @@ def test_frontier_points_use_volatility_as_x_contract_and_weights_sum_to_100(tmp
         assert sum(point.weights_pct.values()) == pytest.approx(100.0)
 
 
+def test_builder_uses_upstream_frontier_landmark_coordinates(tmp_path: Path):
+    model = build_report_model(_fixture_run(tmp_path))
+    landmarks = {point.kind: point for point in model.frontier_landmarks}
+    assert landmarks["provided"].volatility_pct == pytest.approx(11.0)
+    assert landmarks["provided"].expected_return_pct == pytest.approx(15.0)
+    assert landmarks["provided"].weights_pct == {"QQQ": 60.0, "GLD": 40.0}
+    assert landmarks["optimized"].label == "Maximum Sharpe Ratio"
+    assert landmarks["optimized"].volatility_pct == pytest.approx(12.8)
+    assert landmarks["benchmark"].expected_return_pct == pytest.approx(13.0)
+
+
+def test_builder_keeps_up_down_scatter_portfolios_separate(tmp_path: Path):
+    model = build_report_model(_fixture_run(tmp_path))
+    assert len(model.up_down_scatter_provided) == 2
+    assert len(model.up_down_scatter_optimized) == 1
+    assert all(point.portfolio == "provided" for point in model.up_down_scatter_provided)
+    assert model.up_down_scatter_provided[1].benchmark_return_pct == pytest.approx(-2.0)
+    assert model.up_down_scatter_provided[1].portfolio_return_pct == pytest.approx(-1.5)
+
+
 def test_builder_maps_chart_data_without_financial_recalculation(tmp_path: Path):
     model = build_report_model(_fixture_run(tmp_path))
     assert model.objective_name == "Maximum Sharpe Ratio"
@@ -284,7 +385,7 @@ def test_builder_maps_chart_data_without_financial_recalculation(tmp_path: Path)
     assert model.rolling_returns_3y[0].provided_return_pct == pytest.approx(12.0)
 
 
-def test_generate_report_is_self_contained_file_html_with_golden_sections(tmp_path: Path):
+def test_generate_report_is_self_contained_and_locks_p0_renderer_contracts(tmp_path: Path):
     run = _fixture_run(tmp_path)
     template = Path(__file__).resolve().parents[1] / "site" / "report-template.html"
     report = generate_report(run, template_path=template)
@@ -302,4 +403,15 @@ def test_generate_report_is_self_contained_file_html_with_golden_sections(tmp_pa
     assert '"benchmark_symbol":"SPY"' in html
     assert '"active_return_contribution_provided"' in html
     assert '"active_return_contribution_optimized"' in html
+    assert '"up_down_scatter_provided"' in html
+    assert '"up_down_scatter_optimized"' in html
     assert '"year":2025' in html
+
+    # P0 renderer regression guards.
+    assert "filter(q=>q.kind==='frontier')" in html
+    assert "upDownScatterPanels" in html
+    assert "mouseVol=" in html
+    assert "*10000" in html
+    assert "const finite = value => value !== null" in html
+    assert "+r[k]||0" not in html
+    assert "Number.isFinite(+p.x)" not in html
