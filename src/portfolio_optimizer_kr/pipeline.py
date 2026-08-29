@@ -18,7 +18,11 @@ from portfolio_optimizer_kr.models import OptimizationObjective, OptimizationReq
 from portfolio_optimizer_kr.optimize import build_efficient_frontier, maximum_sharpe, target_volatility
 from portfolio_optimizer_kr.portfolio import build_portfolio_path
 from portfolio_optimizer_kr.report import CanonicalResult
-from portfolio_optimizer_kr.stats import annualized_statistics, portfolio_expected_return
+from portfolio_optimizer_kr.stats import (
+    annualized_statistics,
+    portfolio_expected_return,
+    portfolio_volatility,
+)
 
 
 def _annual_rf(request: OptimizationRequest, supplied_annual_rf: float | None) -> float:
@@ -172,18 +176,109 @@ def _up_down_market_table(paths: dict[str, object], benchmark: pd.Series | None)
             active = selected["portfolio"] - selected["benchmark"]
             above = active > 0
             below = active < 0
+            overall = float(active.mean())
+            above_mean = float(active.loc[above].mean()) if above.any() else None
+            below_mean = float(active.loc[below].mean()) if below.any() else None
             rows.append({
                 "portfolio": name, "market_type": market_type,
                 "portfolio_return": float(selected["portfolio"].mean()),
                 "benchmark_return": float(selected["benchmark"].mean()),
-                "active_return": float(active.mean()), "occurrences": len(selected),
+                "active_return": overall, "occurrences": len(selected),
                 "above_benchmark_count": int(above.sum()),
                 "below_benchmark_count": int(below.sum()),
                 "total_count": len(selected),
                 "pct_above_benchmark": float(above.mean() * 100),
-                "above_active_return": float(active.loc[above].mean()) if above.any() else None,
-                "below_active_return": float(active.loc[below].mean()) if below.any() else None,
+                "above_active_return": above_mean,
+                "below_active_return": below_mean,
+                "above_active_return_pct": None if above_mean is None else above_mean * 100.0,
+                "below_active_return_pct": None if below_mean is None else below_mean * 100.0,
+                "overall_active_return_pct": overall * 100.0,
             })
+    return pd.DataFrame(rows)
+
+
+def _up_down_scatter_table(paths: dict[str, object], benchmark: pd.Series | None) -> pd.DataFrame:
+    columns = [
+        "date", "portfolio", "market_type", "benchmark_return", "portfolio_return",
+        "active_return", "benchmark_return_pct", "portfolio_return_pct", "active_return_pct",
+    ]
+    if benchmark is None:
+        return pd.DataFrame(columns=columns)
+    rows = []
+    for name in ("provided", "optimized"):
+        path = paths.get(name)
+        if path is None:
+            continue
+        joined = pd.concat(
+            [path.returns.rename("portfolio"), benchmark.rename("benchmark")],
+            axis=1,
+            join="inner",
+        ).dropna()
+        for timestamp, row in joined.iterrows():
+            benchmark_return = float(row["benchmark"])
+            portfolio_return = float(row["portfolio"])
+            active_return = portfolio_return - benchmark_return
+            rows.append({
+                "date": timestamp,
+                "portfolio": name,
+                "market_type": "up" if benchmark_return > 0 else "down" if benchmark_return < 0 else "flat",
+                "benchmark_return": benchmark_return,
+                "portfolio_return": portfolio_return,
+                "active_return": active_return,
+                "benchmark_return_pct": benchmark_return * 100.0,
+                "portfolio_return_pct": portfolio_return * 100.0,
+                "active_return_pct": active_return * 100.0,
+            })
+    return pd.DataFrame(rows, columns=columns)
+
+
+def _frontier_landmarks_table(
+    request: OptimizationRequest,
+    stats,
+    optimized,
+    benchmark_returns: pd.Series | None,
+    rf: float,
+) -> pd.DataFrame:
+    symbols = list(stats.expected_returns.index)
+    rows: list[dict] = []
+
+    if request.provided_weights is not None:
+        weights = [float(request.provided_weights[symbol]) for symbol in symbols]
+        expected_return = portfolio_expected_return(weights, stats.expected_returns)
+        volatility = portfolio_volatility(weights, stats.covariance)
+        row = {
+            "kind": "provided",
+            "label": "Provided Portfolio",
+            "expected_return": expected_return,
+            "volatility": volatility,
+            "sharpe": (expected_return - rf) / volatility if volatility > 0 else None,
+        }
+        row.update({f"weight_{symbol}": float(request.provided_weights[symbol]) for symbol in symbols})
+        rows.append(row)
+
+    optimized_row = {
+        "kind": "optimized",
+        "label": "Optimized Portfolio",
+        "expected_return": float(optimized.expected_return),
+        "volatility": float(optimized.volatility),
+        "sharpe": float(optimized.sharpe),
+    }
+    optimized_row.update({f"weight_{symbol}": float(optimized.weights[symbol]) for symbol in symbols})
+    rows.append(optimized_row)
+
+    if benchmark_returns is not None:
+        aligned = benchmark_returns.dropna()
+        if not aligned.empty:
+            expected_return = float(aligned.mean() * 12.0)
+            volatility = float(aligned.std(ddof=1) * (12.0 ** 0.5))
+            rows.append({
+                "kind": "benchmark",
+                "label": "Benchmark",
+                "expected_return": expected_return,
+                "volatility": volatility,
+                "sharpe": (expected_return - rf) / volatility if volatility > 0 else None,
+            })
+
     return pd.DataFrame(rows)
 
 
@@ -282,6 +377,8 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     annual_assets = _annual_asset_returns(monthly_returns)
     active_contribution = _active_contribution_table(monthly_returns, paths, benchmark_returns)
     up_down_market = _up_down_market_table(paths, benchmark_returns)
+    up_down_scatter = _up_down_scatter_table(paths, benchmark_returns)
+    frontier_landmarks = _frontier_landmarks_table(request, stats, optimized, benchmark_returns, rf)
     stress_periods = _stress_periods_table(paths)
     metrics_table = _portfolio_metrics_table(paths, benchmark_returns, rf)
     canonical = CanonicalResult(
@@ -300,5 +397,31 @@ def analyze_prices(request: OptimizationRequest, prices: Mapping[str, pd.Series]
     def rolling_review(years: int) -> pd.DataFrame:
         series = [rolling_returns(path.returns, years * 12).rename(f"{name}_annualized_return_pct") * 100 for name, path in paths.items()]
         return pd.concat(series, axis=1).dropna(how="all").reset_index(names="date")
-    result["_tables"] = {"efficient_frontier": frontier, "asset_statistics": asset_stats_table, "correlations": correlation.reset_index(names="series"), "portfolio_performance": performance_table, "annual_returns": annual_table, "monthly_returns": monthly_review, "monthly_return_series": monthly_table, "drawdowns": drawdowns, "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(), "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(), "benchmark_analytics": benchmark_table, "rolling_returns_raw": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"), "rolling_returns_summary": rolling_summary, "rolling_returns_3y": rolling_review(3), "rolling_returns_5y": rolling_review(5), "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame(), "portfolio_growth": growth, "drawdown_series": drawdown_series_output, "annual_asset_returns": annual_assets, "active_return_contribution": active_contribution, "up_down_market_performance": up_down_market, "stress_periods": stress_periods, "portfolio_metrics": metrics_table}
+    result["_tables"] = {
+        "efficient_frontier": frontier,
+        "frontier_landmarks": frontier_landmarks,
+        "asset_statistics": asset_stats_table,
+        "correlations": correlation.reset_index(names="series"),
+        "portfolio_performance": performance_table,
+        "annual_returns": annual_table,
+        "monthly_returns": monthly_review,
+        "monthly_return_series": monthly_table,
+        "drawdowns": drawdowns,
+        "return_decomposition": pd.DataFrame(return_decomp).rename_axis("asset").reset_index(),
+        "risk_decomposition": pd.DataFrame(risk_decomp).rename_axis("asset").reset_index(),
+        "benchmark_analytics": benchmark_table,
+        "rolling_returns_raw": pd.concat({name: pd.DataFrame(values) for name, values in {name: {"36m": rolling_returns(path.returns, 36), "60m": rolling_returns(path.returns, 60)} for name, path in paths.items()}.items()}, axis=1).reset_index(names="date"),
+        "rolling_returns_summary": rolling_summary,
+        "rolling_returns_3y": rolling_review(3),
+        "rolling_returns_5y": rolling_review(5),
+        "active_returns": pd.concat(active_tables, names=["portfolio", "date"]).reset_index() if active_tables else pd.DataFrame(),
+        "portfolio_growth": growth,
+        "drawdown_series": drawdown_series_output,
+        "annual_asset_returns": annual_assets,
+        "active_return_contribution": active_contribution,
+        "up_down_market_performance": up_down_market,
+        "up_down_market_scatter": up_down_scatter,
+        "stress_periods": stress_periods,
+        "portfolio_metrics": metrics_table,
+    }
     return result
