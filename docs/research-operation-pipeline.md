@@ -22,11 +22,11 @@ User <-> ChatGPT
         v
 Study + Experiment YAML
         |
-        | ChatGPT commits experiment and updates execution pointer
+        | ChatGPT persists the experiment/run conditions
         v
 control/execute.yaml
         |
-        | GitHub Actions trigger
+        | GitHub Actions
         v
 portfolio-optimizer execute
         |
@@ -56,29 +56,102 @@ user-facing report      result/review source
              Repository
 ```
 
-사용자가 `run 해줘`, `이 조건으로 최적화해줘` 등 명시적으로 실행을 요청했을 때 ChatGPT가 실행할 Experiment를 GitHub에 저장하고 `control/execute.yaml`이 해당 파일을 가리키도록 갱신한다.
+사용자가 `run 해줘`, `이 조건으로 최적화해줘` 등 명시적으로 실행을 요청했을 때 ChatGPT가 해당 Asset Universe의 Experiment를 찾거나 새로 만들고, 실행 조건을 반영한 뒤 시스템 실행 경로로 넘긴다.
 
 실행 요청 전 연구 조건 확정 규칙은 `docs/llm-research-input-contract.md`를 따른다.
 
 ---
 
-## 3. Experiment Files Are the Research Interface
+## 3. Experiment Identity Rule
+
+Experiment의 identity는 **Asset Universe, 즉 optimizer에 포함되는 종목 집합**으로만 결정한다.
+
+Canonical rule은 두 줄이다.
+
+```text
+종목 집합이 동일하다 -> 같은 Experiment, 새 Run
+종목이 추가/삭제/교체된다 -> 새 Experiment
+```
+
+종목 순서만 달라지는 것은 같은 집합으로 본다.
+
+### 같은 Experiment에서 바뀔 수 있는 조건
+
+다음 값이 달라져도 Asset Universe가 같으면 **새 Experiment를 만들지 않는다.** 실행할 때마다 새 Run으로 남긴다.
+
+- Provided Portfolio weights
+- Min/max constraints
+- Optimization objective
+- Target volatility
+- Analysis period
+- Rebalancing
+- Benchmark
+- Risk-free convention
+- Frontier point count
+- 그 밖의 종목 집합을 바꾸지 않는 실행 조건
+
+각 Run의 정확한 effective condition은 `runs/<run_id>/input.yaml`에 snapshot으로 보존한다.
+
+따라서 Experiment 파일을 조건 변경마다 `r01`, `r02` 식으로 복제하지 않는다.
+
+### 새 Experiment가 되는 경우
+
+Optimizer Asset Universe에서 ticker 하나라도 추가, 삭제 또는 교체되면 별개의 Experiment다.
+
+예:
+
+```text
+Experiment 001: QQQ / SPMO / GLD
+Experiment 002: QQQ / SPMO
+Experiment 003: QQQ / SPMO / XLE
+```
+
+반면 아래는 모두 Experiment 001의 서로 다른 Run이다.
+
+```text
+Run A: Maximum Sharpe / monthly / QQQ max 50% / 2016-2026
+Run B: Target Vol 15% / annual / QQQ max 40% / 2020-2026
+Run C: Maximum Sharpe / monthly / benchmark SPY / latest common period
+```
+
+### Experiment filename
+
+신규 운영 Experiment는 단순한 파일명을 사용한다.
+
+```text
+<experiment-number>-<short-name>.yaml
+```
+
+예:
+
+```text
+001-qqq-spmo-gld.yaml
+002-qqq-spmo.yaml
+003-qqq-spmo-xle.yaml
+```
+
+Experiment 번호는 Study 안에서 사람이 구분하기 위한 순번이다. 별도의 opaque system ID가 아니다.
+
+개발 과정에서 생성된 과거 `r01/r02` 형식 파일은 이 신규 운영 규칙의 기준으로 삼지 않는다. 정식 운영 전 정리할 수 있다.
+
+---
+
+## 4. Experiment Files Are the Research Interface
 
 새로운 run-request 전용 ID나 별도 orchestration 데이터 모델을 만들지 않는다.
 
-기존 구조를 그대로 사용한다.
+기존 구조를 사용한다.
 
 ```text
 studies/<study-id>/
 |- study.md
 `- experiments/
-   |- 001-base-r01.yaml
-   |- 001-base-r02.yaml
-   |- 002-add-gld-r01.yaml
+   |- 001-qqq-spmo-gld.yaml
+   |- 002-qqq-spmo.yaml
    `- ...
 ```
 
-Experiment YAML이 사람이 읽고 다시 사용할 수 있는 executable research input이다.
+Experiment YAML은 사람이 읽고 다시 사용할 수 있는 executable research input이다.
 
 ChatGPT는 사용자와의 대화에서 과거 실험을 찾아 재사용할 수 있다.
 
@@ -86,36 +159,16 @@ ChatGPT는 사용자와의 대화에서 과거 실험을 찾아 재사용할 수
 
 ```text
 User: QQQ랑 SPMO를 사용한 실험 있었어? 그거 가져와.
-ChatGPT: repository에서 해당 Study/Experiment를 찾고 기존 조건과 결과를 설명한다.
-User: 여기서 종목 하나를 바꿔서 다시 실험해줘.
-ChatGPT: 기존 Experiment를 기반으로 새 Experiment 파일을 만든 뒤 실행한다.
+ChatGPT: repository에서 해당 Study/Experiment와 연결된 Run/Result를 찾는다.
+
+User: 조건을 바꿔서 다시 돌려줘.
+ChatGPT: Asset Universe가 같으므로 같은 Experiment의 조건을 갱신하고 새 Run을 실행한다.
+
+User: SPMO를 GLD로 바꿔서 돌려줘.
+ChatGPT: Asset Universe가 달라졌으므로 새 Experiment를 만든 뒤 실행한다.
 ```
 
-이 흐름에서 GPT와 runtime 사이에 별도의 opaque request identity는 두지 않는다. GitHub에 저장된 Study/Experiment 파일이 공유 경계다.
-
-### Experiment와 Revision 규칙
-
-파일명 revision을 기존 방식으로 사용한다.
-
-```text
-<experiment-number>-<short-name>-r##.yaml
-```
-
-의미는 다음과 같다.
-
-- **같은 연구 질문/실험의 수정**: 같은 experiment number를 유지하고 `r##`를 증가시킨다.
-- **자산 universe, 핵심 가설, 주요 조건을 바꾸어 별개 비교 실험을 수행**: 새 experiment number와 `r01`을 만든다.
-- 과거 Experiment 파일은 삭제하거나 덮어쓰지 않고 그대로 보존한다.
-
-예:
-
-```text
-001-qqq-spmo-r01.yaml
-001-qqq-spmo-r02.yaml       # 같은 실험의 수정
-002-qqq-gld-r01.yaml        # 자산 변경으로 파생된 별개 실험
-```
-
-`r##`는 실행 횟수가 아니라 **실험 정의의 revision**이다.
+이 흐름에서 GPT와 runtime 사이에 별도의 opaque request identity는 두지 않는다. GitHub에 저장된 Study/Experiment/Run 파일이 공유 경계다.
 
 ### Execution Pointer
 
@@ -131,19 +184,16 @@ control/execute.yaml
 target: studies/<study-id>/experiments/<experiment>.yaml
 ```
 
-새로운 Experiment를 실행할 때 ChatGPT가 `target`을 그 파일로 변경한다. 이 Git commit이 GitHub Actions 실행의 자연스러운 trigger가 된다.
-
-동일 Experiment 파일을 변경 없이 그대로 재실행해야 하는 운영/복구 상황은 `workflow_dispatch`를 사용한다. 이를 위해 Experiment 모델에 별도의 `request_id`를 추가하지 않는다.
+`control/execute.yaml`은 현재 실행할 Experiment를 가리키는 pointer일 뿐 Experiment identity나 Run identity를 만들지 않는다.
 
 ---
 
-## 4. GitHub Actions Execution Boundary
+## 5. GitHub Actions Execution Boundary
 
 일반 research run의 실행 주체는 GitHub Actions다.
 
 ```text
-ChatGPT commit
-  -> control/execute.yaml changed
+Experiment / execution pointer persisted in GitHub
   -> .github/workflows/run-optimization.yml
   -> portfolio-optimizer execute
   -> runs/<run_id>/ generated
@@ -154,13 +204,13 @@ ChatGPT commit
 
 별도 GPT 전용 optimizer path를 만들지 않는다.
 
-GitHub Actions가 생성한 run commit은 `control/execute.yaml`을 수정하지 않으므로 자기 자신을 재귀적으로 다시 실행하지 않는다.
+같은 Experiment에서 조건만 변경한 새 Run도 자연스럽게 실행할 수 있도록 GitHub Actions trigger 방식은 이 identity rule과 일치해야 한다. 세부 trigger plumbing은 시스템 구현 책임이며 Experiment 모델에 별도의 `request_id` 같은 식별자를 추가하지 않는다.
 
-`workflow_dispatch`는 같은 Experiment의 명시적 재실행, 복구, 운영 점검용으로 유지한다.
+`workflow_dispatch`는 명시적 재실행, 복구, 운영 점검에도 사용할 수 있다.
 
 ---
 
-## 5. Run Provenance
+## 6. Run Provenance
 
 연구 provenance는 사용자가 수기로 작성하지 않는다.
 
@@ -178,9 +228,7 @@ study: studies/<study-id>/study.md
 experiment: studies/<study-id>/experiments/<experiment>.yaml
 ```
 
-이 관계 자체가 provenance의 중심이다. Experiment 파일명과 Git history가 사람이 이해할 수 있는 revision history를 제공하므로 별도 execution request ID는 도입하지 않는다.
-
-후속 provenance 보강 단계에서는 시스템이 자동으로 다음 정도만 추가할 수 있다.
+후속 provenance 보강 단계에서는 시스템이 자동으로 다음 정도를 추가할 수 있다.
 
 ```yaml
 source_commit: <execution-source commit sha>
@@ -189,17 +237,17 @@ executed_at: <timestamp>
 
 필요하다면 experiment 파일의 blob/commit SHA를 추가할 수 있지만, 사용자나 GPT가 이를 일상적으로 다루는 인터페이스로 만들지는 않는다.
 
-목표는 `run_id`에서 Study와 Experiment 파일로 거슬러 올라갈 수 있고, Experiment 파일에서는 Git history를 통해 revision 변화를 확인할 수 있게 하는 것이다.
+목표는 `run_id`에서 Study와 Experiment로 거슬러 올라갈 수 있고, Run의 `input.yaml`에서 그 실행 당시의 정확한 조건을 복원할 수 있게 하는 것이다.
 
 ---
 
-## 6. Run Result Source of Truth
+## 7. Run Result Source of Truth
 
 하나의 persisted run은 다음 의미를 가진다.
 
 ```text
-runs/<run_id>/input.yaml       executable effective input
-runs/<run_id>/context.yaml     provenance/linkage
+runs/<run_id>/input.yaml       executable effective input snapshot
+runs/<run_id>/context.yaml     Study/Experiment/Run provenance
 runs/<run_id>/result.json      canonical calculation result
 runs/<run_id>/raw/*.csv        full-precision machine/audit data
 runs/<run_id>/review/*.csv     ChatGPT/user-readable analysis data
@@ -220,7 +268,7 @@ ChatGPT의 optimization interpretation은 `report.html` 화면을 재계산하�
 
 ---
 
-## 7. GitHub Pages Publication
+## 8. GitHub Pages Publication
 
 Research run이 성공해 `runs/<run_id>/`가 main에 저장되면 Pages publication을 이어서 수행한다.
 
@@ -238,15 +286,11 @@ Canonical user-facing URL 형식:
 https://<owner>.github.io/<repo>/runs/<run_id>/report.html
 ```
 
-`run-optimization.yml`은 run artifact commit 후 `publish-reports.yml`을 dispatch한다.
-
-GitHub Actions의 기본 `GITHUB_TOKEN`으로 생성한 push는 다른 push-triggered workflow를 자동 연쇄 실행하지 않을 수 있으므로, Pages publish는 명시적 workflow dispatch로 연결한다.
-
 ChatGPT는 run 완료 후 사용자에게 이 Pages URL을 안내한다.
 
 ---
 
-## 8. User Decisions vs System Decisions
+## 9. User Decisions vs System Decisions
 
 ### User + ChatGPT가 결정하는 것
 
@@ -259,11 +303,11 @@ ChatGPT는 run 완료 후 사용자에게 이 Pages URL을 안내한다.
 - Analysis period 또는 project default 적용
 - Rebalancing
 - Benchmark
-- 기존 Experiment를 재사용할지, 새 Experiment로 파생할지
+- 기존 Asset Universe를 재사용할지, 종목 변경으로 새 Experiment를 만들지
 
 ### System이 자동으로 결정/수행하는 것
 
-- `control/execute.yaml`을 통한 실행 plumbing
+- Experiment/Run persistence plumbing
 - `run_id` (`YYYYMMDD-####` existing convention)
 - GitHub Actions environment/setup
 - Run artifact generation
@@ -272,23 +316,23 @@ ChatGPT는 run 완료 후 사용자에게 이 Pages URL을 안내한다.
 - Run provenance capture
 - Result artifact locations
 
-Experiment 파일명과 revision은 ChatGPT가 기존 repository convention을 보고 자연스럽게 선택하며, 사용자가 별도의 시스템 ID를 관리할 필요는 없다.
+사용자는 별도의 system ID나 execution request ID를 관리하지 않는다.
 
 ---
 
-## 9. Run -> Result -> Analysis Linkage
+## 10. Run -> Result -> Analysis Linkage
 
 최종 연구 lifecycle은 계산 결과에서 끝나지 않는다.
 
 ```text
 Study
-  -> Experiment
-  -> Run
+  -> Experiment (Asset Universe)
+  -> Run (specific execution conditions)
   -> Result
   -> ChatGPT Initial Interpretation
   -> ChatGPT <-> User Discussion
   -> Confirmed Analysis / Insight
-  -> Next Experiment (optional)
+  -> Next Run or New Experiment
 ```
 
 Run과 Result는 같은 `runs/<run_id>/` identity를 공유한다.
@@ -313,20 +357,27 @@ runs/<run_id>/
 개별 run analysis와 여러 run을 종합하는 Study conclusion은 분리한다.
 
 ```text
-Run analysis      = 한 Experiment 실행 결과의 해석
-Study conclusion  = 여러 Run/Analysis를 종합한 연구 결론
+Run analysis      = 특정 조건으로 실행한 한 Run의 해석
+Study conclusion  = 여러 Run/Experiment 분석을 종합한 연구 결론
 ```
 
-새 insight가 다음 실험을 요구하면 ChatGPT는 기존 Experiment를 참고해 새로운 Experiment 파일을 생성한다. 이렇게 research loop는 별도 API state가 아니라 repository의 Study/Experiment/Run 파일 관계로 이어진다.
+새 insight가 다음 검증을 요구할 때:
+
+```text
+Asset Universe 동일 -> 같은 Experiment의 새 Run
+Asset Universe 변경 -> 새 Experiment
+```
+
+규칙을 그대로 적용한다.
 
 ---
 
-## 10. Operational Principle
+## 11. Operational Principle
 
 Canonical user research execution은 다음 한 줄로 요약한다.
 
 ```text
-User <-> ChatGPT -> Study/Experiment files -> GitHub Actions -> Run/Result -> GitHub Pages + ChatGPT Interpretation -> User -> Confirmed Analysis -> Repo
+User <-> ChatGPT -> Study/Experiment -> GitHub Actions -> Run/Result -> GitHub Pages + ChatGPT Interpretation -> User -> Confirmed Analysis -> Repo
 ```
 
 GPT와 시스템의 통합은 repository 파일을 공유하는 수준으로 유지한다. 중간 과정에서 opaque request state나 과도한 tight coupling을 만들지 않는다.
