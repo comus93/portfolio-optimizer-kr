@@ -447,3 +447,30 @@ Rolling 5Y Returns
 
 가로축 달 년 눈금 추가
 
+
+
+---
+
+추가 사용자 리뷰 (2026-08-29)
+
+Efficient Frontier 스케일 / outsider 판정
+
+1. Efficient Frontier scale은 asset dot 전체 범위로 결정하지 않고 frontier curve를 기준으로 한다는 기존 원칙은 유지한다.
+2. 다만 curve min/max에 딱 붙는 scale이 아니라 PV처럼 충분한 여백을 둔다. 제공된 PV 화면에서는 curve가 약 12~39% volatility 범위인데 X축은 10%부터 시작하며 좌우에 breathing room이 있다.
+3. 구현 시 curve raw min/max -> padding -> readable nice tick으로 바깥 방향 반올림한 최종 display domain을 사용한다.
+4. Asset visible / outsider 판정은 raw curve min/max나 padding 전 domain이 아니라 실제 차트가 사용하는 최종 display domain을 기준으로 해야 한다.
+5. 현재 report는 실제 표시 scale 안에 들어올 수 있는 자산까지 `Assets outside chart scale`로 판정하는 오류가 있다. 예: 현재 validation에서 SPMO(Std Dev 약 17.98%, Expected Return 약 19.51%) 등이 과도하게 outsider 처리된다.
+6. 최종 display domain 안에 있는 asset은 chart에 dot으로 표시하고, 정말 display domain 밖인 asset만 아래 outsider table로 이동한다.
+
+Up vs. Down Market Performance PV 차트 참고
+
+1. 기존 report의 scatter 구성은 폐기한다.
+2. PV 실제 화면의 `Return vs. Benchmark`는 grouped/paired bar chart다.
+3. Y축은 Return %, X축 category label은 Benchmark Return %다.
+4. 각 X category에서 두 bar를 함께 표시한다.
+   - 해당 Portfolio Return
+   - Benchmark Return
+5. 어느 bar에 hover해도 해당 category의 Portfolio Return과 Benchmark Return을 함께 tooltip에 표시한다.
+6. PV 화면에는 120 monthly observations에 대해 약 20개의 ordered benchmark-return categories가 보인다. LLM 추정으로는 benchmark monthly return을 오름차순 정렬한 뒤 equal-frequency bin(현재 120개월이면 20 bins x 6개월)으로 묶고 각 bin의 평균 Portfolio Return / Benchmark Return을 표시하는 구조일 가능성이 높다. 구현 전 실제 monthly series로 PV X label과 검산해서 확정한다.
+7. Provided Portfolio와 Maximum Sharpe Ratio 각각 독립 table + 독립 Return vs. Benchmark paired bar chart로 표시한다.
+8. PV summary의 Up/Down occurrence 85/35와 현재 local result 84/36 차이는 chart presentation과 별개인 data/parity issue로 계속 원인 확인한다.
