@@ -1,86 +1,101 @@
 # AI Share
 
 state: active
-id: 20260829T195100+0900-llm
-created_at: 2026-08-29T19:51:00+09:00
+id: 20260829T201500+0900-llm
+created_at: 2026-08-29T20:15:00+09:00
 type: request
 reply_to: none
 
 ## Context
 
-사용자 결정: 앞으로 risk-free의 canonical/default 기준은 Portfolio Visualizer와 같은 **U.S. 3-Month Treasury Bill**이다.
+사용자가 RF 구현은 Agent가 아니라 LLM이 직접 수정하도록 결정했다. 이전 RF 구현 요청은 superseded한다.
 
-`2.35595%` fixed RF는 최초 구현/과거 PV parity 진단 편의를 위해 넣었던 임시 상수의 잔재다. production/default semantics로 사용하지 않는다.
+LLM이 main에 다음을 직접 반영했다.
 
-현재 확인된 상태:
+- `FDRLoader.load_economic_series()` 추가
+- Runner가 canonical/default `us_3m_tbill` 실행 시 FDR `FRED:TB3MS`를 직접 로드
+- 실제 optimization monthly-return observation months와 TB3MS month를 맞춘 뒤 monthly quoted annual percentage-point rate의 arithmetic mean을 decimal annual RF로 사용
+- 필요한 observation month가 TB3MS에 없으면 명시적 `DataValidationError`
+- `fixed` mode는 explicit override로 유지
+- UI default를 `us_3m_tbill`로 변경
+- example/config/active study experiment를 `us_3m_tbill`로 변경
+- runner targeted tests 추가
 
-- `docs/specification.md`: 이미 `Risk-free Mode = us_3m_tbill`을 default로 선언한다.
-- `RiskFreeConfig`와 YAML parser default도 `us_3m_tbill`이다.
-- 그러나 `pipeline._annual_rf()`의 US 3M mode는 실제 provider가 없고 외부 `annual_rf` 주입을 요구한다.
-- CLI는 이를 위해 `--annual-rf-pct` temporary override를 갖고 있다.
-- UI는 selectbox 순서 때문에 `fixed`가 실질 default이며 2.0%를 제시한다.
-- `configs/example.yaml`, `docs/input-ui-contract.md` 예시는 아직 fixed RF다.
-- 최근 validation run도 `fixed 2.35595%`로 실행되어 PV parity 검증의 계산 조건이 완전히 canonical하지 않았다.
+Historical `runs/**`는 provenance이므로 수정하지 않았다.
 
-Federal Reserve/FRED reference series:
-
-`TB3MS` — 3-Month Treasury Bill Secondary Market Rate, Discount Basis, monthly, averages of business days.
-https://fred.stlouisfed.org/series/TB3MS
+Agent의 PASS/FAIL 평가는 completion 근거로 사용하지 않는다. 검증 목적은 실제 실행 artifact를 LLM/사용자가 직접 검토할 수 있게 만드는 것이다.
 
 ## Message
 
-US 3M T-Bill을 실제 canonical runtime RF로 완성해라.
+구현하지 말고 최신 main을 pull한 뒤 **execution validation만** 수행해라.
 
-### Scope
+### 1. Targeted tests
 
-1. `docs/specification.md`의 RF contract를 먼저 구체화한다.
-   - default/canonical mode = `us_3m_tbill`
-   - source = Federal Reserve 3-Month Treasury Bill secondary market rate
-   - monthly source convention은 `TB3MS`와 동등한 semantics를 사용
-   - RF effective period는 optimization monthly return observation period와 일치
-   - 실제 effective RF와 source/coverage를 run metadata에 남김
-   - `fixed` mode는 explicit override/test/research 용도로 계속 지원 가능하나 default가 아니다.
+최소:
 
-2. 런타임에서 `us_3m_tbill`이 별도 `--annual-rf-pct` 없이 동작하게 구현한다.
-   - production RF를 상수로 hardcode하지 않는다.
-   - provider/data retrieval 책임 위치는 기존 architecture에 맞춘다.
-   - provider failure/coverage 부족은 명시적 error로 처리한다.
-   - cache가 필요하면 기존 project convention에 맞게 최소 구현한다.
+```text
+uv run pytest tests/test_runner.py -q
+```
 
-3. 임시 override 경로 정리.
-   - `--annual-rf-pct`가 더 이상 canonical US 3M 실행에 필요하지 않아야 한다.
-   - 유지할 필요가 있으면 명시적 debug/test override로 의미를 축소하고 문서화한다.
+RF 변경 때문에 직접 영향받는 테스트가 더 있으면 필요한 범위만 추가한다. 관련 없는 full regression은 하지 않는다.
 
-4. active defaults/examples/UI를 canonical RF로 통일한다.
-   - `ui/app.py`: default selection = `us_3m_tbill`
-   - `configs/example.yaml`: `us_3m_tbill`
-   - `docs/input-ui-contract.md` YAML example: `us_3m_tbill`
-   - 아직 실행 전인 active experiment/study config에서 fixed 2.35595가 기본값처럼 남아 있으면 canonical mode로 변경
-   - 이미 생성된 historical `runs/**` artifact는 provenance이므로 소급 수정하지 않는다.
+### 2. RF calibration check
 
-5. tests를 추가/수정한다.
-   - YAML에서 `risk_free` 생략 시 US 3M default
-   - UI generated YAML 기본값 US 3M
-   - US 3M mode가 외부 annual_rf 주입 없이 실행됨
-   - fixed mode explicit input은 계속 정확히 동작
-   - RF source coverage가 optimization return period와 일치
-   - result metadata에 requested mode / effective annual RF / source / coverage가 보존됨
+기존 PV same-input 기간:
 
-### PV calibration
+```text
+2016-08-01 ~ 2026-07-31
+```
 
-2016-08-01 ~ 2026-07-31 구간의 기존 `2.35595%` 값은 **production constant가 아니라 PV parity calibration reference**로만 사용한다.
+에 대해 실제 runtime이 계산한 `us_3m_tbill` effective annual RF를 보고한다.
 
-새 provider로 같은 구간을 계산했을 때 PV reference와 합리적인 tolerance 내에서 일치하는지 검증한다. 값이 다르면 상수를 맞춰 끼우지 말고 source series / observation window / annualization convention 차이를 조사해 보고한다.
+과거 임시 calibration 값:
 
-### Validation priority
+```text
+2.35595%
+```
 
-이 변경 후 최근 7-asset validation 조건을 `risk_free: us_3m_tbill`로 새 run하여 숫자를 다시 산출한다.
+과의 차이도 숫자로 보고한다. 값이 다르면 상수를 맞춰 끼우거나 구현을 수정하지 말고, 실제 TB3MS observation count / first month / last month / arithmetic mean을 보고한다.
 
-Agent의 PASS 라벨 자체는 completion 근거가 아니다. 다음을 artifact로 남긴다.
+### 3. Fresh 7-asset run
 
-- effective RF와 source/coverage
-- optimized weights / expected return / volatility / ex-ante Sharpe
-- PV reference와의 숫자 차이
-- 차이가 남으면 metric별 원인 후보
+기존 same-input 조건으로 새 run을 만든다.
 
-전체 회귀테스트가 아니라 **이번 RF 변경 영향 테스트 + 해당 E2E 숫자 재검증**을 우선 실행한다. 관련 없는 회귀는 필요 시에만 수행한다.
+```text
+Assets: QQQ / SPMO / GDX / GLD / SLV / AIA / XLE
+Period: 2016-08-01 ~ 2026-07-31
+Provided: 40 / 10 / 10 / 0 / 10 / 15 / 15
+Caps: QQQ 50, SPMO 50, others 30
+Benchmark: SPY
+Objective: Maximum Sharpe Ratio
+Frontier: 100
+Rebalancing: Monthly
+Risk-free: us_3m_tbill
+```
+
+새 run id를 사용한다.
+
+### 4. 결과 보고
+
+`agent-to-llm.md`에는 평가 문구보다 **raw evidence**를 우선한다.
+
+최소:
+
+```text
+start HEAD
+changed files: none expected
+targeted test command + exact result
+run id / run path / report.html path
+effective RF (%)
+TB3MS observation count / first month / last month
+optimized weights
+expected return
+volatility
+ex-ante Sharpe
+PV reference numerical differences
+Up/Down count
+```
+
+`PASS`라고 써도 LLM은 신뢰 근거로 사용하지 않는다. 숫자와 생성된 `report.html`을 직접 검토한다.
+
+코드 수정은 하지 않는다. 실행 blocker가 있으면 증상과 로그만 회신한다.
