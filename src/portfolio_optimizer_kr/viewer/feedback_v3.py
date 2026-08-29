@@ -253,7 +253,9 @@ _USER_FEEDBACK_V3_SCRIPT = r"""
       legend.innerHTML = `<span style="--color:${BLUE}">Efficient Frontier</span><span style="--color:${GRAY}">Assets</span><span style="--color:${RED}">Portfolio / Benchmark</span>`;
       root.before(legend);
 
-      section('efficient-frontier')?.querySelector('.v3-frontier-hidden')?.remove();
+      // Replace the prior renderer's raw-curve outsider table; it used a
+      // pre-v3 classification and can contradict the snapped display domain.
+      section('efficient-frontier')?.querySelectorAll('.frontier-hidden, .v3-frontier-hidden').forEach(node=>node.remove());
       if (hidden.length) {
         const wrap = document.createElement('div');
         wrap.className = 'v3-frontier-hidden table-slot';
