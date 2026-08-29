@@ -1,22 +1,50 @@
-# Interactive Report Visual Acceptance Contract
+# Interactive Report Validation Contract
 
-이 문서는 `docs/specification.md`의 Interactive Report에 대한 browser/behavioral acceptance contract다.
+## 1. Purpose
 
-목표는 Portfolio Visualizer(PV)의 pixel-perfect clone이 아니라, 동일 입력에서 사용자가 **같은 금융 의미를 읽고 비교할 수 있는 semantic parity와 충분한 presentation fidelity**를 확보하는 것이다.
+이 문서는 Interactive Research Report의 **검증 절차와 completion rule**을 정의한다.
+
+이 문서는 UI 제품 요구사항 자체를 정의하지 않는다.
+
+Normative source:
+
+```text
+Finance / calculation semantics   docs/specification.md
+Report UI / interaction semantics docs/report-ui-specification.md
+Architecture / responsibility     docs/architecture.md
+```
+
+이 문서의 역할은 위 specification을 구현한 report가 실제 browser에서 올바르게 동작하는지 확인하는 것이다.
 
 ---
 
-## 1. Reference hierarchy
+## 2. External References Are Non-Normative
 
-### Primary behavioral golden
+Portfolio Visualizer(PV), screenshots, historical golden files 등 외부 reference는 다음 용도로 사용할 수 있다.
 
-현재 same-input PV live result:
+- defect discovery
+- numerical sanity check
+- data-source deviation 조사
+- alternative presentation idea 비교
+- historical implementation regression investigation
+
+하지만 외부 reference의 현재 동작은 product requirement가 아니다.
+
+다음 규칙을 따른다.
+
+```text
+internal specification > external reference
+```
+
+External reference가 달라졌다는 이유만으로 우리 implementation을 변경하지 않는다.
+
+현재 유용한 7-asset external comparison fixture:
 
 ```text
 https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=3n4DZ247sp7s5oMf4Umzc5
 ```
 
-Current universe:
+Input context:
 
 ```text
 QQQ / SPMO / GDX / GLD / SLV / AIA / XLE
@@ -28,287 +56,141 @@ Objective: Maximum Sharpe Ratio
 Frontier: 100 points
 ```
 
-PV live는 다음을 검증한다.
+이 fixture는 regression investigation을 위해 유지하되 acceptance source로 사용하지 않는다.
 
-- chart type
-- X/Y semantic
-- axis/tick/domain behavior
-- tooltip content/units
-- series / marker / legend identity
-- panel separation
-- table composition
-- interaction behavior
-
-### Static golden
-
-**현재 최신 full-page static golden은 PENDING USER REFRESH다.**
-
-Report-review v4 구현 완료 후 사용자가 같은 7-asset PV 결과의 최신 screenshot을 제공하면 새 static baseline으로 고정한다.
-
-이전 static image가 깨졌거나 asset universe가 다르면 same-input completion PASS 근거로 사용하지 않는다.
-
-Historical files under `tests/golden/pv/`는 과거 information-structure/parity 참고용으로 유지할 수 있다.
+Static screenshot도 동일하다. Screenshot은 특정 시점의 외부 비교 evidence일 뿐 product contract가 아니다.
 
 ---
 
-## 2. Automated contract vs browser acceptance
+## 3. Validation Layers
 
-두 검증은 서로 대체하지 않는다.
+### 3.1 Calculation Contract
 
-### Automated contract
+`docs/specification.md` 기준으로 automated tests를 수행한다.
 
-최소:
+최소 확인:
 
-- finance calculation convention
-- required report fields
+- finance formula
+- data coverage
+- constraint residual
+- optimization result invariants
+- frontier weight sum
+- historical portfolio path
+- performance/active-return metrics
+- rolling calculation convention
+- decomposition invariants
+
+### 3.2 Report Semantic Contract
+
+`docs/report-ui-specification.md` 기준으로 automated/rendered assertions를 수행한다.
+
+예:
+
+- correct identity labels
+- correct unit formatting
+- required rows/columns
 - missing != zero
-- frontier weights sum 100%
-- portfolio identity
-- annual/rolling semantic X values
-- rendered monetary/percentage unit contract when practical
+- canonical balance 1.0 -> $10,000
+- benchmark relative metrics -> N/A
+- rolling active return uses canonical value
+- independent asset series identity
 
-### Browser acceptance
+### 3.3 Browser Acceptance
 
-실제 generated `report.html`을 localhost HTTP에서 열어 직접 확인한다.
+실제 generated `report.html`을 browser에서 연다.
 
-자동 테스트 PASS만으로 visual completion이라고 보고하지 않는다.
+`file://`가 아니라 localhost HTTP 또는 equivalent served context를 우선한다.
 
----
-
-## 3. General chart contract
-
-### Semantic axes
-
-Row index를 semantic X value 대신 사용하지 않는다.
-
-Time series:
-
-```text
-X = actual date / year
-```
-
-Efficient Frontier:
-
-```text
-X = Standard Deviation %
-Y = Expected Return %
-```
-
-Frontier Transition:
-
-```text
-X = Standard Deviation %
-Y = Allocation %
-```
-
-### Ticks / units
-
-- 의미 있는 interval
-- axis title
-- readable density
-- percentage/currency/date unit
-- 과도한 overlap 없음
-- 의미상 필요하지 않은 0 강제 포함 금지
-
-### Missing value
-
-```text
-missing != zero
-```
-
-null/NaN을 0 observation으로 그리거나 표시하지 않는다.
+자동 test PASS만으로 visual completion이라고 판단하지 않는다.
 
 ---
 
-## 4. Identity contract
+## 4. General Browser Checks
 
-Report 전체에서 가능한 한 다음 identity를 일관되게 사용한다.
+모든 report에서 다음을 확인한다.
 
-```text
-Provided Portfolio
-<objective-aware optimized name, e.g. Maximum Sharpe Ratio>
-<human-readable benchmark name>
-```
+### Layout
 
-Generic `Optimized`, `Benchmark`가 실제 portfolio identity를 대신해 여기저기 섞이지 않도록 한다.
+- section clipping 없음
+- table/chart가 container 밖으로 비정상 overflow하지 않음
+- desktop 주요 chart가 지나치게 작지 않음
+- mobile에서 정보 손실 없이 scroll/wrap 가능
 
-같은 ticker는 report 전체에서 일관된 visual color identity를 유지한다.
+### Identity
 
----
-
-## 5. Efficient Frontier
-
-### Semantics
-
-```text
-X = Annualized Standard Deviation %
-Y = Expected Annual Return %
-```
-
-표시:
-
-- efficient frontier curve
-- nearby individual assets
 - Provided Portfolio
-- Optimized Portfolio
-- Benchmark
+- objective-aware optimized name
+- human-readable benchmark name
+- asset Name/Ticker
 
-### Viewport
+가 specification대로 일관되는지 확인한다.
 
-- curve raw extrema에 딱 붙이지 않는다.
-- curve가 chart의 핵심이지만 nearby asset/landmark context를 충분히 보여준다.
-- 극단적으로 먼 asset 때문에 curve가 지나치게 축소되지 않는다.
-- final display domain 기준으로 asset visible/outside를 판정한다.
-- final domain 안 asset을 outsider table로 보내면 FAIL이다.
+### Units
 
-Current 7-asset PV에서는 의미상 대략:
+- percentage
+- ratio
+- currency
+- date/year
 
-```text
-X: 12% ~ 22.5%
-Y: 11% ~ 22%
-Visible: QQQ / SPMO / GLD / AIA
-Outside: GDX / SLV / XLE
-```
+가 의미에 맞게 표시되는지 확인한다.
 
-이 숫자를 hard-code하지 않고 presentation principle로 재현한다.
+### Missing values
 
-### Size
+Unavailable 값을 0으로 표시하지 않는다.
 
-Desktop에서는 chart가 section 폭을 충분히 활용하고, curve/asset 위치를 한눈에 읽을 수 있는 높이를 확보한다. 260~360px의 납작한 chart로 눌리면 P1 failure다.
+### Tooltips
 
-### Tooltip
+Hover target과 tooltip 값/identity가 일치하는지 확인한다.
 
-Curve hover:
+---
 
-- Expected Return
-- Standard Deviation
-- Sharpe Ratio
-- all asset allocations
+## 5. Section Acceptance
 
-Asset/landmark hover:
+### 5.1 Portfolio Allocation
 
-- identity
-- Expected Return
-- Std Dev
-- Sharpe
+- non-zero allocation 표시
+- Name/Ticker/Allocation hover
+- constraint 정보 유지
+- Provided/Optimized identity 분리
 
-### Asset table
+### 5.2 Efficient Frontier Assets
+
+Required schema:
 
 ```text
 Name | Ticker | Expected Return | Std Dev | Sharpe Ratio | Min Weight | Max Weight
 ```
 
----
+### 5.3 Efficient Frontier
 
-## 6. Frontier Transition
+Check:
 
-- stacked allocation area
+- X = Annualized Standard Deviation %
+- Y = Expected Annual Return %
+- frontier curve shape readable
+- nearby asset/landmark context readable
+- chart height sufficient
+- extreme asset 하나 때문에 curve가 과도하게 축소되지 않음
+- final display domain 안 asset은 chart에 표시
+- final display domain 밖 asset만 outsider table에 표시
+- chart/outside table 간 duplicate/missing asset 없음
+- curve tooltip has return/stddev/sharpe/all allocations
+- asset/landmark tooltip has identity/statistics
+
+특정 external screenshot의 exact X/Y range를 요구하지 않는다.
+
+### 5.4 Frontier Transition
+
+- stacked allocation meaning 유지
 - X = Std Dev
-- Y = 0..100% allocation
-- each frontier point weights sum 100%
-- table allocation columns followed by Expected Return / Std Dev / Sharpe
-- RF note must match actual run mode
+- Y = Allocation
+- per-point weights sum 100%
+- table column order specification 충족
+- RF note matches actual configuration
 
----
+### 5.5 Performance Summary
 
-## 7. Annual / Asset Returns
-
-### Annual Returns
-
-한 year hover에서:
-
-- Provided
-- Optimized
-- Benchmark
-
-annual return을 함께 표시한다.
-
-### Annual Asset Returns
-
-- ticker별 independent series/color
-- generic single return series로 합치지 않는다.
-- legend에 asset identity
-- year hover에서 전체 asset Name/Ticker/return을 함께 표시
-
----
-
-## 8. Active Return Contribution
-
-Provided와 Optimized는 별도 panel/series group이다.
-
-Ticker path key:
-
-```text
-(portfolio, ticker), ordered by date
-```
-
-Cross-portfolio sawtooth artifact는 P0다.
-
-Raw debug table을 UI에 남기지 않는다.
-
----
-
-## 9. Rolling Active Return and Risk
-
-Provided / Optimized 각각 독립 panel.
-
-```text
-Title: Rolling Active Return and Risk (36 months)
-Subtitle: <Portfolio> vs. <Benchmark>
-```
-
-Presentation:
-
-```text
-Active Return   = blue bars, left Y-axis
-Tracking Error  = mint line, right Y-axis
-```
-
-두 scale을 하나의 Y축에 얹으면 FAIL이다.
-
-Rolling Active Return 계산 convention은 `docs/specification.md`를 따른다.
-
-```text
-36M portfolio annualized return - 36M benchmark annualized return
-```
-
-36M total-return difference를 annualize 없이 표시하면 P0 semantic failure다.
-
-Hover는 동일 month의 Active Return과 Tracking Error를 함께 표시한다.
-
----
-
-## 10. Up vs. Down Market Performance
-
-Provided와 Optimized 각각:
-
-```text
-conditional statistics table
-+
-Return vs. Benchmark paired bar chart
-```
-
-Scatter requirement는 폐기됐다.
-
-Paired bar presentation:
-
-- benchmark monthly return 오름차순 정렬
-- 약 20 equal-frequency groups
-- 120 observations이면 20 groups x 6 months
-- each group: Portfolio / Benchmark mean-return bars
-- X tick = mean Benchmark Return
-- Y = Return %
-- hover = Portfolio / Benchmark values + observation count
-
-PV/local source가 benchmark sign에서 다르면 count를 hard-code하지 않는다. Exact divergent month와 source-data deviation을 기록한다.
-
-Known current deviation: local FDR SPY 2026-07 sign difference로 84/36 vs PV 85/35가 발생할 수 있다.
-
----
-
-## 11. Tables / Metrics
-
-### Performance Summary minimum
+Minimum rows:
 
 ```text
 Start Balance
@@ -327,17 +209,18 @@ Tracking Error
 Information Ratio
 ```
 
-Normalized balance convention:
+Checks:
 
 ```text
-1.0 -> $10,000
+Start Balance = $10,000 when canonical value is 1.0
+Benchmark Active Return = N/A
+Benchmark Tracking Error = N/A
+Benchmark Information Ratio = N/A
 ```
 
-Benchmark Active Return / Tracking Error / Information Ratio는 `N/A`, not `0`.
+### 5.6 Portfolio Asset Performance
 
-### Portfolio Asset Performance
-
-최소:
+Required identity + metrics + trailing columns가 모두 유지되는지 확인한다.
 
 ```text
 Ticker / Name
@@ -347,90 +230,207 @@ MDD / Sharpe / Sortino
 3M / YTD / 1Y / 3Y / 5Y / 10Y
 ```
 
-Identity 추가 과정에서 기존 trailing columns를 제거하면 regression이다.
+### 5.7 Annual Returns
 
-### Correlation / Decomposition
+- year X-axis
+- Provided/Optimized/Benchmark identity
+- grouped year tooltip
 
-Asset identity는 Name + Ticker를 제공한다.
+### 5.8 Annual Asset Returns
 
----
+- ticker별 independent series
+- stable color identity
+- legend identity
+- grouped year tooltip with all assets
 
-## 12. Other time-series charts
+### 5.9 Drawdowns
 
-Drawdown / rolling 3Y / rolling 5Y / active contribution은:
+- X = Month / Year
+- Y = Drawdown %
+- portfolio별 episode table 분리
 
-- readable date ticks
-- percentage Y ticks
-- correct title/unit
-- panel identity
+### 5.10 Correlations
 
-를 제공한다.
+- required matrix scope
+- Name/Ticker identity
+- numeric coefficient readable
+- color is supplemental, not sole information carrier
 
----
+### 5.11 Return / Risk Decomposition
 
-## 13. Mandatory validation loop
+- Provided/Optimized identity
+- required asset identity
+- contribution totals/invariants already protected by calculation tests
 
-Report UI 변경은 필요 범위에서:
+### 5.12 Active Return Contribution
+
+- `(portfolio, ticker)` path identity
+- no cross-portfolio sawtooth
+- X = Month / Year
+- Y = cumulative contribution %
+- raw debug table absent
+
+### 5.13 Rolling Active Return and Risk
+
+Provided / Optimized separate panels.
+
+Check:
 
 ```text
-implement
--> affected automated tests
--> fresh same-input run
--> generated report browser open
--> current PV live open
--> section comparison
--> fix P0/P1
--> final validation artifact
+Title    = Rolling Active Return and Risk (36 months)
+Subtitle = <Portfolio> vs. <Benchmark>
+Active Return  = bars, left Y-axis
+Tracking Error = line, right Y-axis
+X = Month / Year
 ```
 
-Agent가 독립 검증자로 요청된 작업에서는 LLM implementation을 임의 redesign하지 않고 evidence를 우선 보고한다.
+두 metric을 동일 Y-axis에 놓으면 FAIL이다.
+
+Displayed Rolling Active Return은 canonical result와 일치해야 한다.
+
+36M total-return difference를 annualize 없이 표시하면 P0다.
+
+Hover는 동일 month의 Active Return과 Tracking Error를 함께 제공한다.
+
+### 5.14 Up vs. Down Market Performance
+
+Provided / Optimized 각각:
+
+```text
+conditional statistics table
++
+Return vs. Benchmark paired bar chart
+```
+
+Check:
+
+- canonical Up/Down counts 사용
+- benchmark return ordering
+- approximately 20 equal-frequency view groups
+- each group has Portfolio/Benchmark paired bars
+- X = group mean Benchmark Return %
+- Y = Return %
+- hover has Portfolio/Benchmark/observation count
+
+External source와 count가 다르더라도 internal canonical data가 맞으면 FAIL이 아니다.
+
+### 5.15 Rolling 3Y / 5Y Returns
+
+- X = Month / Year
+- Y = Annualized Return %
+- Provided/Optimized/Benchmark identity
 
 ---
 
-## 14. Validation evidence
+## 6. Severity
 
-`runs/<run_id>/validation/visual-comparison.md` 최소:
+Severity definition은 `docs/report-ui-specification.md`와 동일하게 사용한다.
+
+### P0
+
+금융 의미 오류 또는 required information failure.
+
+Examples:
+
+- wrong value/unit
+- missing shown as zero
+- wrong path identity
+- incorrect rolling metric
+- required row/series missing
+
+### P1
+
+Meaning은 유지되지만 분석/비교 usability가 materially degraded.
+
+Examples:
+
+- important chart too small
+- identity regression
+- required trailing columns lost
+- unreadable ticks
+- wrong outsider classification
+
+### P2
+
+Non-semantic visual polish difference.
+
+---
+
+## 7. Validation Evidence
+
+Validation run에서 필요하면:
 
 ```text
-PV live comparison: PASS | FAIL
-Static golden: PASS | FAIL | PENDING USER REFRESH
+runs/<run_id>/validation/visual-comparison.md
+```
+
+를 남긴다.
+
+최소 내용:
+
+```text
+Internal specification acceptance: PASS | FAIL
+Calculation contract: PASS | FAIL
+Report semantic contract: PASS | FAIL
+Browser acceptance: PASS | FAIL
 
 P0 mismatches: n
 P1 mismatches: n
-Intentional deviations: n
-
-Efficient Frontier
-- domain
-- visible/outside
-- tooltip
-
-Rolling Active Return and Risk
-- calculation range
-- left/right axes
-- bars/line
-
-Metrics
-- balance unit
-- benchmark N/A
-- required rows
-
-Remaining differences
-- ...
+P2 notes: n
+Known data/source deviations: n
+External comparison performed: YES | NO
 ```
 
-Screenshot persistence가 도구 제약으로 불가능한 것 자체는 blocker가 아니다. 직접 비교 evidence를 문서에 남긴다.
+Section별로 actual observation과 defect를 기록한다.
+
+External comparison을 수행했으면 결과를 별도 evidence로 기록하되 internal acceptance와 혼동하지 않는다.
 
 ---
 
-## 15. Completion rule
+## 8. Screenshot Policy
 
-Interactive Report 작업 완료는 현재 작업 scope에 대해:
+Static screenshot은 다음 용도로 유용하다.
 
-1. affected automated contracts pass
-2. same-input generated report browser acceptance pass
-3. current PV live comparison과 intentional deviations가 durable artifact로 기록
-4. static golden이 필요한 completion gate라면 최신 same-input image가 확보됨
+- visual regression evidence
+- historical UI comparison
+- layout discussion
 
-을 만족해야 한다.
+하지만 screenshot의 부재 자체가 product defect는 아니다.
 
-P0 semantic mismatch가 하나라도 남으면 완료가 아니다.
+Screenshot persistence가 환경 제약으로 불가능한 경우 textual/browser evidence를 남길 수 있다.
+
+---
+
+## 9. Completion Rule
+
+Interactive Report 작업 완료 조건:
+
+1. affected calculation contracts pass
+2. affected report semantic contracts pass
+3. generated report browser acceptance pass
+4. P0 = 0
+5. P1이 남아 있으면 명시적으로 accepted/deferred 상태가 기록됨
+6. external reference가 아니라 **internal specification**을 기준으로 completion 판단
+
+External comparison은 현재 작업이 parity investigation 또는 historical regression investigation을 포함할 때만 필수다.
+
+---
+
+## 10. Change Rule
+
+검증 중 외부 service와 다른 점을 발견했을 때:
+
+```text
+external difference discovered
+        ↓
+우리 specification과 implementation 비교
+        ↓
+implementation이 spec 위반? -> defect
+spec과 implementation 일치? -> not defect
+        ↓
+외부 방식이 더 낫다고 판단되면 별도 product change proposal
+        ↓
+spec 먼저 변경 후 구현
+```
+
+검증자가 외부 reference를 근거로 specification을 암묵적으로 재정의하지 않는다.
