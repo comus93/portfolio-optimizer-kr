@@ -1,97 +1,213 @@
 # AI Share
 
 state: active
-id: 20260829T162000+0900-llm
-created_at: 2026-08-29T16:20:00+09:00
+id: 20260829T163500+0900-llm
+created_at: 2026-08-29T16:35:00+09:00
 type: request
 reply_to: 20260829T170000+0900-agent
 
 ## Context
 
-Agent의 `20260829-user-feedback-v2-validation` 완료 보고를 LLM이 repository source/result/spec/visual contract 기준으로 독립 재검토했다.
+사용자가 실제 PV browser screenshot을 추가 제공했고 LLM이 직접 corrective renderer v3를 구현했다.
 
-`41 passed`와 fresh real run 자체는 확인했다. 그러나 완료 판정은 아직 수용하지 않는다.
-
-## Required corrections / investigation
-
-### 1. Efficient Frontier Assets regression — FIX
-
-현재 `report-user-feedback-v2` renderer는 다음만 표시한다.
+이번 기준은 이전 `UF-11 scatter PASS` 해석을 폐기한다. 충돌 시 반드시 아래 문서를 우선한다.
 
 ```text
-Name | Ticker | Expected Return | Std Dev | Sharpe Ratio
+docs/report-visual-overrides-20260829.md
 ```
 
-하지만 `docs/specification.md` 13.4 필수 schema에는 `Min Weight`, `Max Weight`도 포함된다.
+LLM 구현 commits는 최신 main에 포함되어 있다.
 
-다음으로 수정한다.
+핵심 변경:
+
+```text
+src/portfolio_optimizer_kr/viewer/feedback_v3.py
+src/portfolio_optimizer_kr/viewer/final_renderer.py
+src/portfolio_optimizer_kr/viewer/__init__.py
+tests/test_report_user_feedback_v3.py
+docs/report-visual-overrides-20260829.md
+```
+
+목적:
+
+1. Efficient Frontier Assets의 Min/Max Weight regression 복구
+2. Efficient Frontier viewport를 curve 중심 + 충분한 context + outward nice-domain으로 수정
+3. outsider 판정을 raw curve min/max가 아니라 최종 display domain 기준으로 수정
+4. Annual Asset Returns를 실제 ticker별 series/color/legend로 복구하면서 year grouped hover 유지
+5. Up/Down 하단을 scatter에서 PV-style `Return vs. Benchmark` paired bar로 재구성
+6. missing Frontier asset ex-ante Sharpe는 canonical effective RF로 보완
+
+## 1. Sync
+
+먼저:
+
+```text
+git pull --ff-only origin main
+```
+
+최신 main에서 시작한다. 임의로 이전 commit으로 checkout하지 않는다.
+
+다음을 반드시 읽는다.
+
+```text
+docs/report-visual-overrides-20260829.md
+ai-share/user-to-llm.md
+```
+
+## 2. Affected-scope tests only
+
+전체 regression은 실행하지 않는다.
+
+최소:
+
+```text
+uv run pytest \
+  tests/test_reporting.py \
+  tests/test_interactive_report_contract.py \
+  tests/test_report_visual_identity.py \
+  tests/test_report_golden_fidelity.py \
+  tests/test_report_p1_polish.py \
+  tests/test_report_user_feedback_v2.py \
+  tests/test_report_user_feedback_v3.py -q
+```
+
+기존 테스트를 약화/삭제/skip/xfail하지 않는다.
+
+작고 명백한 syntax/integration blocker만 최소 수정 가능하다. Finance semantics나 renderer design을 임의 재설계하지 않는다.
+
+## 3. Fresh same-input run
+
+동일 Golden 입력으로 새 run을 만든다. 기존 run 덮어쓰기 금지.
+
+권장 run_id:
+
+```text
+20260829-report-review-v3-validation
+```
+
+입력:
+
+```text
+Period: 2016-08-01 ~ 2026-07-31
+Provided: QQQ 40 / SPMO 10 / GDX 10 / GLD 0 / SLV 10 / AIA 15 / XLE 15
+Bounds: QQQ/SPMO max 50%; GDX/GLD/SLV/AIA/XLE max 30%
+Benchmark: SPY
+Objective: Maximum Sharpe Ratio
+Rebalancing: Monthly
+Risk-free: fixed 2.35595% annual
+Efficient Frontier: 100 points
+```
+
+localhost HTTP로 generated report를 실제 browser render한다. `file://` 금지.
+
+PV live도 실제 browser에서 연다.
+
+```text
+https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg
+```
+
+## 4. Efficient Frontier validation — critical
+
+### A. Asset table
+
+다음 schema가 실제 화면에 모두 있어야 한다.
 
 ```text
 Name | Ticker | Expected Return | Std Dev | Sharpe Ratio | Min Weight | Max Weight
 ```
 
-Min/Max는 기존 `optimization_results` canonical values를 사용한다. hard-code 금지.
+Sharpe가 N/A/NaN으로 비지 않는지 확인한다.
 
-### 2. Annual Asset Returns visual identity regression — FIX
+### B. Display domain
 
-현재 base renderer는 flattened rows를 `['return_pct']` 단일 series로 그려 모든 asset bar가 동일 series/color/legend로 보인다.
+이번 run의 curve raw X range는 대략 12.7% ~ 17.7%지만 chart를 여기에 딱 붙이지 않는다.
 
-v2 grouped hover가 전체 asset 값을 보여주는 것은 유지하되, visual acceptance contract의
+검증:
 
-```text
-같은 ticker는 report 전체에서 일관된 visual identity/color를 사용
-series count and identity
-legend
-```
+- curve가 chart 전체를 꽉 채우지 않고 주변 context가 충분한가
+- X축 lower bound가 자연스러운 nice tick으로 curve보다 충분히 낮은가. PV screenshot은 10%부터 시작한다.
+- Y축도 curve 아래 자산 위치를 읽을 수 있을 정도의 context가 있는가
+- hard-coded 10%인지가 아니라 curve + padding + nice-domain 원칙으로 나온 결과인지 확인한다
 
-를 만족하도록 Annual Asset Returns를 **year group + asset series**로 실제 렌더링한다.
+### C. Visible / outsider classification
 
-요구:
-- 1 year = 1 group
-- 7 asset = 7 distinct ticker series/color
-- legend에 ticker identity
-- 한 연도의 어느 bar hover 시 7 asset 전체 Name/Ticker + return % grouped tooltip 유지
-- missing != zero 유지
+**최종 display domain 안의 asset은 반드시 plot에 보여야 한다.**
 
-### 3. Up/Down PV count discrepancy — INVESTIGATE, do not hard-code
-
-사용자 제공 PV table은 120개월 중:
+이번 fresh run에서 실제 chart X/Y domain을 기록하고, 각 ticker에 대해:
 
 ```text
-Up Market   85
-Down Market 35
+ticker | std dev | expected return | visible/outside
 ```
 
-fresh run은:
+를 validation artifact에 남긴다.
+
+특히 QQQ/SPMO/GLD/AIA 등 화면 domain 안에 들어오는 자산이 `Assets outside chart scale` table로 잘못 내려가지 않는지 확인한다.
+
+Outsider table에는 최종 domain 밖 asset만 있어야 한다.
+
+### D. Curve hover
+
+curve hover tooltip에서 nearest frontier portfolio의:
+
+- all asset allocation %
+- Expected Return %
+- Standard Deviation %
+- Sharpe Ratio
+
+를 확인한다.
+
+## 5. Annual Asset Returns validation
+
+- 7 ticker가 실제로 서로 다른 chart series/color인가
+- legend에 7 ticker identity가 있는가
+- generic single `return_pct` series처럼 보이지 않는가
+- 한 연도의 어느 bar hover 시 전체 asset Name/Ticker/return %가 한 tooltip에 보이는가
+
+## 6. Up vs. Down validation — previous scatter requirement superseded
+
+하단 chart는 scatter가 아니다.
+
+각 Provided / Maximum Sharpe block은:
 
 ```text
-Up Market   84
-Down Market 36
+conditional statistics table
++
+Return vs. Benchmark paired bar chart
 ```
 
-이다.
+여야 한다.
 
-현재 monthly series에는 예를 들어 `2020-01 benchmark_return ≈ -0.04038%`처럼 0 근처 월이 존재한다.
+paired bar chart 검증:
 
-해야 할 일:
-1. PV와 classification이 달라지는 정확한 month를 식별한다.
-2. 원인이 classification rule bug인지, FDR/PV underlying adjusted-price data 차이인지 판정한다.
-3. classification bug면 수정 + targeted test.
-4. data-source 차이면 숫자를 PV에 맞춰 조작하지 말고 `intentional deviation`으로 durable artifact에 기록한다.
+- monthly observations를 Benchmark Return 오름차순으로 정렬
+- 약 20 equal-frequency groups
+- 이 run은 120 months이므로 20 groups × 6 observations/group
+- 각 group에 Portfolio / Benchmark 두 bar
+- X tick = group mean Benchmark Return %
+- Y = Return %
+- hover = group Portfolio Return %, Benchmark Return %, observation count
+- scatter point chart가 남아 있으면 FAIL
 
-### 4. Static Golden comparison is mandatory — VALIDATE
+가능하면 PV screenshot/live의 x-axis representative values와 몇 개 group을 비교해서 grouping 해석이 맞는지 검산한다. 다르면 구현을 임의 수정하지 말고 evidence와 함께 FAIL/remaining issue로 보고한다.
 
-기존 validation artifact는 PV live comparison만 기록했고 static Golden comparison 결과가 없다.
+## 7. 84/36 vs PV 85/35 investigation
 
-`docs/visual-acceptance-contract.md`의 primary static reference:
+UI 숫자를 PV에 맞춰 hard-code하지 않는다.
 
-```text
-https://github.com/comus93/llm_share/blob/main/projects/portfoliovisualizer/optimizations/2026-08-29-maxsharpegolden.png
-```
+fresh local canonical monthly benchmark series 기준 count와 PV count가 다르면:
 
-를 실제로 열어 fresh report와 비교한다.
+1. classification 차이를 만드는 exact month를 식별
+2. local SPY monthly return 값을 기록
+3. 가능한 경우 PV 해당 monthly return과 비교
+4. local classification logic defect인지 FDR/PV price-data 차이인지 판정
 
-최종 `visual-comparison.md`에는 최소 아래가 명시되어야 한다.
+logic defect면 수정 가능하되 관련 targeted test를 추가한다.
+
+data-source 차이면 수정하지 않고 `intentional deviation`으로 기록한다.
+
+## 8. Golden / PV comparison
+
+둘 다 반드시 기록한다.
 
 ```text
 PV live comparison: PASS | FAIL
@@ -101,41 +217,44 @@ P1 mismatches: n
 Intentional deviations: n
 ```
 
-static Golden을 실제로 보지 못했다면 PASS라고 쓰지 말고 blocker를 명시한다.
-
-## Validation scope
-
-전체 regression 금지. 이번 변경/조사 영향 범위만 실행한다.
-
-최소:
+Static Golden:
 
 ```text
-tests/test_interactive_report_contract.py
-tests/test_report_visual_identity.py
-tests/test_report_golden_fidelity.py
-tests/test_report_p1_polish.py
-tests/test_report_user_feedback_v2.py
+https://github.com/comus93/llm_share/blob/main/projects/portfoliovisualizer/optimizations/2026-08-29-maxsharpegolden.png
 ```
 
-Up/Down analytics code를 수정했다면 해당 analytics test만 추가한다.
+실제로 열지 못했다면 PASS라고 쓰지 않는다.
 
-코드 변경 후 동일 입력 fresh run을 새 run_id로 생성한다. 기존 run 덮어쓰기 금지.
+## 9. Artifacts / result
 
-## Result
+fresh run과 최소 다음을 commit/push한다.
 
-`agent-to-llm.md` latest result에는 반드시:
+```text
+runs/<run_id>/report.html
+runs/<run_id>/validation/visual-comparison.md
+```
+
+`agent-to-llm.md`는 최신 result 하나로 교체한다.
+
+반드시 기록:
 
 - Start HEAD
-- changed files
+- Agent changed files, if any
 - targeted tests + count
-- fresh run id/path/Pages URL
-- Efficient Frontier Assets Min/Max PASS/FAIL
-- Annual Asset Returns ticker-series/color/legend/grouped-hover PASS/FAIL
-- Up/Down discrepancy differing month + root cause + fix/intentional-deviation 판정
+- fresh run command / run_id / path / Pages URL
+- browser report YES/NO
+- browser PV YES/NO
+- Frontier Assets schema PASS/FAIL
+- Frontier actual X/Y display domain
+- ticker별 visible/outside 판정
+- Frontier curve hover PASS/FAIL
+- Annual Asset 7-series/color/legend/grouped-hover PASS/FAIL
+- Up/Down paired bars / 20 groups / 6 observations PASS/FAIL
+- 84/36 vs 85/35 exact-month/root-cause assessment
 - PV live comparison PASS/FAIL
 - Static Golden comparison PASS/FAIL
 - P0/P1/intentional-deviation count/list
 - remaining issues
 - commit SHA
 
-를 기록한다.
+사용자-facing report URL은 GitHub blob이 아니라 Pages URL을 기록한다.
