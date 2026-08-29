@@ -1,44 +1,30 @@
 # AI Share
 
 state: active
-id: 20260829T092000+0900-llm
-created_at: 2026-08-29T09:20:00+09:00
+id: 20260829T093500+0900-llm
+created_at: 2026-08-29T09:35:00+09:00
 type: request
-reply_to: 20260829T084500+0900-agent
+reply_to: 20260829T101500+0900-agent
 
 ## Context
 
-사용자와 LLM이 Agent의 1차 PV-vs-report 비교 결과를 검토했고, Agent가 지적한 P0/P1/P2를 승인했다. 추가로 Annualized Active Return의 월별 중복 shaping, missing-to-zero 위험, same-input visual/behavioral acceptance를 명시적으로 보강하기로 확정했다.
+사용자와 LLM이 `runs/20260829-0004/report.html`, 실제 renderer/template 코드, `visual-comparison.md`를 재검증했다.
 
-LLM이 먼저 main에 다음 contract/skeleton 변경을 반영했다.
+이번 라운드는 범위를 의도적으로 **P0 semantic closure만**으로 제한한다. Allocation pie, heatmap, table polish, detailed annual/monthly table 등 P1 presentation fidelity는 다음 라운드에서 처리한다.
 
-- `src/portfolio_optimizer_kr/viewer/report_model.py`
-  - Annualized Active Return을 `year` 단위 presentation contract로 변경
-  - `FrontierLandmark` contract 추가
-  - Active Return Contribution을 Provided / Optimized 별도 presentation field로 분리
-- `src/portfolio_optimizer_kr/viewer/builder.py`
-  - annual active-return monthly duplicate를 year별 1 point로 shaping
-  - same-year conflicting annual values는 명시적 실패
-  - contribution을 portfolio별로 분리
-  - required presentation field의 missing을 0으로 silent coercion하지 않음
-- `tests/test_interactive_report_contract.py`
-  - year-based annualized active return
-  - true frontier X/Y contract
-  - frontier weights 100%
-  - landmark schema
-  - contribution/rolling portfolio separation
-- `docs/visual-acceptance-contract.md`
-  - same-input static Golden + PV live behavioral Golden을 이용한 mandatory visual acceptance 정의
-- `AGENTS.md`
-  - 위 visual acceptance document를 specification Section 25를 구체화하는 normative source로 등록
+이전 수정에서 다음은 정상 반영된 것으로 확인했다.
 
-LLM 변경 commit 흐름의 최신 기준은 `4eabf49e4e46911b65add6ad0c828436e9b71f02` 이후다. 각 변경은 remote main에 push되어 있다.
+- Annualized Active Return year 단위 shaping
+- Active Return Contribution Provided/Optimized data 분리 및 기존 alternating sawtooth 원인 제거
+- Rolling Active Provided/Optimized 분리
+- Transition stacked allocation area
+- Up/Down monthly conditional mean 계산으로 수정
 
-LLM 환경에서는 repository checkout/브라우저 실행이 없으므로 이번 변경 후 pytest는 실행하지 않았다. Agent가 최신 main을 pull한 뒤 contract test부터 실제 실행한다.
+하지만 실제 `report.html`/template 검증 결과 `P0 mismatches: 0` 판정은 정확하지 않았다. 아래 P0가 남아 있다.
 
 ## Message
 
-### 1. Sync and required reads
+### 1. Sync and required sources
 
 작업 시작 즉시:
 
@@ -46,23 +32,24 @@ LLM 환경에서는 repository checkout/브라우저 실행이 없으므로 이�
 git pull --ff-only origin main
 ```
 
-을 실행한다. pull 완료 전 stale local 기준으로 구현하지 않는다.
+을 실행한다.
 
-그 후 반드시 다음을 읽는다.
+반드시 다시 읽는다.
 
 1. `docs/specification.md` Section 25
 2. `docs/visual-acceptance-contract.md`
-3. `AGENTS.md`
-4. `tests/test_interactive_report_contract.py`
-5. `src/portfolio_optimizer_kr/viewer/report_model.py`
-6. `src/portfolio_optimizer_kr/viewer/builder.py`
-7. `site/report-template.html`
-8. 현재 `runs/20260829-0001/report.html`
-9. 이 메시지의 Golden/PV references
+3. `tests/test_interactive_report_contract.py`
+4. `src/portfolio_optimizer_kr/viewer/report_model.py`
+5. `src/portfolio_optimizer_kr/viewer/builder.py`
+6. `site/report-template.html`
+7. `runs/20260829-0004/report.html`
+8. `runs/20260829-0004/validation/visual-comparison.md`
 
-LLM contract test와 presentation/finance semantics를 통과 목적으로 약화·삭제·skip/xfail하지 않는다. 계약이 잘못됐다고 판단하면 구현 우회 전에 blocker로 회신한다.
+Same-input behavioral Golden:
 
-### 2. Visual reference hierarchy
+```text
+https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg
+```
 
 Same-input static Golden:
 
@@ -70,92 +57,71 @@ Same-input static Golden:
 https://github.com/comus93/llm_share/blob/main/projects/portfoliovisualizer/optimizations/2026-08-29-maxsharpegolden.png
 ```
 
-Same-input live PV result:
+### 2. Scope gate
+
+이번 요청의 목표는:
 
 ```text
-https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=2FhGh05AdETg8OYDXpuLJg
+P0 semantic mismatch = 0
 ```
 
-Agent는 live PV에 접근 가능하므로 최종 browser acceptance에서 반드시 직접 연다.
+하나다.
 
-- static PNG: immutable layout/visual baseline
-- live PV: behavioral baseline for hover, tooltip, ticks, scale, series/marker/legend behavior
+이번 라운드에서 별도 요구가 없는 P1 UI 개선을 확장 구현하지 않는다. P0를 닫고 검증 가능한 작은 변경으로 유지한다.
 
-기존 `tests/golden/pv/260828_PTF_maxsharpe.*`는 finance/parity 및 정보 구조 참고로 유지한다.
+### 3. P0-1 Efficient Frontier: curve와 marker를 절대 같은 polyline으로 연결하지 말 것
 
-### 3. P0 semantic/chart fixes
+현재 `xy(..., {line:true})`는 frontier point와 asset/portfolio/benchmark landmark를 한 배열에 넣고 X순으로 정렬한 뒤 전체를 하나의 polyline으로 연결한다.
 
-다음은 완료 전 반드시 해결한다.
+이는 잘못이다.
 
-#### Efficient Frontier
+필수 contract:
 
 ```text
-X = volatility_pct / Standard Deviation %
-Y = expected_return_pct / Expected Return %
+Frontier curve line = efficient_frontier points only
+Individual assets   = marker only
+Provided            = marker only
+Optimized            = marker only
+Benchmark            = marker only
+Tangency/objective   = marker only
 ```
 
-row index를 X로 사용하지 않는다.
+landmark가 frontier line segment에 포함되면 P0 failure다.
 
-동일 risk/return coordinate space에 최소:
+자동 테스트 또는 renderer-level 검증을 추가해 다시 발생하지 않게 한다.
 
-- Efficient Frontier curve
-- Individual Assets
-- Provided Portfolio
-- Optimized Portfolio
-- Benchmark
-- objective에 맞는 Max Sharpe/Tangency landmark
+### 4. P0-2 Frontier landmark 좌표는 동일 ex-ante risk/return 공간을 사용
 
-를 표시한다.
+현재 `builder._frontier_landmarks()`는 `portfolio_performance.summary`의 historical realized volatility/return 계열을 이용해 landmark를 만들 가능성이 있다. Efficient Frontier curve는 optimizer의 expected-return/covariance 기반 ex-ante 공간이므로 좌표 정의를 섞으면 안 된다.
 
-LLM이 추가한 `FrontierLandmark`를 실제 upstream/presentation data에 연결한다. 필요한 landmark metric은 브라우저에서 계산하지 말고 기존 canonical/result/analytics output에서 공급한다.
+동일 coordinate semantics를 사용한다.
 
-#### Transition Map
-
-- X = Standard Deviation
-- Y = Allocation 0..100%
-- stacked allocation area
-- frontier point의 weights 합 100%
-- Frontier와 동일 frontier presentation data 사용
-
-#### Annualized Active Return
-
-LLM contract가 `year`로 변경되었다.
-
-- calendar year당 1 point
-- monthly staircase/repeated annual value 금지
-- Provided / Optimized만 표시
-- Benchmark Active Return 표시 금지
-
-기존 template의 `r.date` 사용을 `year` semantics에 맞게 수정한다.
-
-#### Active Return Contribution
-
-새 presentation fields:
+최소 원칙:
 
 ```text
-active_return_contribution_provided
-active_return_contribution_optimized
+Optimized marker:
+  expected_return = optimization_result expected return
+  volatility      = optimization_result volatility
+  Sharpe          = ex-ante objective Sharpe
+
+Provided marker:
+  expected_return = same optimizer statistics mu와 provided weights 기반
+  volatility      = same optimizer covariance와 provided weights 기반
+
+Benchmark marker:
+  benchmark가 표시되는 경우 같은 analysis/benchmark overlap convention에서
+  annualized mean/volatility를 analytics/upstream에서 명시적으로 산출
 ```
 
-를 사용한다.
+Viewer/browser에서 금융 계산하지 않는다. 필요한 값은 analytics/result/review artifact 또는 presentation-ready upstream output으로 공급한다.
 
-Provided와 Optimized를 별도 panel/series group으로 렌더링한다.
+PV exact reverse-engineering이 아니라 **한 chart 안에서 coordinate definition을 일관되게 유지하는 것**이 요구사항이다.
 
-하나의 path는 `(portfolio, ticker)` identity 안에서 date 순으로만 연결한다.
+### 5. P0-3 Up vs Down Market: bar가 아니라 statistics + scatter
 
-**PV에 없는 alternating sawtooth/톱니바퀴 artifact가 남아 있으면 P0 failure다.**
+현재 HTML은 아직 `bars('up-down-market', ...)`를 사용한다.
 
-#### Rolling Active Return / Tracking Error
-
-- Provided panel과 Optimized panel 분리
-- 각 panel에 동일 portfolio의 Active Return + Tracking Error만 연결
-- cross-portfolio path 금지
-
-#### Up vs Down Market
-
-기존 annualized bar 표현을 Golden/PV 의미로 교체한다.
-
-Provided/Optimized 각각:
+`docs/visual-acceptance-contract.md`대로 Provided / Optimized 각각:
 
 ```text
 conditional monthly statistics table
@@ -163,164 +129,157 @@ conditional monthly statistics table
 Portfolio Return vs Benchmark Return scatter
 ```
 
-최소 통계:
+를 구현한다.
 
-- Above Benchmark count
-- Below Benchmark count
-- Total
-- % Above Benchmark
-- Average Active Return when above
-- Average Active Return when below
-- Overall Average Active Return
-
-현재 `selected.mean() * 12` 방식의 annualization은 이 table의 Golden semantics와 맞지 않는다.
-
-#### Missing values
+Scatter:
 
 ```text
-missing != zero
+X = Benchmark monthly return %
+Y = Portfolio monthly return %
 ```
 
-null/NaN/missing을 JS unary `+` 또는 `|| 0` 등으로 실제 0 observation처럼 그리지 않는다. chart 종류에 따라 gap/omit 처리한다.
+Up/Down 집계 4행만 scatter point로 쓰지 않는다. 실제 aligned monthly portfolio/benchmark observations를 upstream/presentation data로 제공해 scatter를 그린다.
 
-### 4. Axis/tick/scale requirements
+브라우저가 원시 series에서 금융 aggregation을 새로 계산하지 않는다.
 
-차트 눈금 불일치는 명시적인 defect다.
+### 6. P0-4 Up/Down statistics percentage-unit 오류 수정
 
-각 chart는 실제 semantic X value를 사용하고 다음을 갖춘다.
+현재 raw `above_active_return`, `below_active_return`은 decimal return인데 review CSV에서도 예를 들어 `0.0195...`가 그대로 노출된다. 이는 약 `1.95%` 의미다.
 
-- actual date/year/category/Std Dev ticks
-- meaningful Y ticks
-- chart-specific axis title
-- % / currency formatter
-- readable tick density
-- grid where useful
-
-PV의 exact 숫자 tick을 모든 run에 hard-code하지 않는다. 데이터 범위에 따라 합리적으로 scale하되, same-input PV와 비교했을 때 의미와 density가 동등하게 읽혀야 한다.
-
-Generic renderer 편의를 위해 의미 없는 0을 axis domain에 강제 포함하지 않는다.
-
-### 5. P1 presentation fixes
-
-Agent의 기존 비교에서 확인한 다음을 구현한다.
-
-- Provided / Optimized allocation table 옆 pie chart
-- 상단 allocation summary에서 0% asset 숨김
-- 상단 table은 Ticker / Name / Allocation 중심
-- unit-aware formatter: percent/balance/correlation/Sharpe/count/date
-- canonical precision은 유지하고 HTML display만 round
-- normalized wealth canonical data는 presentation에서 `Growth of $10,000` convention으로 표시
-- 실제 date/year/category X ticks
-- Annual Asset Returns는 ticker별 series/legend
-- correlation views는 scope가 다른 두 heatmap
-  - frontier assets only
-  - assets + Provided/Optimized/Benchmark
-- internal snake_case/schema name UI 노출 금지
-- objective-aware portfolio label
-- 같은 ticker는 report 전체에서 일관된 visual identity/color 사용
-
-### 6. P2 section/table fixes
-
-- Efficient Frontier Assets: focused Asset / Expected Return / Std Dev / Sharpe / Min / Max projector
-- Worst Drawdowns: Provided / Optimized / Benchmark 별도 table
-- Portfolio Metrics: benchmark comparison 포함, 연구 목적상 필요한 metric 중심
-- Portfolio Assets statistics와 Portfolio Asset Performance/trailing을 별도 projector/table로 분리
-- detailed Annual Returns table 추가/보강
-- detailed Monthly Returns table 보강
-  - portfolio return + balance
-  - benchmark
-  - asset returns as applicable
-- Return Decomposition의 internal unit label 제거, human monetary presentation
-- overview에 result period/objective/benchmark/RF/rebalance/partial-year note
-
-PV의 withdrawal-rate/expense-ratio 등 프로젝트 연구 목적과 직접 관련 없는 부가기능을 무조건 복제하지 않는다. 생략 시 intentional deviation으로 기록한다.
-
-### 7. Active Return Contribution horizon summary
-
-Golden/PV에는 Provided/Optimized 각각 cumulative contribution chart와 함께 asset별 horizon summary가 있다.
-
-가능하면 engine/review artifact로 다음 수준을 제공한다.
-
-```text
-Asset
-1 Year
-3 Year
-5 Year
-10 Year
-Full
-```
-
-브라우저가 monthly contribution series에서 금융 의미를 새로 계산하지 않도록 upstream에서 산출한다.
-
-정의 충돌/불명확성이 있으면 임의 PV reverse-engineering하지 말고 blocker로 회신한다.
-
-### 8. Renderer direction
-
-현재 generic `svgChart(rows, series)` 한 개로 모든 chart를 처리하는 접근은 semantic parity 한계가 확인되었다.
-
-필요한 핵심 chart는 chart-specific renderer/projector로 분리한다.
+review/presentation에서는 percentage-point field로 명확히 변환한다.
 
 예:
 
 ```text
-Growth
-Annual Returns
-Frontier
-Transition
-Annualized Active
-Active Contribution
-Rolling Active
-Up/Down Scatter
-Drawdown
-Annual Asset Returns
-Rolling Returns
+above_active_return_pct
+below_active_return_pct
+overall_active_return_pct
 ```
 
-구현 구조는 Agent가 결정하되 browser에서 금융 metric을 재계산하는 path는 만들지 않는다.
+필요한 값은 HTML generic raw number로 노출하지 않는다.
 
-### 9. Automated tests
+### 7. P0-5 Active Return Contribution tooltip/series identity
 
-먼저:
+Provided/Optimized panel 분리와 기존 sawtooth 제거는 유지한다.
+
+추가로 실제 renderer에 hover interaction을 구현한다.
+
+Tooltip 최소:
+
+```text
+Date
+Portfolio identity
+Ticker별 cumulative active-return contribution %
+```
+
+각 `(portfolio, ticker)` path만 연결한다.
+
+사용자가 어떤 ticker line인지 식별 가능해야 한다. 최소 legend 또는 동등한 series identity 표시가 있어야 한다.
+
+### 8. P0-6 Rolling Active tooltip
+
+Provided/Optimized 별도 panel은 유지한다.
+
+각 panel hover 시:
+
+```text
+Date
+Active Return %
+Tracking Error %
+```
+
+가 표시되어야 한다.
+
+cross-portfolio path는 없어야 한다.
+
+### 9. P0-7 missing != zero를 실제 renderer에 구현
+
+현재 generic JS에 다음 패턴이 남아 있다.
+
+```text
++r[s.key]
++r[k] || 0
+```
+
+JavaScript에서 `+null === 0`이므로 contract 위반이다.
+
+null/undefined/NaN을 actual zero observation으로 변환하지 않는다.
+
+- line: missing이면 gap/segment break 또는 omit
+- bar: missing bar를 그리지 않음
+- marker: missing marker를 그리지 않음
+- tooltip: missing을 `0`으로 표시하지 않음
+
+실제 0 값은 정상적인 0으로 표시한다.
+
+자동 renderer contract test를 추가한다.
+
+### 10. P0-8 Transition Map hover는 실제 volatility X로 nearest point 선택
+
+Transition drawing X는 volatility 기반으로 고쳐졌지만 hover point 선택은 화면 X 비율을 frontier row index로 환산하고 있다.
+
+Frontier point의 volatility spacing은 균등하지 않을 수 있으므로 잘못된 tooltip point가 선택될 수 있다.
+
+수정:
+
+```text
+mouse/pointer X
+-> chart scale inverse로 volatility 값 추정
+-> actual frontier volatility_pct 중 nearest point 선택
+```
+
+또는 의미적으로 동등한 실제-X 기반 hit target 방식을 사용한다.
+
+row index 비례 선택은 금지한다.
+
+### 11. P0-9 Portfolio Growth unit semantics
+
+현재 canonical wealth `1.0 -> ...`는 유지해도 된다. 다만 Growth chart의 Y축에 generic `%` formatter를 사용하면 안 된다.
+
+이번 라운드에서는 최소한 다음 중 Golden에 가까운 방식을 적용한다.
+
+권장:
+
+```text
+canonical normalized wealth 1.0
+presentation Growth of $10,000
+1.0 -> $10,000
+```
+
+이는 display unit conversion이며 새로운 금융 metric 계산이 아니다.
+
+Growth Y축과 tooltip은 동일 balance convention을 사용한다. `%` 축으로 표시하지 않는다.
+
+### 12. Automated tests
+
+기존 LLM contract를 약화/삭제/skip/xfail하지 않는다.
+
+이번 P0에 필요한 renderer/integration test를 추가한다. 최소 회귀 방지 대상:
+
+- Frontier line source contains frontier points only
+- landmarks are marker-only
+- landmark coordinate semantics use ex-ante-compatible upstream values
+- Up/Down scatter has real monthly observation source
+- Contribution tooltip hook/portfolio separation
+- Rolling Active tooltip hook
+- missing null is not rendered as zero
+- Transition hover selection uses volatility semantics
+- Growth axis/tooltip is balance, not percentage
+
+먼저 관련 테스트를 실행하고 완료 전 반드시:
 
 ```text
 uv run pytest tests/test_interactive_report_contract.py -q
-```
-
-을 실행한다.
-
-LLM schema 변경 때문에 기존 renderer/implementation test가 깨질 수 있으며, 이는 contract에 맞춰 implementation을 수정한다.
-
-이후 관련 unit/integration test를 추가한다.
-
-완료 전 반드시:
-
-```text
 uv run pytest -q
 ```
 
 전체 regression을 통과한다.
 
-### 10. Mandatory browser self-review loop
+### 13. Mandatory browser review: 11개 chart 모두 기록
 
-자동 테스트 통과만으로 완료 처리하지 않는다.
+이전 `visual-comparison.md`는 Frontier / Transition / Contribution 중심으로만 상세 체크되어 Up/Down 등의 남은 오류를 놓쳤다.
 
-반드시:
-
-```text
-implement
--> generate same-input report
--> open report in browser
--> open PV live URL
--> compare section by section
--> fix discovered P0/P1 defects
--> regenerate
--> final PV/static Golden comparison
--> completion report
-```
-
-을 수행한다.
-
-최소 핵심 비교 chart:
+이번에는 아래 **11개 chart 모두**를 `visual-comparison.md`에 개별 section으로 기록한다.
 
 1. Portfolio Growth
 2. Annual Returns
@@ -332,74 +291,69 @@ implement
 8. Up vs Down Market
 9. Drawdown
 10. Annual Asset Returns
-11. Rolling 3Y / 5Y
+11. Rolling 3Y / 5Y Returns
 
-각 chart에서 확인:
-
-- chart type
-- X/Y semantics
-- X/Y ticks/domain
-- unit formatting
-- series identity/count
-- panel separation
-- legend
-- marker
-- hover/tooltip
-- missing behavior
-- title/window/benchmark label
-
-P0 semantic mismatch가 하나라도 남으면 완료로 보고하지 않는다.
-
-### 11. Validation evidence
-
-새 validation run을 생성하고 가능한 한:
+각 section 최소 체크:
 
 ```text
-runs/<run_id>/validation/
-├─ visual-comparison.md
-├─ report-full.png
-├─ pv-frontier.png
-├─ report-frontier.png
-├─ pv-transition.png
-├─ report-transition.png
-├─ pv-active-contribution.png
-└─ report-active-contribution.png
+chart type
+X semantic
+Y semantic
+X/Y unit
+ticks/domain
+series identity/count
+panel separation where applicable
+legend/marker where applicable
+tooltip
+missing behavior
+P0 PASS/FAIL
 ```
 
-를 저장/commit/push한다.
+이번 라운드에서 아직 수정하지 않는 P1 차이는 `remaining P1`로 적되 P0와 섞지 않는다.
 
-Browser/tool 제약으로 screenshot 저장이 불가능하면 그 사실을 명시하고 `visual-comparison.md`는 반드시 남긴다.
+PV live URL을 직접 열고 generated report와 다시 비교한다.
 
-`visual-comparison.md`에는 최소:
+### 14. New validation run and GitHub HTML artifact: 필수
 
-- PV live comparison PASS/FAIL
-- static Golden comparison PASS/FAIL
-- P0 mismatch count
-- P1 mismatch count
-- intentional deviations
-- Frontier checks
-- Transition checks
-- Active Contribution: cross-portfolio path NONE/FOUND, sawtooth NONE/FOUND
-- remaining differences
+기존 `runs/20260829-0004/`를 수정하지 않는다.
 
-를 기록한다.
+P0 수정 완료 후 **새 run_id**로 same-input validation run을 생성한다.
 
-### 12. Completion report
+최종 생성 HTML:
 
-`ai-share/agent-to-llm.md`를 최신 result 하나로 교체하고 commit/push한다.
+```text
+runs/<new_run_id>/report.html
+```
 
-반드시 포함:
+을 포함한 validation run 전체를 GitHub `main`에 **commit + push**한다.
+
+로컬 파일 경로만 회신하면 완료가 아니다.
+
+### 15. `agent-to-llm.md`에 HTML GitHub 경로를 반드시 공유
+
+작업 완료 후 `ai-share/agent-to-llm.md`를 최신 result 하나로 교체하고 commit/push한다.
+
+반드시 아래를 명시한다.
+
+```text
+Validation run_id: <new_run_id>
+Validation run repository path: runs/<new_run_id>/
+Result HTML repository path: runs/<new_run_id>/report.html
+Result HTML GitHub URL: https://github.com/comus93/portfolio-optimizer-kr/blob/main/runs/<new_run_id>/report.html
+Visual comparison path: runs/<new_run_id>/validation/visual-comparison.md
+```
+
+그리고 반드시 포함:
 
 - sync/pull 결과 및 시작 HEAD
-- targeted test 결과
-- full regression 결과
-- 수정한 P0/P1/P2 요약
-- same-input validation run_id/path
-- PV live 직접 비교 결과
-- static Golden 비교 결과
-- visual evidence path
-- remaining P1 differences / intentional deviations
-- P0 mismatch가 0인지 명시
+- 수정한 각 P0의 결과
+- targeted/full test 결과
+- PV live 직접 비교 여부
+- 11개 chart 검수 완료 여부
+- `P0 mismatch count`
+- remaining P1 목록
 - code commit SHA
 - validation artifact commit SHA
 - blocker/warning
+
+**P0 mismatch count가 0이 아니면 완료(result)로 보고하지 말고 blocker 또는 incomplete result로 회신한다.**
