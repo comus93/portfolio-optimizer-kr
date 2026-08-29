@@ -1,13 +1,36 @@
+import math
+
 from portfolio_optimizer_kr import viewer
 from portfolio_optimizer_kr.viewer.feedback_v3 import (
     _USER_FEEDBACK_V3_SCRIPT,
     _inject_user_feedback_v3_script,
 )
+from portfolio_optimizer_kr.viewer.final_renderer import _normalize_frontier_assets
+from portfolio_optimizer_kr.viewer.report_model import FrontierAssetPoint, ReportModel
 
 
-def test_viewer_routes_report_generation_through_feedback_v3_overlay():
-    assert viewer.generate_report.__module__.endswith("feedback_v3")
-    assert viewer.render_report.__module__.endswith("feedback_v3")
+def test_viewer_routes_report_generation_through_final_renderer():
+    assert viewer.generate_report.__module__.endswith("final_renderer")
+    assert viewer.render_report.__module__.endswith("final_renderer")
+
+
+def test_final_renderer_fills_missing_frontier_asset_ex_ante_sharpe_from_effective_rf():
+    model = ReportModel(
+        run_id="test",
+        objective_name="Maximum Sharpe Ratio",
+        metadata={"configuration": {"risk_free": {"effective_annual_rate": 0.02}}},
+        frontier_assets=(
+            FrontierAssetPoint(
+                symbol="AAA",
+                name="Asset A",
+                expected_return_pct=12.0,
+                standard_deviation_pct=20.0,
+                sharpe_ratio=float("nan"),
+            ),
+        ),
+    )
+    normalized = _normalize_frontier_assets(model)
+    assert math.isclose(normalized.frontier_assets[0].sharpe_ratio, 0.5)
 
 
 def test_feedback_v3_is_injected_once_and_remains_self_contained():
