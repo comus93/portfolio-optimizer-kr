@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from portfolio_optimizer_kr.research import (
+    DEFAULT_RESEARCH_BENCHMARK,
     ResearchControlError,
     execute_controlled_experiment,
     next_run_id,
@@ -165,12 +166,31 @@ def test_controlled_execution_generates_effective_input_and_context(tmp_path):
 
     assert output.parent == repo / "runs"
     assert effective["run_id"] == output.name
+    assert effective["benchmark"] == DEFAULT_RESEARCH_BENCHMARK
     assert context == {
         "run_id": output.name,
         "study": "studies/demo-study/study.md",
         "experiment": "studies/demo-study/experiments/001-base-r01.yaml",
     }
     assert (output / "result.json").exists()
+
+
+def test_explicit_benchmark_is_preserved(tmp_path):
+    experiment = (
+        EXPERIMENT_YAML.lstrip()
+        + "\nbenchmark:\n  symbol: QQQ\n  name: Invesco QQQ Trust\n  currency: USD\n"
+    )
+    repo, _ = _make_repo(tmp_path, experiment)
+
+    output = execute_controlled_experiment(
+        repo_root=repo,
+        loader=FakeLoader(),
+        analyze_fn=_analyze,
+        writer=_writer,
+    )
+
+    effective = yaml.safe_load((output / "input.yaml").read_text(encoding="utf-8"))
+    assert effective["benchmark"]["symbol"] == "QQQ"
 
 
 def test_same_experiment_can_be_executed_twice_as_distinct_runs(tmp_path):
