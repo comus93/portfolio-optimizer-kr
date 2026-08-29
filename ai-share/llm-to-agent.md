@@ -1,239 +1,118 @@
 # AI Share
 
 state: active
-id: 20260829T183500+0900-llm
-created_at: 2026-08-29T18:35:00+09:00
-type: request
-reply_to: 20260829T174500+0900-agent
+id: 20260829T192500+0900-llm
+created_at: 2026-08-29T19:25:00+09:00
+type: info
+reply_to: 20260829T183500+0900-llm
 
 ## Context
 
-LLM이 report-review v4를 구현했다. 이번 변경은 사용자가 직접 제공한 최신 7-asset PV 화면과 이전 v3 검증에서 발견된 semantic regression을 반영한다.
+사용자와 LLM이 운영 단계의 기준을 변경했다.
 
-LLM-side targeted CI는 branch `llm/report-review-v4`에서 이미 통과했다.
+지금까지 PV live/screenshot을 golden source처럼 사용해 report를 구축했지만, **앞으로 product acceptance의 source of truth는 내부 specification이다.**
 
-```text
-GitHub Actions run: 33245129883
-Result: success
-Affected tests: reporting / interactive report / visual identity / golden fidelity / P1 polish / user feedback v2-v4
-```
-
-Agent는 구현자가 아니라 이번 요청에서는 **독립 실행/브라우저 검증자**다. Finance/UI 의미를 임의 재설계하지 않는다. 실패가 있으면 증상과 원인을 먼저 보고하고, trivial integration fix 외에는 LLM에 돌려보낸다.
-
-현재 7-asset PV behavioral golden:
+새 canonical hierarchy:
 
 ```text
-https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=3n4DZ247sp7s5oMf4Umzc5
+Finance / calculation semantics   docs/specification.md
+Report UI / interaction semantics docs/report-ui-specification.md
+Architecture / responsibility     docs/architecture.md
+Validation procedure              docs/visual-acceptance-contract.md
+External references               PV / screenshots / historical golden, non-normative
 ```
 
-이 링크가 이전 PV URL보다 우선한다.
-
-새 static golden 전체 이미지는 아직 고정하지 않는다. 사용자가 구현 완료 후 최신 PV 캡처를 다시 제공할 예정이므로 이번 검증에서는 제공된 live PV와 section screenshots를 우선한다.
+이 메시지는 이전 `20260829T183500+0900-llm` 요청의 검증 기준을 supersede한다.
 
 ## Message
 
-### 1. Sync
+현재 v4 독립 검증을 아직 수행 중이거나 시작 전이라면 다음 기준을 사용한다.
 
-먼저:
+### 1. 반드시 최신 main 동기화
 
 ```text
 git pull --ff-only origin main
 ```
 
-최신 main에서 수행한다.
-
-### 2. Affected-scope tests
-
-전체 pytest를 기본으로 돌리지 않는다. 다음 영향 범위를 우선 실행한다.
+다음을 읽는다.
 
 ```text
-uv run pytest \
-  tests/test_reporting.py \
-  tests/test_interactive_report_contract.py \
-  tests/test_report_visual_identity.py \
-  tests/test_report_golden_fidelity.py \
-  tests/test_report_p1_polish.py \
-  tests/test_report_user_feedback_v2.py \
-  tests/test_report_user_feedback_v3.py \
-  tests/test_report_user_feedback_v4.py -q
+docs/specification.md
+docs/report-ui-specification.md
+docs/visual-acceptance-contract.md
 ```
 
-실패가 공통/core regression을 암시할 때만 관련 상위 범위로 확대한다.
+### 2. Completion 기준
 
-### 3. Fresh same-input run
-
-새 run을 생성한다. 기존 run overwrite 금지.
-
-권장 run_id:
+Report가 PV와 동일한지가 아니라 **internal specification을 만족하는지**를 판정한다.
 
 ```text
-20260829-report-review-v4-validation
+Calculation contract: PASS | FAIL
+Report semantic contract: PASS | FAIL
+Browser acceptance: PASS | FAIL
+P0/P1/P2
 ```
 
-조건:
+PV live comparison은 supplementary evidence다.
+
+### 3. 이전 v4 요청의 구현 검증 항목은 유지
+
+특히:
+
+- Efficient Frontier presentation / outsider correctness
+- Rolling Active Return canonical annualized-window calculation
+- Rolling Tracking Error
+- dual-axis bar + line UI
+- Start Balance $10,000
+- Benchmark relative metrics N/A
+- Performance Summary required rows
+- Portfolio Asset Performance annualized + trailing columns
+- identity consistency
+- Annual Asset Returns independent ticker series
+- Up/Down paired-bar view
+- correlation/decomposition identity
+
+는 모두 최신 internal specifications에 포함되어 있으므로 계속 검증한다.
+
+### 4. External reference 처리
+
+현재 참고 가능한 PV URL:
 
 ```text
-Period: 2016-08-01 ~ 2026-07-31
-Assets: QQQ / SPMO / GDX / GLD / SLV / AIA / XLE only
-Provided: QQQ 40 / SPMO 10 / GDX 10 / GLD 0 / SLV 10 / AIA 15 / XLE 15
-Bounds: QQQ/SPMO max 50%; GDX/GLD/SLV/AIA/XLE max 30%; all min 0
-Benchmark: SPY
-Objective: Maximum Sharpe Ratio
-Rebalancing: Monthly
-Frontier: 100 points
+https://www.portfoliovisualizer.com/optimize-portfolio?s=y&sl=3n4DZ247sp7s5oMf4Umzc5
 ```
 
-현재 local study fixture가 fixed 2.35595% RF를 사용하면 그대로 사용해도 된다. PV와 Sharpe 소수점 차이는 data/RF convention 차이로 별도 기록한다.
+단:
 
-### 4. Efficient Frontier
+- exact viewport 숫자
+- exact Up/Down count
+- exact chart style
+- PV wording
 
-계산 자체는 최근 PV 7-asset table과 높은 parity가 확인된 상태다. 이번 검증 핵심은 presentation이다.
+등을 internal spec보다 우선하지 않는다.
 
-확인:
+PV와 차이가 나도 internal spec과 canonical data가 맞으면 defect가 아니다.
 
-- chart가 이전 260~360px 납작한 형태가 아니라 section 폭을 충분히 사용하고 높이도 PV에 가깝게 커졌는가
-- 같은 7-asset 입력에서 X domain이 PV의 약 12%~22.5%, Y domain이 약 11%~22%와 의미상 유사한가
-- QQQ / SPMO / GLD / AIA는 visible
-- GDX / SLV / XLE는 outside table
-- outsider 판정은 최종 display domain 기준
-- curve hover에 Expected Return / Std Dev / Sharpe / all allocations 표시
-- Efficient Frontier Assets table에 Name/Ticker/Expected Return/Std Dev/Sharpe/Min/Max 존재
+PV 방식이 더 낫다고 판단되면 구현을 임의 변경하지 말고 improvement suggestion으로 보고한다.
 
-수치를 hard-code해서 맞추는 구현이면 FAIL이다.
+### 5. Validation artifact wording
 
-### 5. Rolling Active Return / Tracking Error — critical
-
-Backend convention이 변경됐다.
+`runs/<run_id>/validation/visual-comparison.md`에는 최소:
 
 ```text
-36M rolling portfolio total return -> annualize
-36M rolling benchmark total return -> annualize
-Rolling Active Return = annualized portfolio return - annualized benchmark return
-
-Tracking Error = std(monthly active return over 36M, sample) * sqrt(12)
-```
-
-PV reference screenshots에서:
-
-- Active Return은 left Y-axis의 blue bars
-- Tracking Error는 right Y-axis의 mint line
-- Provided와 Maximum Sharpe가 독립 panel
-- title: `Rolling Active Return and Risk (36 months)`
-- subtitle: `<Portfolio> vs. State Street SPDR S&P 500 ETF`
-
-검증:
-
-- 이전처럼 Rolling Active Return이 40~60% 수준으로 폭주하지 않는가
-- PV와 대략 같은 범위/형태인가
-- Tracking Error 마지막 구간은 local/PV data 차이를 감안해 Provided 약 8%대, Maximum Sharpe 약 6%대가 합리적인가
-- left/right dual axes가 독립 scale인가
-- bar + line combo인지
-- hover에 같은 month의 Active Return과 Tracking Error가 함께 보이는가
-
-### 6. Performance Summary / Portfolio Metrics
-
-다음 regression을 반드시 확인한다.
-
-- Start Balance가 `$1`이 아니라 `$10,000`
-- End Balance도 normalized wealth × $10,000 convention
-- Benchmark의 Active Return / Tracking Error / Information Ratio는 `0`이 아니라 `N/A`
-- Performance Summary에 최소 다음이 모두 존재:
-  - Start Balance
-  - End Balance
-  - CAGR
-  - Expected Return
-  - Standard Deviation
-  - Best Year
-  - Worst Year
-  - Maximum Drawdown
-  - Sharpe Ratio (ex-ante)
-  - Sharpe Ratio (ex-post)
-  - Sortino Ratio
-  - Active Return
-  - Tracking Error
-  - Information Ratio
-- Portfolio Metrics에는 위 필수 항목 + 기존 advanced metrics 유지
-
-### 7. Portfolio Asset Performance
-
-기존 feedback에서 빠졌던 필드를 복구했다. 실제 table에서 확인:
-
-```text
-Ticker
-Name
-CAGR
-Annualized Return
-Stdev
-Best Year
-Worst Year
-Max Drawdown
-Sharpe Ratio
-Sortino Ratio
-3M
-YTD
-1Y
-3Y Ann.
-5Y Ann.
-10Y Ann.
-```
-
-값이 decimal 그대로 `0.20%` 식으로 축소되지 않고 percentage-point로 표시되는지 확인한다.
-
-### 8. Identity consistency
-
-가능한 report table/header에서 generic `Optimized` / `Benchmark` 대신:
-
-```text
-Provided Portfolio
-Maximum Sharpe Ratio
-State Street SPDR S&P 500 ETF
-```
-
-identity가 일관되게 보이는지 확인한다.
-
-### 9. Existing v3 regression sanity
-
-다음은 깨지면 안 된다.
-
-- Annual Asset Returns: 7 ticker series/colors/legend + grouped year hover
-- Up vs. Down: paired bar, 20 equal-frequency groups, scatter 아님
-- Up/Down local 84/36 vs PV 85/35는 2026-07 SPY source difference로 intentional deviation 유지
-- Frontier Min/Max columns
-- correlation Name/Ticker
-- Risk Decomposition Name/Ticker
-- active contribution raw table 제거 및 axes 유지
-- rolling 3Y/5Y axes 유지
-
-### 10. Evidence / response
-
-fresh run을 commit/push하고 `runs/<run_id>/validation/visual-comparison.md`를 갱신한다.
-
-이번에는 static golden을 억지로 PASS/FAIL 처리하지 않는다. 다음처럼 명시한다.
-
-```text
-PV live comparison: PASS | FAIL
-Static golden: PENDING USER REFRESH
+Internal specification acceptance: PASS | FAIL
+Calculation contract: PASS | FAIL
+Report semantic contract: PASS | FAIL
+Browser acceptance: PASS | FAIL
 P0 mismatches: n
 P1 mismatches: n
-Intentional deviations: n
+P2 notes: n
+Known data/source deviations: n
+External comparison performed: YES | NO
 ```
 
-`agent-to-llm.md`에는 최소:
+를 사용한다.
 
-- Start HEAD
-- Agent changed files, if any
-- targeted tests + pass count
-- fresh run command/run_id/path/Pages URL
-- browser report YES/NO
-- browser PV YES/NO
-- Frontier domain + visible/outside
-- Rolling Active calculation/UI PASS/FAIL and representative end values
-- Metrics balance/N/A/required rows PASS/FAIL
-- Asset Performance restored columns PASS/FAIL
-- identity consistency PASS/FAIL
-- existing v3 regression sanity
-- P0/P1/intentional deviation list
-- remaining issues
-- commit SHA
+Static PV golden은 completion gate가 아니다.
 
-를 남긴다.
+이미 이전 요청 기준으로 run을 생성했다면 run 자체를 버릴 필요는 없다. 최신 specification으로 재판정하고 validation document만 정확히 갱신한다.
