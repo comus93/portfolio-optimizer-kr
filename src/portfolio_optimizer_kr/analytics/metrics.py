@@ -178,13 +178,24 @@ def active_return_metrics(portfolio: pd.Series, benchmark: pd.Series) -> dict[st
 
 
 def active_analytics(portfolio: pd.Series, benchmark: pd.Series, window: int = 36) -> pd.DataFrame:
+    """Return active analytics using annualized rolling-return differences.
+
+    The rolling active-return convention mirrors Portfolio Visualizer semantics:
+    annualize each portfolio and benchmark return over the rolling window first,
+    then subtract benchmark annualized return from portfolio annualized return.
+    Tracking error remains the annualized sample standard deviation of monthly
+    active returns over the same window.
+    """
     joined = pd.concat([portfolio.rename("portfolio"), benchmark.rename("benchmark")], axis=1, join="inner").dropna()
     active = joined["portfolio"] - joined["benchmark"]
     annual = joined.groupby(joined.index.year).apply(
         lambda x: float((1.0 + x["portfolio"]).prod() - (1.0 + x["benchmark"]).prod())
     )
-    rolling_portfolio = (1.0 + joined["portfolio"]).rolling(window).apply(np.prod, raw=True) - 1.0
-    rolling_benchmark = (1.0 + joined["benchmark"]).rolling(window).apply(np.prod, raw=True) - 1.0
+    rolling_portfolio_total = (1.0 + joined["portfolio"]).rolling(window).apply(np.prod, raw=True) - 1.0
+    rolling_benchmark_total = (1.0 + joined["benchmark"]).rolling(window).apply(np.prod, raw=True) - 1.0
+    annualization_exponent = 12.0 / float(window)
+    rolling_portfolio = (1.0 + rolling_portfolio_total) ** annualization_exponent - 1.0
+    rolling_benchmark = (1.0 + rolling_benchmark_total) ** annualization_exponent - 1.0
     return pd.DataFrame({
         "portfolio_return": joined["portfolio"],
         "benchmark_return": joined["benchmark"],
