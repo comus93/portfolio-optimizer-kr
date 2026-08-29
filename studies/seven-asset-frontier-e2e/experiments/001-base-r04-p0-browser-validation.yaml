@@ -1,0 +1,59 @@
+run_id: 20260829-p0-browser-validation
+analysis_period:
+  start: 2016-08-01
+  end: 2026-07-31
+assets:
+  - symbol: QQQ
+    name: Invesco QQQ Trust
+    currency: USD
+    provided_weight_pct: 40
+    min_weight_pct: 0
+    max_weight_pct: 50
+  - symbol: SPMO
+    name: Invesco S&P 500 Momentum ETF
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 50
+  - symbol: GDX
+    name: VanEck Gold Miners ETF
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: GLD
+    name: SPDR Gold Shares
+    currency: USD
+    provided_weight_pct: 0
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: SLV
+    name: iShares Silver Trust
+    currency: USD
+    provided_weight_pct: 10
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: AIA
+    name: iShares Asia 50 ETF
+    currency: USD
+    provided_weight_pct: 15
+    min_weight_pct: 0
+    max_weight_pct: 30
+  - symbol: XLE
+    name: Energy Select Sector SPDR Fund
+    currency: USD
+    provided_weight_pct: 15
+    min_weight_pct: 0
+    max_weight_pct: 30
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+optimization:
+  objective: max_sharpe
+  frontier_points: 100
+portfolio:
+  rebalancing_period: monthly
+risk_free:
+  mode: fixed
+  annual_rate_pct: 2.35595
