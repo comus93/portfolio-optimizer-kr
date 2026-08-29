@@ -14,7 +14,7 @@
    canonical result -> raw/review tables -> self-contained report.html
 
 3. Research Interaction
-   study / experiment / execution pointer / AI handoff
+   study / experiment / execution control / AI handoff
 ```
 
 Research layer와 browser viewer는 금융 계산 의미론을 변경하지 않는다.
@@ -377,19 +377,30 @@ Asset Universe 동일 -> 같은 Experiment
 003-qqq-spmo-xle.yaml
 ```
 
-### Execution pointer
+### Execution control
 
 ```text
 control/execute.yaml
 ```
 
-현재 실행할 experiment를 가리킨다.
+현재 실행할 Experiment와 실행 의도를 함께 표현한다.
 
 ```yaml
 target: studies/<study-id>/experiments/<experiment>.yaml
+run: false
 ```
 
-`portfolio-optimizer execute`는 새 optimizer가 아니라 pointer resolution + 기존 runner 호출 orchestration이다.
+의미는 다음과 같다.
+
+```text
+target     현재 선택된 Experiment
+run: false 저장/대기 상태
+run: true  현재 target을 한 번 실행하라는 요청
+```
+
+일반 research execution에서는 `control/execute.yaml`의 main push가 GitHub Actions trigger다. Action은 `run: true`일 때만 `portfolio-optimizer execute`를 호출하고, 성공한 요청은 최신 요청을 덮어쓰지 않는 조건에서 `run: false`로 consume한다.
+
+`portfolio-optimizer execute`는 새 optimizer가 아니라 target resolution + 기존 runner 호출 orchestration이다.
 
 ### Provenance
 
