@@ -154,7 +154,7 @@ def input_page() -> None:
             else None
         )
         frontier_points = st.number_input("Frontier points", min_value=2, value=100)
-        risk_free_mode = st.selectbox("Risk-free mode", ["fixed", "us_3m_tbill"])
+        risk_free_mode = st.selectbox("Risk-free mode", ["us_3m_tbill", "fixed"])
         annual_rate = (
             st.number_input("Annual risk-free rate (%)", value=2.0)
             if risk_free_mode == "fixed"
