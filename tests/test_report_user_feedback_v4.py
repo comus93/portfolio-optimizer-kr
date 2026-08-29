@@ -54,3 +54,14 @@ def test_v4_frontier_and_rolling_active_match_current_pv_presentation_contract()
     assert "Tracking Error" in script
     assert "stroke:MINT" in script
     assert "v4-rolling-panel" in script
+
+
+def test_final_renderer_growth_hover_uses_plot_wide_nearest_date_overlay():
+    script = final_renderer._SERIES_CONTRAST_SCRIPT
+    assert "final-growth-hover-overlay" in script
+    assert "fixPortfolioGrowthHover" in script
+    assert "targetTime" in script
+    assert "const nearest" in script
+    assert "circle[fill=\"transparent\"]" in script
+    assert "Provided Portfolio" in script
+    assert "data.objective_name" in script
