@@ -17,6 +17,13 @@ class ResearchControlError(ValueError):
     """Raised when the tracked research execution pointer is invalid."""
 
 
+DEFAULT_RESEARCH_BENCHMARK: dict[str, str] = {
+    "symbol": "SPY",
+    "name": "SPDR S&P 500 ETF Trust",
+    "currency": "USD",
+}
+
+
 @dataclass(frozen=True)
 class ResearchTarget:
     repo_root: Path
@@ -39,6 +46,15 @@ def _load_mapping(path: Path, *, label: str) -> dict[str, Any]:
     if not isinstance(loaded, Mapping):
         raise ResearchControlError(f"{label} root must be a mapping")
     return dict(loaded)
+
+
+def _apply_research_defaults(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the effective Research Frontend input with canonical defaults materialized."""
+    effective = dict(config)
+    benchmark = effective.get("benchmark")
+    if benchmark is None or (isinstance(benchmark, str) and not benchmark.strip()):
+        effective["benchmark"] = dict(DEFAULT_RESEARCH_BENCHMARK)
+    return effective
 
 
 def resolve_control_target(
@@ -98,7 +114,9 @@ def execute_controlled_experiment(
     if not output.is_absolute():
         output = target.repo_root / output
 
-    effective = _load_mapping(target.experiment, label="experiment")
+    effective = _apply_research_defaults(
+        _load_mapping(target.experiment, label="experiment")
+    )
     if not str(effective.get("run_id") or "").strip():
         effective["run_id"] = next_run_id(output)
 
