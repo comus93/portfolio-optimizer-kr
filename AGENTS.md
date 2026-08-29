@@ -13,69 +13,169 @@
 
 현재 LLM 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
 
-`docs/visual-acceptance-contract.md`는 `docs/specification.md` Section 25 `Interactive Research Report`의 visual/behavioral acceptance를 구체화하는 normative contract다. 두 문서가 충돌한다고 판단되면 임의 해석하지 말고 `agent-to-llm.md`에 blocker를 남긴다.
+`docs/specification.md`는 금융 계산과 결과 계약의 canonical source다. `docs/visual-acceptance-contract.md`는 Interactive Report의 browser/behavior acceptance를 구체화한다. 충돌이 의심되면 임의 해석하지 말고 `agent-to-llm.md`에 blocker를 남긴다.
 
-## Role split
+---
 
-- LLM은 요구사항 분석, 금융 계산 정의, 테스트 시나리오와 **pytest 계약 코드**, 초기 뼈대 코드를 담당한다.
-- Agent는 개발자로서 LLM이 만든 계약/테스트/초기 뼈대 코드를 기준으로 구현 보강, 의존성 정리, 실제 실행, 디버깅, UI hardening, 회귀 테스트를 담당한다.
-- Agent는 테스트를 통과시키기 위해 LLM이 만든 contract test를 임의로 약화·삭제·의미 변경하지 않는다. 계약 자체에 문제가 있다고 판단하면 먼저 `agent-to-llm.md`로 blocker를 남긴다.
-- YAML/UI/Viewer 작업에서도 동일 R&R을 유지한다. LLM이 YAML schema, execution boundary, viewer boundary와 테스트를 고정하고 초기 뼈대 코드를 작성하며, Agent가 실제 환경에서 end-to-end로 완성한다.
-- 금융 계산 정의나 scope를 바꿔야 하면 임의로 변경하지 말고 `agent-to-llm.md`로 질문 또는 blocker를 남긴다.
+## Development workflow mode
+
+이 repository는 LLM과 Codex Agent의 역할을 고정하지 않는다. 작업마다 사용자가 선택하거나 LLM이 명시한 workflow mode를 따른다.
+
+### LLM sandbox development
+
+```text
+LLM = 설계 + sandbox 구현 + targeted test/CLI 1차 검증
+Agent = 독립 real-environment / E2E / browser 검증
+```
+
+### LLM implementation
+
+```text
+LLM = 설계 + GitHub 구현
+Agent = 실제 checkout에서 targeted test / CLI / browser 검증
+```
+
+필요하면 LLM이 GitHub-side CI로 구현 후 1차 실행 검증을 추가할 수 있다.
+
+### LLM design
+
+```text
+LLM = 요구사항 + 계산 정의 + 테스트/수용조건 + 리뷰
+Agent = 구현 + 실제 실행 검증
+```
+
+`AGENTS.md`는 어느 mode가 항상 우월하다고 규정하지 않는다. **현재 `ai-share/llm-to-agent.md`의 요청이 해당 작업의 역할 분담을 결정한다.**
+
+Agent는 자신이 독립 검증자 역할로 요청받았을 때 구현 범위를 임의 확대하지 않는다. 반대로 개발자로 요청받았을 때는 요구사항과 테스트 계약 범위 안에서 구현을 책임진다.
+
+---
 
 ## Development principles
 
-- v1의 market data source는 FinanceDataReader(FDR)다.
-- 계산 로직은 일반적인 금융 분석 관례를 우선하며 Portfolio Visualizer(PV)는 참고 및 golden reference로 사용한다.
-- PV와 100% 동일한 결과를 목표로 하지 않는다. 동일 입력과 설정에서 일관되고 재현 가능한 결과를 만드는 것이 우선이다.
-- 데이터 정규화, 통계 계산, optimization, analytics의 책임이 코드에서 구분되어야 한다.
-- 동일 입력과 설정은 동일 결과를 만들어야 한다.
-- 계산 함수는 가능한 한 side effect 없이 테스트 가능하게 유지한다.
-- 실제 반복 요구가 없는 추상화 계층이나 범용 framework를 선제적으로 만들지 않는다.
-- 비밀값이나 개인 환경 설정은 repository에 commit하지 않는다.
+- v1 market data source는 FinanceDataReader(FDR)다.
+- 일반적인 금융 분석 관례를 우선하고 PV는 numerical/behavioral golden reference로 사용한다.
+- PV와 수치가 다르면 market-data 차이와 calculation defect를 구분한다.
+- 데이터 정규화, 통계, optimization, portfolio path, analytics, reporting, viewer 책임을 분리한다.
+- 동일 입력과 설정에서 deterministic result를 만든다.
+- 계산 함수는 가능한 한 side-effect 없이 테스트 가능하게 유지한다.
+- 실제 반복 요구가 없는 범용 abstraction/framework를 선제적으로 만들지 않는다.
+- browser presentation layer는 canonical finance result를 재계산하지 않는다.
+- 비밀값, token, 개인 환경 설정은 commit하지 않는다.
+
+금융 계산 정의나 canonical result 의미를 바꿔야 하면 현재 요청에 명시되어 있지 않은 한 Agent가 임의 변경하지 않는다.
+
+---
 
 ## Testing discipline
 
-- 구현은 `docs/specification.md`의 계산 정의와 acceptance checks를 기준으로 검증한다.
-- Interactive Report는 추가로 `docs/visual-acceptance-contract.md`의 browser-based visual/behavioral acceptance를 완료해야 한다. 자동 테스트 통과만으로 UI 완료로 판단하지 않는다.
+### Calculation
+
 - 핵심 수식은 synthetic fixture로 독립 검증한다.
-- PV golden reference는 parity / sanity check에 사용하되, market-data 차이로 인한 수치 차이와 optimizer 로직 차이를 구분한다.
-- **초기 구현 및 최초 검증에서는 전체 테스트 스위트를 실행하고 모든 테스트 결과를 확인한다.**
-- **초기 검증 이후의 개발 반복 중에는 변경 영향 범위에 해당하는 테스트를 우선 실행한다.** 이는 빠른 피드백을 위한 개발 단계 규칙이다.
-- 공통/core 코드 변경, 여러 모듈에 영향을 주는 변경, 또는 영향 범위가 불명확한 경우에는 개발 중에도 관련 상위 테스트 범위로 확대하고 필요하면 전체 테스트 스위트를 실행한다.
-- **작업 완료로 보고하기 전에는 변경 범위와 관계없이 전체 테스트 스위트를 다시 실행해 기존 기능의 회귀(regression)가 없는지 확인한다.** 영향 범위 테스트만 통과한 상태로 완료 처리하지 않는다.
-- 전체 회귀 테스트에서 실패가 발생하면 해당 실패가 이번 변경과 무관해 보이더라도 원인을 확인하고, 미해결 상태라면 완료가 아니라 blocker로 보고한다.
-- solver 결과는 성공 여부뿐 아니라 weight sum, min/max, target volatility 등 constraint residual도 검증한다.
+- solver status뿐 아니라 weight sum, min/max, long-only, target-volatility residual과 finite result를 확인한다.
+- PV parity test에서는 source-data deviation과 optimizer defect를 구분한다.
+
+### Scope
+
+개발 반복에서는 **changed/affected scope 테스트를 우선**한다.
+
+Full regression은 자동 의무가 아니다. 다음 경우에 범위를 확대한다.
+
+- 사용자 또는 LLM이 명시적으로 요청
+- 공통/core 코드 변경으로 영향 범위가 넓음
+- 영향 범위가 불명확함
+- targeted failure가 cross-module regression 가능성을 드러냄
+- release/completion gate에서 필요하다고 현재 작업 요청이 정의함
+
+작은 viewer/presentation 수정마다 관성적으로 전체 pytest를 실행하지 않는다.
+
+테스트를 통과시키기 위해 기존 contract test를 임의로 약화·삭제·skip·xfail하지 않는다. Contract가 잘못됐다고 판단되면 evidence와 함께 blocker를 남긴다.
+
+### Interactive Report
+
+자동 pytest만으로 UI 완료라고 판단하지 않는다.
+
+필요한 작업에서는:
+
+```text
+generate report
+-> localhost HTTP browser render
+-> current PV live reference open
+-> section-by-section semantic/visual comparison
+-> P0/P1/deviation 기록
+```
+
+을 수행한다.
+
+특히 table/metric은 문자열 marker 존재뿐 아니라 실제 rendered unit/value를 확인한다.
+
+---
 
 ## Run outputs
 
-- 일반 unit/integration test의 임시 출력은 repository에 저장하지 않고 `agent-to-llm.md`에 pass/fail 요약만 남긴다.
-- LLM 또는 사용자가 검토해야 하는 **research / validation run의 실제 산출물은 `runs/<run_id>/` 아래에 저장하고 commit/push한다.**
-- 최소 산출물은 `result.json`이다. 큰 표나 matrix가 필요하면 CSV로 분리할 수 있다.
-- parity 검증을 수행한 run은 비교 결과도 같은 run 디렉터리에 machine-readable 파일로 남긴다. 예: `parity.json`.
-- Interactive Report visual 검증을 수행한 run은 가능한 경우 `runs/<run_id>/validation/visual-comparison.md`와 핵심 screenshot evidence를 함께 보존한다. screenshot 저장이 도구 제약으로 불가능하면 비교 결과와 제약을 `visual-comparison.md`에 명시한다.
-- run 산출물은 재현 가능한 입력/configuration과 실제 data coverage를 포함해야 한다.
-- 완료 회신 시 `agent-to-llm.md`에 run 경로와 commit SHA를 남긴다.
+일반 unit test 임시 출력은 repository에 저장하지 않는다.
 
-## Golden reference
-
-PV reference는 다음 위치를 사용한다.
+사용자/LLM이 검토해야 하는 research 또는 validation run은:
 
 ```text
-tests/golden/pv/
+runs/<run_id>/
 ```
 
-현재 기준 reference:
+아래에 저장하고 commit/push한다.
+
+최소 source of truth는 `result.json`이며 필요에 따라:
 
 ```text
-260828_PTF_maxsharpe.md
-260828_PTF_maxsharpe.jpg
+input.yaml
+context.yaml
+raw/*.csv
+review/*.csv
+report.html
+validation/visual-comparison.md
 ```
 
-Interactive Report의 same-input visual/behavioral acceptance reference는 `docs/visual-acceptance-contract.md`에 정의한다.
+를 함께 둔다.
+
+Run은 재현 가능한 effective input과 실제 data coverage를 포함해야 한다. 기존 run directory를 silent overwrite하지 않는다.
+
+Interactive Report validation screenshot은 가능하면 보존하되 tool/browser 제약으로 저장할 수 없다면 blocker로 취급하지 않고 `visual-comparison.md`에 사실과 직접 비교 결과를 기록한다.
+
+---
+
+## Golden / PV reference
+
+Current Interactive Report behavioral golden의 source of truth는 `docs/visual-acceptance-contract.md`다.
+
+Historical reference는 `tests/golden/pv/`에 유지할 수 있지만 **asset universe나 input 조건이 현재 validation fixture와 다르면 same-input PASS 근거로 사용하지 않는다.**
+
+Static Golden은 최신 동일-input screenshot이 있을 때만 completion evidence로 사용한다. 깨진 URL이나 다른-universe 이미지를 PASS로 간주하지 않는다.
+
+---
 
 ## AI Share
 
 ChatGPT와 Codex 간 메시지 및 세션 handover에는 `./ai-share/PROTOCOL.md`를 따른다.
 
-Agent 작업 결과는 `ai-share/agent-to-llm.md`에 최소한으로 정리하고 GitHub remote에 commit/push한 뒤 완료로 간주한다.
+### Inbound to Agent
+
+요청 확인 전에 GitHub remote를 source of truth로 동기화한다.
+
+```text
+git pull --ff-only origin <branch>
+```
+
+안전하게 pull할 수 없으면 remote의 최신 `ai-share/llm-to-agent.md`를 직접 확인하고 local sync blocker를 알린다.
+
+### Outbound from Agent
+
+Agent 결과는 `ai-share/agent-to-llm.md`를 최신 result 하나로 교체하고 commit/push한 뒤 전달 완료로 간주한다.
+
+최소 결과:
+
+- start HEAD
+- changed files
+- test/run/browser evidence
+- P0/P1/deviation or blocker
+- run path / user-facing Pages URL when applicable
+- result commit SHA
+
+과거 메시지는 Git history에 맡기고 ai-share 파일에 append하지 않는다.
