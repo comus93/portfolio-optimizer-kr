@@ -1,0 +1,105 @@
+name: Execute research optimization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "control/execute.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: research-execution
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Execute selected research experiment
+        id: execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          portfolio-optimizer execute \
+            --repo-root . \
+            --control control/execute.yaml \
+            --output-root runs | tee /tmp/portfolio-run.log
+
+          RUN_PATH="$(tail -n 1 /tmp/portfolio-run.log | tr -d '\r')"
+          if [[ ! -d "$RUN_PATH" ]]; then
+            echo "Expected run directory was not created: $RUN_PATH" >&2
+            exit 1
+          fi
+
+          RUN_ID="$(basename "$RUN_PATH")"
+          echo "run_path=$RUN_PATH" >> "$GITHUB_OUTPUT"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+          test -f "$RUN_PATH/input.yaml"
+          test -f "$RUN_PATH/context.yaml"
+          test -f "$RUN_PATH/result.json"
+          test -f "$RUN_PATH/report.html"
+          test -d "$RUN_PATH/review"
+
+      - name: Commit generated run artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          RUN_ID="${{ steps.execute.outputs.run_id }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RUN_PATH"
+
+          if git diff --cached --quiet; then
+            echo "No generated run artifacts to commit" >&2
+            exit 1
+          fi
+
+          git commit -m "runs: add $RUN_ID"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Publish run to GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run publish-reports.yml --ref main
+
+      - name: Write run summary
+        shell: bash
+        run: |
+          RUN_ID="${{ steps.execute.outputs.run_id }}"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          PAGE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/runs/${RUN_ID}/report.html"
+          {
+            echo "## Research run created"
+            echo
+            echo "- Run ID: \`$RUN_ID\`"
+            echo "- Artifact path: \`runs/$RUN_ID/\`"
+            echo "- Expected Pages URL: $PAGE_URL"
+            echo
+            echo "Pages deployment is dispatched after the run commit."
+          } >> "$GITHUB_STEP_SUMMARY"
