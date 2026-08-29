@@ -1,0 +1,50 @@
+assets:
+- symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+  provided_weight_pct: 20
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+  provided_weight_pct: 30
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: CPER
+  name: United States Copper Index Fund
+  currency: USD
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: MCHI
+  name: iShares MSCI China ETF
+  currency: USD
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 50
+- symbol: EWY
+  name: iShares MSCI South Korea ETF
+  currency: USD
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 50
+optimization:
+  objective: max_sharpe
+portfolio:
+  rebalancing_period: monthly
+risk_free:
+  mode: us_3m_tbill
+run_id: 20260829-0003

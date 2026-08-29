@@ -1,0 +1,3 @@
+kind,label,sharpe,expected_return_pct,volatility_pct,weight_SPY_pct,weight_QQQ_pct,weight_TLT_pct,weight_GLD_pct,weight_CPER_pct,weight_MCHI_pct,weight_EWY_pct
+provided,Provided Portfolio,0.8167104729494057,12.03917836556435,12.726952240748455,20.0,30.0,10.0,10.0,10.0,10.0,10.0
+optimized,Optimized Portfolio,1.0442126299642382,15.727496487614246,13.486289000620838,31.39545540608037,50.0,0.0,18.60454459391963,0.0,0.0,0.0
