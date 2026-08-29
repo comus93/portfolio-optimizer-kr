@@ -12,7 +12,102 @@
 
 ---
 
-## 1. User Decision Boundary
+## 1. Conversation Protocol
+
+사용자가 포트폴리오 구성이나 분석을 요청하면 LLM은 아래 순서로 응대한다.
+
+### Step 1. 사용자에게서 이미 받은 정보를 먼저 추출한다
+
+다음 항목을 대화에서 우선 복원한다.
+
+```text
+Asset Universe
+Provided Portfolio weights
+사용자 지정 min/max constraint
+Optimization Goal
+Target Volatility (해당 시)
+Analysis Period (사용자 지정이 있을 때)
+Rebalancing (사용자 지정이 있을 때)
+Benchmark (사용자 지정이 있을 때)
+Risk-free convention (사용자 지정이 있을 때)
+```
+
+이미 대화에서 나온 값은 다시 묻지 않는다.
+
+### Step 2. 기계적으로 검증 가능한 것은 LLM이 먼저 검증한다
+
+예:
+
+```text
+- ticker가 명확한가
+- Provided weights 합이 100%인가
+- 같은 자산이 중복 입력됐는가
+- target-vol objective인데 target vol이 빠졌는가
+- 사용자 지정 min/max가 서로 모순되지 않는가
+```
+
+기계적으로 판단 가능한 것을 사용자에게 되묻지 않는다.
+
+### Step 3. 아래 질문표에 따라 실제로 물어볼 항목만 남긴다
+
+| 항목 | 언제 질문하는가 | 언제 질문하지 않는가 |
+|---|---|---|
+| Asset Universe | 자산/티커가 모호하거나 후보 중 선택이 필요할 때 | 종목이 이미 명확할 때 |
+| Provided weights | 사용자가 현재 포트폴리오 비교를 원하지만 비중이 빠졌을 때 | 비중이 이미 있거나 Provided Portfolio 자체가 필요 없는 연구일 때 |
+| Custom min/max constraints | 사용자가 특정 cap/floor를 원한다고 했는데 값이 빠졌을 때 | 별도 제약 요구가 없으면 canonical default 사용 |
+| Optimization Goal | 사용자 의도에서 objective를 결정할 수 없고 canonical default가 없을 때 | objective가 이미 명시됐을 때 |
+| Target Volatility | objective가 Target Volatility인데 값이 없을 때 | Maximum Sharpe이거나 값이 이미 있을 때 |
+| Analysis Period | 특정 기간 비교/국면 연구를 요청했는데 기간이 불명확할 때 | 일반 분석이면 common-overlap default 사용 |
+| Rebalancing | 사용자가 월/연 리밸런싱 차이를 연구하려고 하는데 선택이 없을 때 | 일반 분석이면 canonical default 사용 |
+| Benchmark | benchmark-relative 질문인데 기준지수가 불명확할 때 | benchmark가 필요 없는 연구이거나 사용자가 이미 지정했을 때 |
+| Risk-free | 특정 convention 비교가 연구 질문일 때 | 일반 분석이면 canonical default 사용 |
+
+**이 표에 없는 system/internal parameter는 정상적인 Research Frontend 흐름에서 질문하지 않는다.**
+
+### Step 4. 남은 질문만 한 번에 묻는다
+
+질문의 개수를 채우지 않는다.
+
+예를 들어 Asset Universe와 Provided weights가 이미 확정됐고, 일반 분석이며 objective만 미정이면 다음처럼 **objective만** 묻는다.
+
+```text
+종목과 비중은 확정됐어.
+최적화 목표만 정하면 돼:
+- Maximum Sharpe
+- Maximum Return at Target Volatility
+
+Target Volatility를 선택하면 허용 연환산 변동성도 알려줘.
+```
+
+이 상황에서 다음을 추가로 묻지 않는다.
+
+```text
+analysis period
+rebalancing
+risk-free
+frontier resolution
+solver
+benchmark가 필요하지 않은 경우 benchmark
+```
+
+### Step 5. 사용자가 실행 의도를 이미 밝혔다면 다시 승인받지 않는다
+
+사용자가 다음과 같이 말한 경우:
+
+```text
+분석해
+돌려줘
+최적화해줘
+실행해
+```
+
+이는 실행 의도로 본다.
+
+필수 User Research Decision이 모두 해결되면 짧은 sanity-check 요약 후 `진행할까?`를 다시 묻지 않고 바로 실행한다.
+
+---
+
+## 2. User Decision Boundary
 
 모든 입력값을 사용자 질문으로 승격시키지 않는다.
 
@@ -94,9 +189,9 @@ LLM이 어떤 값을 사용자에게 물을지 고민될 때 다음 순서로 �
 
 ---
 
-## 2. 주요 Research Input 처리 규칙
+## 3. 주요 Research Input 처리 규칙
 
-### 2.1 연구 대상 자산
+### 3.1 연구 대상 자산
 
 각 자산에 대해 최소한 ticker를 확인한다.
 
@@ -114,7 +209,7 @@ LLM이 어떤 값을 사용자에게 물을지 고민될 때 다음 순서로 �
 
 사용자가 custom min/max constraint를 지정하지 않은 경우 specification의 canonical asset bound를 사용한다. custom cap이 없다는 이유만으로 별도 질문을 만들지 않는다.
 
-### 2.2 Optimization Goal
+### 3.2 Optimization Goal
 
 Optimization objective는 연구 결론을 직접 바꾸는 값이다.
 
@@ -134,7 +229,7 @@ Risk-adjusted return이 가장 높은 포트폴리오를 찾는다.
 
 Target volatility가 정해지지 않은 상태에서 LLM이 임의의 값을 만들어 넣지 않는다.
 
-### 2.3 Rebalancing
+### 3.3 Rebalancing
 
 사용자가 rebalancing을 지정하면 그 값을 사용한다.
 
@@ -142,7 +237,7 @@ Target volatility가 정해지지 않은 상태에서 LLM이 임의의 값을 �
 
 특정 연구 질문이 monthly vs yearly 차이 자체를 비교하는 경우에만 별도 연구 의사결정으로 올린다.
 
-### 2.4 Analysis Period
+### 3.4 Analysis Period
 
 사용자가 시작일/종료일을 지정하면 그 기간을 우선한다.
 
@@ -158,7 +253,7 @@ LLM은 generic research flow에서 단순히 기간을 지정하지 않았다는
 
 특정 자산의 짧은 history 때문에 공통 분석 기간이 크게 줄어들면 결과 해석에서 반드시 별도로 보고한다.
 
-### 2.5 Benchmark
+### 3.5 Benchmark
 
 Benchmark는 optional input이다.
 
@@ -168,7 +263,7 @@ Benchmark는 optional input이다.
 
 연구 목적상 benchmark가 반드시 필요한데 후보에 따라 해석이 실질적으로 달라지고 합리적 default도 없다면 그때만 사용자에게 묻는다.
 
-### 2.6 Risk-free Rate
+### 3.6 Risk-free Rate
 
 사용자가 별도 convention을 요구하지 않으면 specification의 canonical default를 적용한다.
 
@@ -176,7 +271,7 @@ PV parity 등 특정 외부 결과와 직접 비교하는 연구라면 비교 �
 
 ---
 
-## 3. LLM의 질문 방식
+## 4. LLM의 질문 방식
 
 사용자가 이미 제공한 정보를 다시 묻지 않는다.
 
@@ -204,7 +299,7 @@ PV parity 등 특정 외부 결과와 직접 비교하는 연구라면 비교 �
 
 ---
 
-## 4. Execution Gate
+## 5. Execution Gate
 
 정식 실행 전에 필요한 것은 **모든 YAML 필드에 대한 사용자 승인**이 아니라, 모든 User Research Decision이 해소되어 있는지 여부다.
 
@@ -234,7 +329,7 @@ run: true
 
 ---
 
-## 5. 실행 직전 LLM 요약
+## 6. 실행 직전 LLM 요약
 
 사용자가 별도로 요구하지 않는 한 장황한 승인 절차를 만들지 않는다.
 
@@ -267,7 +362,7 @@ workflow plumbing
 
 ---
 
-## 6. Guiding Rule
+## 7. Guiding Rule
 
 Research Frontend의 목표는 **사용자가 optimizer UI의 모든 옵션을 직접 조작하게 만드는 것**이 아니다.
 
