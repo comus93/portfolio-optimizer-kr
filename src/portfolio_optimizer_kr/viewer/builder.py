@@ -22,6 +22,7 @@ from .report_model import (
     RollingActivePoint,
     RollingReturnPoint,
     UpDownMarketPoint,
+    UpDownScatterPoint,
 )
 
 
@@ -263,9 +264,10 @@ def _active_contribution(
     for row in frame.itertuples(index=False):
         if str(row.portfolio) != portfolio:
             continue
-        grouped[str(row.date)][str(row.ticker)] = float(
-            row.cumulative_active_contribution_pct
-        )
+        value = getattr(row, "cumulative_active_contribution_pct", None)
+        if value is None or pd.isna(value):
+            continue
+        grouped[str(row.date)][str(row.ticker)] = float(value)
     return tuple(
         ActiveContributionPoint(
             date=date, portfolio=portfolio, contributions_pct=values
@@ -290,6 +292,35 @@ def _up_down_market(frame: pd.DataFrame | None) -> tuple[UpDownMarketPoint, ...]
                 occurrences=None
                 if occurrences is None or pd.isna(occurrences)
                 else int(occurrences),
+            )
+        )
+    return tuple(points)
+
+
+def _up_down_scatter(
+    frame: pd.DataFrame | None, portfolio: str
+) -> tuple[UpDownScatterPoint, ...]:
+    if frame is None:
+        return ()
+    points: list[UpDownScatterPoint] = []
+    for row in frame.itertuples(index=False):
+        if str(row.portfolio) != portfolio:
+            continue
+        fields = (
+            getattr(row, "benchmark_return_pct", None),
+            getattr(row, "portfolio_return_pct", None),
+            getattr(row, "active_return_pct", None),
+        )
+        if any(value is None or pd.isna(value) for value in fields):
+            continue
+        points.append(
+            UpDownScatterPoint(
+                date=str(row.date),
+                portfolio=portfolio,
+                market_type=str(row.market_type),
+                benchmark_return_pct=float(fields[0]),
+                portfolio_return_pct=float(fields[1]),
+                active_return_pct=float(fields[2]),
             )
         )
     return tuple(points)
@@ -322,22 +353,42 @@ def _frontier_assets(frame: pd.DataFrame | None) -> tuple[FrontierAssetPoint, ..
     )
 
 
-def _frontier_landmarks(artifacts: RunArtifacts, config: Mapping[str, Any]) -> tuple[FrontierLandmark, ...]:
-    result = artifacts.result
-    performance = result.get("portfolio_performance", {}) if isinstance(result, Mapping) else {}
-    summary = performance.get("summary", {}) if isinstance(performance, Mapping) else {}
-    optimization = result.get("optimization_result", {}) if isinstance(result, Mapping) else {}
-    provided_weights = {str(a.get("symbol")): float(a.get("provided_weight_pct", 0)) for a in config.get("assets", []) if isinstance(a, Mapping)}
-    optimized_weights = {str(k): float(v) * 100 for k, v in optimization.get("weights", {}).items()} if isinstance(optimization, Mapping) else {}
-    items = (("provided", "Provided Portfolio", provided_weights, summary.get("provided", {})), ("optimized", _objective_name(config), optimized_weights, summary.get("optimized", {})), ("benchmark", "Benchmark", {}, summary.get("benchmark", {})))
-    points = []
-    for kind, label, weights, values in items:
-        if not isinstance(values, Mapping):
+def _frontier_landmarks(
+    frame: pd.DataFrame | None, objective_name: str
+) -> tuple[FrontierLandmark, ...]:
+    if frame is None:
+        return ()
+    weight_columns = [
+        column
+        for column in frame.columns
+        if column.startswith("weight_") and column.endswith("_pct")
+    ]
+    points: list[FrontierLandmark] = []
+    for row in frame.to_dict(orient="records"):
+        kind = str(row.get("kind") or "")
+        volatility = _clean_scalar(row.get("volatility_pct"))
+        expected_return = _clean_scalar(row.get("expected_return_pct"))
+        if not kind or volatility is None or expected_return is None:
             continue
-        vol, ret = values.get("annualized_volatility"), values.get("expected_return")
-        if vol is None or ret is None:
-            continue
-        points.append(FrontierLandmark(kind, label, float(vol) * 100, float(ret) * 100, values.get("sharpe_ex_post"), weights))
+        weights = {
+            column[len("weight_") : -len("_pct")]: float(row[column])
+            for column in weight_columns
+            if _clean_scalar(row.get(column)) is not None
+        }
+        label = str(row.get("label") or kind)
+        if kind == "optimized":
+            label = objective_name
+        sharpe = _clean_scalar(row.get("sharpe"))
+        points.append(
+            FrontierLandmark(
+                kind=kind,
+                label=label,
+                volatility_pct=float(volatility),
+                expected_return_pct=float(expected_return),
+                sharpe_ratio=None if sharpe is None else float(sharpe),
+                weights_pct=weights,
+            )
+        )
     return tuple(points)
 
 
@@ -348,10 +399,11 @@ def build_report_model_from_artifacts(
     benchmark_symbol, benchmark_name = _benchmark(config)
     review = artifacts.review
     tables = {name: _records(frame) for name, frame in sorted(review.items())}
+    objective_name = _objective_name(config)
 
     return ReportModel(
         run_id=str(config.get("run_id") or artifacts.run_dir.name),
-        objective_name=_objective_name(config),
+        objective_name=objective_name,
         benchmark_symbol=benchmark_symbol,
         benchmark_name=benchmark_name,
         tables=tables,
@@ -361,7 +413,9 @@ def build_report_model_from_artifacts(
         frontier_assets=_frontier_assets(
             review.get("efficient_frontier_assets", review.get("asset_statistics"))
         ),
-        frontier_landmarks=_frontier_landmarks(artifacts, config),
+        frontier_landmarks=_frontier_landmarks(
+            review.get("frontier_landmarks"), objective_name
+        ),
         annualized_active_returns=_annualized_active_returns(review.get("active_returns")),
         active_return_contribution_provided=_active_contribution(
             review.get("active_return_contribution"), "provided"
@@ -373,6 +427,12 @@ def build_report_model_from_artifacts(
         rolling_active_optimized=_rolling_active(review.get("active_returns"), "optimized"),
         up_down_market_performance=_up_down_market(
             review.get("up_down_market_performance")
+        ),
+        up_down_scatter_provided=_up_down_scatter(
+            review.get("up_down_market_scatter"), "provided"
+        ),
+        up_down_scatter_optimized=_up_down_scatter(
+            review.get("up_down_market_scatter"), "optimized"
         ),
         drawdowns=_drawdowns(review.get("drawdown_series")),
         annual_asset_returns=_annual_asset_returns(review.get("annual_asset_returns")),
