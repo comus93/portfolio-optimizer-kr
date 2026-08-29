@@ -1,0 +1,2 @@
+stress_period,start,end,provided_return,optimized_return,benchmark_return
+COVID-19 Start,2020-01-01,2020-03-31,-0.20415332062875546,-0.09702740298269463,-0.19447671957198642
