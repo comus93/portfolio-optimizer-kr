@@ -39,15 +39,24 @@ Total = 100%.
 ## Experiment / Run References
 
 - Experiment: `experiments/001-spy-qqq-tlt-gld-cper-mchi-ewy.yaml`
-- Run: pending first execution
+- First persisted Run: `runs/20260829-0003/`
 
 ## Observed Facts
 
-Pending first persisted run.
+First persisted run facts:
+
+- Effective monthly-return coverage: 2011-12-31 through 2026-07-31, 176 observations.
+- CPER price history begins 2011-11-15 and is the limiting asset for the common-period start.
+- Maximum-Sharpe allocation: SPY 31.3955%, QQQ 50.0000%, GLD 18.6045%; TLT, CPER, MCHI, EWY 0%.
+- QQQ is binding at its user-defined 50% maximum weight.
+- Provided Portfolio: Expected Return 12.0392%, Volatility 12.7270%, Sharpe 0.8167.
+- Optimized Portfolio: Expected Return 15.7275%, Volatility 13.4863%, Sharpe 1.0442.
+- Historical CAGR: Provided 11.8360%, Optimized 15.8794%.
+- Maximum Drawdown: Provided -27.7459%, Optimized -25.6321%.
 
 ## Interpretation
 
-Pending GPT + user review.
+Pending GPT + user discussion. Initial interpretation is not yet a confirmed Study conclusion.
 
 ## Current Conclusion
 
@@ -55,4 +64,4 @@ Pending.
 
 ## Follow-up
 
-첫 run의 Data Validity Gate와 Efficient Frontier를 확인한 뒤, 현재 결론을 가장 크게 바꿀 수 있는 불확실성부터 후속 검증을 정한다.
+Review the first run with the user using the LLM analysis framework. Prioritize sensitivity around the binding QQQ cap and any role claims that depend strongly on the 2011-2026 common sample.
