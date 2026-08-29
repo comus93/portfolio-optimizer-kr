@@ -340,6 +340,8 @@ Visual acceptance의 normative source는 `docs/visual-acceptance-contract.md`다
 
 ## 10. Research Interaction Layer
 
+사용자 연구의 운영 규칙은 `docs/research-operation-pipeline.md`를 따른다.
+
 ### Study
 
 ```text
@@ -356,11 +358,23 @@ studies/<study-id>/experiments/*.yaml
 
 Experiment 자체가 executable YAML이다. 별도 DB manifest를 만들지 않는다.
 
-Revision은 file revision으로 관리한다.
+Experiment identity는 **optimizer Asset Universe의 종목 집합**으로 결정한다.
 
 ```text
-003-gld-max30-r01.yaml
-003-gld-max30-r02.yaml
+Asset Universe 동일 -> 같은 Experiment
+종목 추가 / 삭제 / 교체 -> 새 Experiment
+```
+
+기간, Provided weights, min/max constraints, objective, target volatility, rebalancing, benchmark, risk-free convention 등 종목 집합을 바꾸지 않는 조건 변경은 같은 Experiment의 새 Run으로 관리한다.
+
+각 Run의 실제 조건은 `runs/<run_id>/input.yaml`에 snapshot으로 보존한다. 따라서 조건 변경을 표현하기 위한 Experiment `r01/r02` revision 파일은 신규 운영 규칙에서 사용하지 않는다.
+
+신규 운영 파일 예:
+
+```text
+001-qqq-spmo-gld.yaml
+002-qqq-spmo.yaml
+003-qqq-spmo-xle.yaml
 ```
 
 ### Execution pointer
@@ -386,6 +400,8 @@ Study <-> Experiment <-> Run
 ```
 
 link를 `runs/<run_id>/context.yaml`에 보존한다.
+
+Run의 `input.yaml`은 같은 Experiment에서 실행 조건이 달라졌더라도 해당 시점의 effective input을 복원할 수 있는 source다.
 
 ---
 
