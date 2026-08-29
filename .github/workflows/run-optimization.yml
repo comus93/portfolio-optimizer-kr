@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "studies/**/experiments/*.yaml"
+      - "studies/**/experiments/*.yml"
       - "control/execute.yaml"
   workflow_dispatch:
 
@@ -17,6 +19,7 @@ concurrency:
 
 jobs:
   execute:
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'run:') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
