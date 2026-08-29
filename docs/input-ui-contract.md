@@ -61,10 +61,11 @@ optimization:
 portfolio:
   rebalancing_period: monthly
 risk_free:
-  mode: fixed
-  annual_rate_pct: 2.0
+  mode: us_3m_tbill
 fx: {}
 ```
+
+`us_3m_tbill` is the canonical/default risk-free mode. `fixed` remains available only when an explicit fixed annual rate is intentionally requested.
 
 For mixed KRW/USD runs, `fx.usdkrw_symbol` must be explicitly supplied until the FX provider convention is centrally fixed.
 
@@ -74,6 +75,7 @@ For mixed KRW/USD runs, `fx.usdkrw_symbol` must be explicitly supplied until the
 - Add/remove/edit assets.
 - Edit provided weight and optimizer min/max constraints.
 - Configure period, benchmark, objective, rebalancing, risk-free mode, and FX series when required.
+- Default the risk-free selector to `us_3m_tbill`.
 - Preview and save generated YAML.
 - Execute the YAML runner.
 - Open an existing run and render review tables plus charts sourced from run outputs.
