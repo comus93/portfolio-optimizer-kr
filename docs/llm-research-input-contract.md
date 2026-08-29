@@ -97,8 +97,8 @@ Optimization objective와 target annual volatility를 선택해줘.
    모두 같은 제한을 써도 되고 자산별로 달라도 돼.
 
 2. 무엇을 최우선으로 볼지
-   - 위험 대비 수익이 가장 좋은 조합
-   - 허용한 변동성 안에서 수익이 가장 높은 조합
+   - 변동성 대비 기대수익이 좋은 조합 (Sharpe 지수)
+   - 허용한 변동성 안에서 기대수익이 가장 높은 조합
 ```
 
 두 번째를 선택했을 때만 다음처럼 추가로 묻는다.
@@ -253,12 +253,14 @@ Optimization objective는 연구 결론을 직접 바꾸는 값이다.
 사용자에게는 내부 objective 이름만 던지기보다 의미를 먼저 설명한다.
 
 ```text
-- 위험 대비 수익이 가장 좋은 조합을 찾기
+- 변동성 대비 기대수익이 좋은 조합 (Sharpe 지수)
   = Maximum Sharpe
 
-- 내가 허용한 변동성 안에서 수익이 가장 높은 조합을 찾기
+- 내가 허용한 변동성 안에서 기대수익이 가장 높은 조합
   = Maximum Return at Target Volatility
 ```
+
+**사용자-facing 대화에서는 위 자연어 표현을 먼저 사용하고, `Maximum Sharpe` 같은 내부/전문 용어는 필요할 때 괄호나 보조 설명으로만 붙인다.**
 
 두 번째를 선택하면 허용할 연환산 변동성 상한이 추가 User Research Decision이다.
 
@@ -319,9 +321,10 @@ PV parity 등 특정 외부 결과와 직접 비교하는 연구라면 비교 �
 ```text
 내부 용어                사용자에게 우선할 표현
 min/max constraint       비중을 최소/최대 어디까지 허용할지
-optimization objective   무엇을 최우선으로 최적화할지
+optimization objective   무엇을 최우선으로 볼지
 target annual volatility 연간 변동성을 어디까지 허용할지
 common overlap period    모든 자산 데이터가 함께 있는 전체 기간
+Maximum Sharpe           변동성 대비 기대수익이 좋은 조합 (Sharpe 지수)
 ```
 
 필요하면 익숙한 표현 뒤에 기술 용어를 괄호로 붙일 수 있지만, 기술 용어 자체를 이해해야만 답할 수 있는 질문을 만들지 않는다.
