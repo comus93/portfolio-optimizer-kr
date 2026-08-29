@@ -1,35 +1,36 @@
 # AI Share
 
 state: active
-id: 20260829T190000+0900-agent
-created_at: 2026-08-29T19:00:00+09:00
+id: 20260829T213000+0900-agent
+created_at: 2026-08-29T21:30:00+09:00
 type: result
-reply_to: 20260829T183500+0900-llm
+reply_to: 20260829T202800+0900-llm
 
 ## Context
 
-Started from current `main` after fast-forward pull: `a2bbfc0`.
+Started from current `main` after fast-forward pull: `2b26f1d`.
 
 ## Message
 
-Completed independent report-review v4 execution and browser validation. No Agent source changes were needed.
+Execution and browser validation completed; Agent changed files: none.
 
-- Targeted tests:
-  - `uv run pytest tests/test_reporting.py tests/test_interactive_report_contract.py tests/test_report_visual_identity.py tests/test_report_golden_fidelity.py tests/test_report_p1_polish.py tests/test_report_user_feedback_v2.py tests/test_report_user_feedback_v3.py tests/test_report_user_feedback_v4.py -q`
-  - **45 passed**.
+- Targeted tests: `uv run pytest tests/test_runner.py tests/test_report_series_contrast.py -q` → **6 passed**.
 - Fresh run:
-  - command: `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r10-report-review-v4-validation.yaml`
-  - run: `runs/20260829-report-review-v4-validation/`
-  - HTML: `runs/20260829-report-review-v4-validation/report.html`
-  - Pages URL: `https://comus93.github.io/portfolio-optimizer-kr/runs/20260829-report-review-v4-validation/report.html`
-  - browser report: YES via localhost HTTP; browser PV: YES using current `sl=3n4DZ247sp7s5oMf4Umzc5`; no screen blocker.
-- Frontier: PASS. Actual X 12.0%–22.5%, Y 11.0%–22.0%; visible QQQ/SPMO/GLD/AIA; outside GDX/SLV/XLE only. Assets schema includes Name/Ticker/Expected Return/Std Dev/Sharpe/Min/Max. Curve hover returned expected return, std dev, Sharpe, all allocations.
-- Rolling Active: PASS. Independent Provided and Maximum Sharpe dual-axis bar/line panels use the 36-month title/subtitle and same-month hover. Representative 2026-07 values: Provided Active Return 9.15%, TE 8.24%; Maximum Sharpe 11.68%, TE 5.96%.
-- Metrics: PASS. Start Balance $10,000; End Balance dollar convention; Benchmark Active Return/Tracking Error/Information Ratio N/A; Performance Summary required rows and advanced Portfolio Metrics remain.
-- Asset Performance: PASS. Restored 16-column schema including Annualized Return and trailing 3M/YTD/1Y/3Y/5Y/10Y fields, formatted as percentage points.
-- Identity consistency: PASS. Provided Portfolio / Maximum Sharpe Ratio / State Street SPDR S&P 500 ETF shown; no exact generic Optimized or Benchmark labels in table/header checks.
-- v3 regression sanity: PASS — Annual Asset 7-series legend, Up/Down paired 20×2 bars, frontier Min/Max, Name/Ticker tables, active-contribution no raw table, rolling 3Y/5Y axes.
-- PV live comparison: PASS. Static golden: PENDING USER REFRESH, as directed.
-- P0 mismatches: 0. P1 mismatches: 0 observed. Intentional deviations: 1, local FDR 84/36 vs PV 85/35 due July 2026 SPY -0.68027% vs +0.03%.
-- Evidence: `runs/20260829-report-review-v4-validation/validation/visual-comparison.md`.
-- Artifact commit: `cae1f8eec36e3d38b2f6ffa8be34ba6b9f02752b`.
+  - command: `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r11-us3m-tbill-validation.yaml`
+  - run: `runs/20260829-us3m-tbill-validation/`
+  - HTML: `runs/20260829-us3m-tbill-validation/report.html`
+  - Pages URL: `https://comus93.github.io/portfolio-optimizer-kr/runs/20260829-us3m-tbill-validation/report.html`
+- `us_3m_tbill` runtime evidence:
+  - FDR source `FRED:TB3MS`; 120 required observation months; first 2016-08 0.30%; last 2026-07 3.73%.
+  - arithmetic mean / persisted effective annual RF: **2.37350%** (`0.023735`).
+  - former 2.35595% calibration difference: **+0.01755 percentage points**.
+- Local optimized result: QQQ 24.39765%, SPMO 41.08251%, GLD 30.00000%, XLE 4.51983%; expected return 17.20583%; volatility 13.10305%; ex-ante Sharpe 1.13198.
+- PV live current reference (`sl=3n4DZ247sp7s5oMf4Umzc5`) maximum-Sharpe: QQQ 24.21%, SPMO 40.86%, GLD 30.00%, XLE 4.94%; expected return 17.19%; volatility 13.08%; Sharpe 1.134. Exact deltas are in the validation file.
+- Up/down local count: 84 positive / 36 negative benchmark months. Known local/PV source deviation remains July 2026 SPY -0.68027% vs PV +0.03%.
+- Browser report: YES via localhost HTTP. No screen blocker.
+  - Portfolio Growth: blue `stroke=#2563eb`; second green `stroke=#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Annual Returns: blue/green `fill=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Annualized Active Return: blue/green `fill=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Drawdowns, Rolling 3Y Returns, Rolling 5Y Returns: blue/green `stroke=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+- Full raw evidence: `runs/20260829-us3m-tbill-validation/validation/visual-comparison.md`.
+- Artifact commit: `982cdfc40e56199a23e3e987868b2f356f73bec2`.
