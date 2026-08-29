@@ -109,6 +109,16 @@ class UpDownMarketPoint:
 
 
 @dataclass(frozen=True)
+class UpDownScatterPoint:
+    date: str
+    portfolio: str
+    market_type: str
+    benchmark_return_pct: float
+    portfolio_return_pct: float
+    active_return_pct: float
+
+
+@dataclass(frozen=True)
 class ReportModel:
     run_id: str
     objective_name: str
@@ -126,6 +136,8 @@ class ReportModel:
     rolling_active_provided: tuple[RollingActivePoint, ...] = ()
     rolling_active_optimized: tuple[RollingActivePoint, ...] = ()
     up_down_market_performance: tuple[UpDownMarketPoint, ...] = ()
+    up_down_scatter_provided: tuple[UpDownScatterPoint, ...] = ()
+    up_down_scatter_optimized: tuple[UpDownScatterPoint, ...] = ()
     drawdowns: tuple[DrawdownPoint, ...] = ()
     annual_asset_returns: tuple[AnnualAssetReturnPoint, ...] = ()
     rolling_returns_3y: tuple[RollingReturnPoint, ...] = ()
