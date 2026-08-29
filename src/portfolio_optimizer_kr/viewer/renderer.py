@@ -10,6 +10,58 @@ from .report_model import ReportModel
 
 _REPORT_DATA_TOKEN = "__REPORT_DATA_JSON__"
 
+_VISUAL_IDENTITY_SCRIPT = r"""
+<script id="report-legend-identity">
+(() => {
+  const data = window.PORTFOLIO_REPORT_DATA || {};
+  const BLUE = '#2563eb';
+  const PURPLE = '#7c3aed';
+  const GRAY = '#64748b';
+  const ORANGE = '#f97316';
+  const RED = '#e11d48';
+
+  const paintLegend = (legend, colorList) => {
+    if (!legend) return;
+    legend.querySelectorAll('span').forEach((span, index) => {
+      const color = colorList[index];
+      if (color) span.style.setProperty('--color', color);
+    });
+  };
+
+  const paintSectionLegends = (sectionId, colorList) => {
+    document.querySelectorAll(`#${sectionId} .legend`).forEach(
+      legend => paintLegend(legend, colorList),
+    );
+  };
+
+  // These bar/line renderers use fixed series colors. Keep the legend tied to
+  // the actual plotted series rather than recomputing fallback colors from
+  // human-readable legend labels.
+  paintSectionLegends('annual-returns', [BLUE, PURPLE, GRAY]);
+  paintSectionLegends('annualized-active-return', [BLUE, PURPLE]);
+  paintSectionLegends('rolling-active-return', [BLUE, ORANGE]);
+  paintSectionLegends('up-down-market', [BLUE, RED]);
+  paintSectionLegends('annual-asset-returns', [BLUE]);
+
+  // Efficient Frontier uses three visual identities in the current renderer:
+  // curve points/line = blue, individual asset markers = gray,
+  // portfolio/benchmark/objective landmarks = red.
+  const frontierAssets = new Set(
+    (data.frontier_assets || []).map(asset => String(asset.symbol)),
+  );
+  document.querySelectorAll('#efficient-frontier .legend span').forEach(span => {
+    const label = (span.textContent || '').trim();
+    const color = label === 'Efficient Frontier'
+      ? BLUE
+      : frontierAssets.has(label)
+        ? GRAY
+        : RED;
+    span.style.setProperty('--color', color);
+  });
+})();
+</script>
+""".strip()
+
 
 def _json_safe(value: Any) -> Any:
     if isinstance(value, float):
@@ -23,6 +75,17 @@ def _json_safe(value: Any) -> Any:
 
 def default_template_path() -> Path:
     return Path(__file__).resolve().parents[3] / "site" / "report-template.html"
+
+
+def _inject_visual_identity_script(html: str) -> str:
+    closing_body = "</body>"
+    if closing_body not in html:
+        raise ValueError("report template missing closing body tag")
+    return html.replace(
+        closing_body,
+        f"  {_VISUAL_IDENTITY_SCRIPT}\n{closing_body}",
+        1,
+    )
 
 
 def render_report(
@@ -43,6 +106,7 @@ def render_report(
         separators=(",", ":"),
     ).replace("</", "<\\/")
     html = template.replace(_REPORT_DATA_TOKEN, payload)
+    html = _inject_visual_identity_script(html)
 
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
