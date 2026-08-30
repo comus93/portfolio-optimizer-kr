@@ -1,0 +1,8 @@
+schema: spec-driven
+created: 2026-08-30
+goal: Migrate the completed optimizer baseline into project-wide OpenSpec capability specifications without changing product behavior.
+affected_areas:
+  - requirements
+  - optimization
+  - shared-analytics
+  - reporting
