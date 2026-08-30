@@ -9,7 +9,26 @@ uv sync --extra dev
 uv run pytest
 ```
 
-The financial conventions are defined in `docs/specification.md`.
+## Change workflow
+
+OpenSpec manages requirements and change state.
+
+```text
+openspec/specs/                 current capability requirements
+openspec/changes/<change>/      active proposal/spec/design/tasks
+openspec/changes/archive/       completed changes
+```
+
+Existing detailed contracts in `docs/` remain the baseline for capabilities not yet migrated to OpenSpec. New or modified behavior is planned through OpenSpec and archived into `openspec/specs/` over time.
+
+Current feature work:
+
+```text
+branch: bt-module
+change: openspec/changes/bt-module/
+```
+
+Codex uses the OpenSpec skills installed by `openspec init --tools codex`; its workflow is invoked with names such as `$openspec-propose` and `$openspec-apply-change`.
 
 The canonical user research operation flow is defined in `docs/research-operation-pipeline.md`:
 
@@ -24,7 +43,7 @@ User <-> ChatGPT
 -> Repository
 ```
 
-Agent workflow rules for development and validation are in `AGENTS.md`.
+Agent workflow rules are in `AGENTS.md` and ChatGPT/Codex handoff rules are in `ai-share/PROTOCOL.md`.
 
 ## Current skeleton
 
