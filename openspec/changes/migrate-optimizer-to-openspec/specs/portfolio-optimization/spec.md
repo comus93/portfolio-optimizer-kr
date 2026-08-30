@@ -17,6 +17,14 @@ Optimization run은 asset universe, analysis period, provided weights(optional),
 - WHEN request를 검증한다
 - THEN target annual volatility가 반드시 제공되어야 한다
 
+### Requirement: Optimization input surface
+사용자-facing optimization input surface는 asset catalog의 ticker/name 검색, asset 추가/제거/편집, provided weight와 min/max constraint 편집, period, benchmark, objective, rebalancing, risk-free mode 및 필요한 FX 설정을 구성할 수 있어야 한다.
+
+#### Scenario: 사용자 optimization 구성
+- GIVEN 사용자가 UI에서 portfolio universe를 구성한다
+- WHEN asset과 optimization 설정을 편집한다
+- THEN canonical optimization input에 필요한 값을 설정하고 YAML run contract로 표현할 수 있다
+
 ### Requirement: Ex-ante expected return
 시스템은 optimization용 annual expected return을 monthly simple return의 arithmetic mean에 12를 곱한 값으로 계산해야 한다.
 
