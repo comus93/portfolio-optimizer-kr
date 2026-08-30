@@ -1,60 +1,51 @@
 # AI Share
 
 state: active
-id: 20260830T154500+0900-llm
-created_at: 2026-08-30T15:45:00+09:00
+id: 20260830T162600+0900-llm
+created_at: 2026-08-30T16:26:00+09:00
 type: request
-reply_to: none
+reply_to: 20260830T155136+0900-agent
 
 ## Context
 
-`bt-module` branch에서 Phase 1 OpenSpec 도입을 시작했다.
+`bt-module`에서 기존 Optimizer baseline을 OpenSpec으로 이관 중이다.
 
-LLM이 추가/변경한 핵심:
+현재 change:
 
 ```text
-openspec/config.yaml
-openspec/changes/bt-module/.openspec.yaml
-openspec/changes/bt-module/proposal.md
-openspec/specs/.gitkeep
-openspec/changes/archive/.gitkeep
-AGENTS.md
-README.md
+openspec/changes/migrate-optimizer-to-openspec/
 ```
 
-OpenSpec은 change scope/status를 관리하고, 아직 이관되지 않은 기존 상세 contract는 `docs/`를 baseline으로 유지한다. 현재 active change는 `bt-module`이다.
+LLM이 기존 `docs/specification.md`, `docs/report-ui-specification.md`, `docs/input-ui-contract.md`의 requirement를 다음 capability delta로 분해했다.
+
+```text
+market-data
+portfolio-optimization
+portfolio-simulation
+portfolio-analytics
+run-artifacts
+research-report
+```
+
+이번 migration은 behavior 변경이 아니라 requirement ownership/source-of-truth 전환이다.
 
 ## Message
 
-`bt-module` 최신 remote를 pull한 뒤 OpenSpec의 Codex integration을 실제 repo checkout에 초기화하고 구조를 검증해라.
+최신 `bt-module`을 pull한 뒤 **코드나 OpenSpec artifact를 수정하지 말고** 현재 migration spec delta만 검증해라.
 
-1. Node >= 20.19 확인.
-2. OpenSpec CLI가 없으면 global install 대신 `npx -y @fission-ai/openspec@latest`를 사용한다.
-3. 기존 OpenSpec-managed legacy files가 있는지 먼저 확인한다. 있으면 삭제/이동하지 말고 blocker로 보고한다.
-4. 아래와 동등한 방식으로 Codex core skills를 repo에 생성한다.
+실행:
 
 ```text
-npx -y @fission-ai/openspec@latest init --tools codex --profile core --no-animation
+npx -y @fission-ai/openspec@latest status --change migrate-optimizer-to-openspec
+npx -y @fission-ai/openspec@latest validate migrate-optimizer-to-openspec --strict
 ```
 
-5. 생성된 OpenSpec skill 파일은 commit 대상이다.
-6. 아래를 실행해 결과를 확인한다.
+추가로 OpenSpec 구조상 obvious schema/format 오류가 있는지만 확인한다. Requirement 의미나 scope를 임의 변경하지 않는다.
 
-```text
-openspec status --change bt-module
-openspec validate bt-module --strict
-```
-
-`openspec`가 PATH에 없으면 같은 `npx -y @fission-ai/openspec@latest` prefix를 사용한다.
-
-현재 Phase 1에서는 Backtest spec/design/tasks를 임의 작성하지 않는다. `proposal.md` 이후 단계는 LLM/사용자와 기획 후 진행한다.
-
-결과를 `agent-to-llm.md`에 간단히 남긴다.
+`agent-to-llm.md`에 아래만 간단히 회신한다.
 
 - start HEAD
-- OpenSpec version
-- generated files
 - status output
-- validation output
-- blocker 여부
-- result commit SHA
+- strict validation output
+- validation failure가 있으면 exact error
+- changed files: none expected
