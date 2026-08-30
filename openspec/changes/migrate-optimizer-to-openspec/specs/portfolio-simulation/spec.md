@@ -12,6 +12,14 @@ Portfolio simulation은 target asset weights와 해당 asset들의 canonical mon
 - WHEN historical portfolio path를 생성한다
 - THEN 동일한 asset return observations를 기준으로 portfolio return series를 만든다
 
+### Requirement: Default rebalancing period
+사용자가 rebalancing period를 별도로 지정하지 않으면 Monthly를 기본값으로 사용해야 한다.
+
+#### Scenario: 기본 rebalancing
+- GIVEN rebalancing period가 생략된 유효한 run configuration이 있다
+- WHEN effective simulation configuration을 확정한다
+- THEN Monthly rebalancing을 적용한다
+
 ### Requirement: Monthly rebalancing
 Monthly rebalancing에서는 각 monthly period 시작 시 target weights로 복귀한 것으로 계산해야 한다.
 
