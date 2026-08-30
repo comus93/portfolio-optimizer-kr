@@ -5,19 +5,27 @@ context: |
   Write OpenSpec artifacts in Korean.
   Portfolio Visualizer is an external reference, not a normative source.
   Existing detailed contracts remain in docs/ until the relevant capability is migrated into OpenSpec.
+  Target product capabilities are portfolio-optimization and portfolio-backtest.
+  Shared capabilities are market-data, portfolio-simulation, portfolio-analytics, run-artifacts, and research-report.
+  Product specs define product-specific behavior; shared rules and formulas live only in the shared capability that owns them.
+  A shared capability change must identify affected product capabilities and the required affected-scope regression.
   Keep scope concise and avoid restating the same constraint in multiple forms.
 
 rules:
   proposal:
     - Separate product behavior from tooling/process changes.
+    - Identify shared capability changes separately from product-specific changes.
     - Keep scope and impact concise.
   specs:
     - Define observable behavior and testable scenarios, not implementation steps.
     - State financial formulas explicitly when they are part of the behavior contract.
+    - Do not duplicate a shared formula or acceptance rule in portfolio-optimization and portfolio-backtest specs.
   design:
     - Reuse existing data, portfolio, analytics, report, and viewer layers before creating parallel implementations.
+    - For shared changes, document impact on both portfolio-optimization and portfolio-backtest when applicable.
   tasks:
     - Prefer affected-scope tests during iteration and include real-run/browser checks when the change needs them.
+    - Include regression tasks for every existing product capability affected by a shared capability change.
 
 operations:
   apply:
