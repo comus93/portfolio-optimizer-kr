@@ -1,0 +1,319 @@
+USER MESSAGE
+레포의 agent.md specification.md m \ai-share 의 protocol.md 읽어 개발에 들어가진 말아 뼈대코드는 llm이 만들고 있어
+
+USER MESSAGE
+llm이 뼈대 코드 생성 완료했어 llm to agent를 읽고 나머지 개발을 완료해줘
+
+USER MESSAGE
+개발 요청 내용은 없었어?
+
+USER MESSAGE
+llm to agent 요청 사항 확인하고 개발 진행해
+
+USER MESSAGE
+llm 요구사항 확인하고 진행해
+
+USER MESSAGE
+llm 요구사항 확인하고 진행해
+
+USER MESSAGE
+llm요구사항 확인하고 진행해
+
+USER MESSAGE
+llm 요건 확인하고 개발 진행해
+
+USER MESSAGE
+지피티 요청 확인하고 진행해
+
+USER MESSAGE
+지피티 요건 확인하고 진행해
+
+USER MESSAGE
+지피티 의뢰 결과 확인하고 진랭해 추가 최적화 기능이다
+
+USER MESSAGE
+지피티 피드백 확인해
+
+USER MESSAGE
+지피티 피드잭 확인해
+
+USER MESSAGE
+깃헙 경로를 알려줘
+
+USER MESSAGE
+~/.codex/config.toml의 project trust 설정을 확인해줘.
+현재 프로젝트의 실제 Windows 경로는 C:\Workspace\github\portfolio-optimizer-kr야.
+이 경로와 정확히 동일한 대소문자로 된 [projects.'C:\Workspace\github\portfolio-optimizer-kr'] 항목이 없으면 기존 설정은 유지하고 이 경로의 trust_level = "trusted" 항목을 추가해줘.
+다른 설정은 변경하지 마.
+
+USER MESSAGE
+현재까지의 portfolio-optimizer-kr 개발 관련 대화와 작업 기록을 사후검증용 raw audit로 남겨줘.
+중요:
+• 요약, 해석, 평가, 개선안은 넣지 말 것
+• 가능한 한 원문과 실제 기록을 그대로 보존할 것
+• 대화, 지시, 응답, 작업 결과, 테스트 결과, 오류, 재시도, commit/run 정보 등 현재 접근 가능한 기록을 빠뜨리지 말 것
+• 확인되지 않은 내용은 추정하지 말 것
+• 비공개 내부 추론, 시스템 프롬프트, 인증정보, secret은 제외할 것
+저장 위치: llm_share/projects/portfoliovisualizer/postmortem/
+파일명은 작성 주체를 구분할 수 있게 정해줘. 동일 파일명이 있으면 다른 이름으로 저장해 
+예:)
+• 2026-08-30-gpt-raw-audit.txt
+• 2026-08-30-agent-raw-audit.txt
+완료 후 commit/push하고 파일 경로만 알려줘.
+
+COMMAND
+git status --short
+
+OUTPUT
+?? runs/20260829-report-review-v3-validation/
+?? studies/seven-asset-frontier-e2e/experiments/001-base-r08-report-review-v3-validation.yaml
+
+COMMAND
+git branch --show-current
+
+OUTPUT
+main
+
+COMMAND
+git rev-parse HEAD
+
+OUTPUT
+f707ba4e4b5d23750d8bda04465b40f7f5a1841c
+
+COMMAND
+git log -1 --format=fuller
+
+OUTPUT
+commit f707ba4e4b5d23750d8bda04465b40f7f5a1841c
+Author:     JY <comus93@naver.com>
+AuthorDate: Sun Aug 30 10:23:26 2026 +0900
+Commit:     JY <comus93@naver.com>
+CommitDate: Sun Aug 30 10:23:26 2026 +0900
+
+    docs: remove conversation postmortem
+
+COMMAND
+git log --all --format='%H%x09%aI%x09%an%x09%s' -- runs
+
+OUTPUT
+b50b2de765d81832094c16a99503a8f7d198ae08	2026-08-29T13:28:03Z	github-actions[bot]	runs: add 20260829-0005
+94b001c6e70d18cf2e9bcaa2d767f73462023b49	2026-08-29T12:40:19Z	github-actions[bot]	runs: add 20260829-0003
+982cdfc40e56199a23e3e987868b2f356f73bec2	2026-08-29T20:11:36+09:00	JY	validation: add us 3m tbill report run
+cae1f8eec36e3d38b2f6ffa8be34ba6b9f02752b	2026-08-29T18:41:33+09:00	JY	validation: add report review v4 run
+0ec08f6091c57c59536f61bdad5ddf02603203c1	2026-08-29T16:58:03+09:00	JY	fix: finalize report review v3 frontier overlay
+a59a7edefd27f32c5e068da86b41c8ff2dcd4d90	2026-08-29T16:14:56+09:00	JY	validation: add user feedback v2 report run
+922ee52bb6775c43ee80c4b953543529e1fd13ec	2026-08-29T14:55:15+09:00	JY	validation: add P1 polish report run
+b712f05178302790f34dd63cbf5828c238138d33	2026-08-29T12:36:10+09:00	JY	validation: add golden fidelity report run
+47f0493c1cea9040861d7e3bebf3844871f60e94	2026-08-29T11:20:33+09:00	JY	validation: add browser-rendered P0 report run
+c1c86065c85141de439f4623cee6941029991664	2026-08-29T11:02:17+09:00	JY	validation: add final interactive report P0 run
+9aa515c888a48d484d4129676f061da28554f55b	2026-08-29T09:45:43+09:00	JY	data: add partial P0 validation report run
+425ce6046c3d897a43637deb874061c63e503392	2026-08-29T09:08:24+09:00	JY	data: add visual report validation run
+9ce4be381f3498ef39ddf08dac710c9efb835649	2026-08-29T08:09:53+09:00	JY	data: add interactive report validation run
+fe6e299a42c7e30fe13bbc59920421da2161099c	2026-08-28T17:40:51+09:00	JY	data: persist completed month research run
+64df3aecc51bc95952af3582f58f6c3393a0ff76	2026-08-28T17:22:28+09:00	JY	data: persist seven asset frontier research run
+25930c75ace24baa54c156239942ea5b4a33d758	2026-08-28T17:09:32+09:00	JY	feat: enrich target volatility parity diagnostics
+68c4c202fa867f0044157e38366a18cdafeb393e	2026-08-28T13:58:54+09:00	JY	docs: refresh target volatility diagnostic outputs
+11d4d28349cde99a319553bf03db8f2750f63de4	2026-08-28T13:58:20+09:00	JY	docs: add target volatility parity validation run
+82f692c29826c1e6cb8f03fd929510b4b80abe70	2026-08-28T13:03:03+09:00	JY	docs: refresh runs after review hygiene fixes
+db91c0c1992e65119259a64c61ad00d5b3c0cea2	2026-08-28T13:02:46+09:00	JY	docs: refresh runs after review hygiene fixes
+5c5f5db6e928a154fc29eb6e0130ae830ff8b427	2026-08-28T12:56:45+09:00	JY	docs: refresh runs with purpose-built review tables
+2aa0a9563162727b429e4bcf3d48443825ecabf0	2026-08-28T12:56:26+09:00	JY	docs: refresh runs with purpose-built review tables
+b30d8d08dcdb42318a3931a4af1d8f53701fdf77	2026-08-28T12:46:50+09:00	JY	docs: add example YAML validation run
+238a26cbd9649e17170f2916510af220f05b3ea0	2026-08-28T12:28:39+09:00	JY	docs: add review and raw parity output layers
+19b602812620c7eb2f67424b01c63377b4a03a54	2026-08-28T12:22:38+09:00	JY	docs: add rolling return parity outputs
+bfb87bbc318c23aa5cd4aac8226c041a72c75a93	2026-08-28T12:20:29+09:00	JY	docs: refresh parity outputs for latest revision
+61ec241cd76b57f85aa3f8e36d3b64b4d8f9bb28	2026-08-28T12:19:55+09:00	JY	docs: refresh parity diagnostics with moment analysis
+e90c750129827899ed325de1e261012a2b7a3fe8	2026-08-28T12:01:11+09:00	JY	docs: add PV max sharpe diagnostic run
+
+GIT OBJECT REFERENCES
+git log --all -p -- ai-share/llm-to-agent.md ai-share/agent-to-llm.md ai-share/llm-to-llm.md ai-share/agent-to-agent.md
+git log --all --name-status
+git rev-list --all --objects
+
+CURRENT FILE
+ai-share/llm-to-agent.md
+
+# AI Share
+
+state: active
+id: 20260829T220000+0900-llm
+created_at: 2026-08-29T22:00:00+09:00
+type: request
+reply_to: none
+
+## Context
+
+사용자가 Research Frontend 및 report 동작을 다음처럼 확정했다.
+
+### Benchmark
+
+- Benchmark는 Research Frontend에서 항상 존재한다.
+- 기본 비교대상은 S&P 500 (SPY).
+- LLM은 기본값을 다시 선택시키지 않고 `비교대상은 기본적으로 S&P 500(SPY)이며 원하면 변경 가능`하다고 고지한다.
+- 사용자가 변경하지 않으면 Experiment/Input YAML에 SPY를 명시적으로 기록한다.
+- 오래된 Experiment에 benchmark가 빠져 있어도 Research execution boundary가 SPY default를 effective input에 materialize한다.
+
+### Portfolio Growth hover
+
+- 기존 invisible hover point가 Provided series 높이에만 있어 Optimized line hover가 실패할 수 있었다.
+- final renderer가 plot 전체 transparent overlay로 mouse X의 nearest date를 선택해 grouped tooltip을 표시하도록 수정했다.
+
+### Partial calendar years
+
+PV reference에서 partial year도 결과에서 제거하지 않고 실제 available completed months로 annual result를 계산/표시한다.
+
+예:
+
+```text
+2016 = Aug-Dec
+2026 = Jan-Jul
+```
+
+사용자가 같은 방향을 확정했다.
+
+- partial year를 Annual Returns에서 제거하지 않는다.
+- Monthly Returns에서 없는 월은 N/A로 유지한다.
+- Annual Returns와 Monthly Returns 양쪽에 partial year가 어느 completed months를 기반으로 하는지 note를 표시한다.
+- Best/Worst Year의 partial-year 포함 여부는 이번 변경 범위가 아니며 별도 validation 대상으로 유지한다.
+
+LLM이 main에 직접 구현했다.
+
+- `docs/llm-research-input-contract.md`
+- `src/portfolio_optimizer_kr/research.py`
+- `studies/global-multi-asset-allocation/experiments/001-spy-qqq-tlt-gld-cper-mchi-ewy.yaml`
+- `src/portfolio_optimizer_kr/viewer/final_renderer.py`
+- `tests/test_research.py`
+- `tests/test_report_user_feedback_v4.py`
+- `docs/report-visual-overrides-20260829.md`
+
+Research E2E는 PAUSE 상태다. 실제 사용자 Experiment를 다시 실행하지 않는다.
+
+Agent의 PASS/FAIL 평가는 completion 근거가 아니다. 실제 명령 결과와 browser/DOM evidence를 보고한다.
+
+## Message
+
+최신 main을 pull한 뒤 **코드는 수정하지 말고 targeted execution/browser validation만** 수행해라.
+
+### 1. Targeted tests
+
+```text
+uv run pytest tests/test_research.py tests/test_report_user_feedback_v4.py -q
+```
+
+실패하면 임의 수정하지 말고 exact failure를 보고한다.
+
+### 2. Research benchmark default evidence
+
+benchmark가 없는 임시 Research Experiment/fixture를 `execute_controlled_experiment()`로 실행하고 생성된 임시 `input.yaml`에 아래가 materialize되는지 확인한다.
+
+```yaml
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+```
+
+명시적 다른 benchmark가 override되지 않는지도 확인한다.
+
+실제 사용자 E2E Experiment를 실행하거나 `control/execute.yaml run:true`로 바꾸지 않는다.
+
+### 3. Portfolio Growth tooltip browser evidence
+
+`runs/20260829-0003` persisted artifacts를 source로 최신 renderer를 사용해 **임시 report HTML**을 생성하고 browser에서 확인한다.
+
+확인사항:
+
+```text
+- .final-growth-hover-overlay가 plot-wide hit target으로 존재
+- Provided 선 근처에서 tooltip 표시
+- Optimized 선 근처에서도 tooltip 표시
+- plot 내 다른 Y 높이에서도 같은 mouse X 기준 tooltip 표시
+- tooltip에 같은 날짜의 Provided와 Optimized 값이 함께 표시
+- 기존 transparent point circles는 pointer-events:none
+```
+
+가능하면 overlay x/y/width/height/pointer-events 실제 DOM 값을 보고한다.
+
+### 4. Partial-year note browser evidence
+
+같은 임시 report에서 `runs/20260829-0003`의 2011 partial year를 확인한다.
+
+기대 동작:
+
+```text
+Annual Returns:
+- 2011 partial return 자체는 계속 표시
+- section 아래 partial-year note 존재
+
+Monthly Returns:
+- 2011 Jan-Nov = N/A
+- 2011 Dec = 기존 실제 return
+- 기존 annual/YTD aggregate 값은 유지
+- section 아래 partial-year note 존재
+- note가 `2011 is based on Dec only` 의미를 전달
+```
+
+해당 run에 다른 partial year가 있으면 note가 같이 표시되는지도 실제 문자열로 보고한다.
+
+### 5. 결과 보고
+
+`agent-to-llm.md`에는 raw evidence를 우선한다.
+
+최소:
+
+```text
+start HEAD
+changed files: none expected
+targeted test command + exact result
+benchmark-default input.yaml excerpt
+explicit benchmark override evidence
+temporary report path
+Portfolio Growth overlay DOM attributes
+Provided/Optimized hover tooltip samples
+Annual Returns partial-year note exact text
+Monthly Returns partial-year note exact text
+2011 monthly row values 확인
+browser/runtime blocker exact symptom/log
+```
+
+코드 수정은 하지 않는다.
+
+CURRENT FILE
+ai-share/agent-to-llm.md
+
+# AI Share
+
+state: active
+id: 20260829T213000+0900-agent
+created_at: 2026-08-29T21:30:00+09:00
+type: result
+reply_to: 20260829T202800+0900-llm
+
+## Context
+
+Started from current `main` after fast-forward pull: `2b26f1d`.
+
+## Message
+
+Execution and browser validation completed; Agent changed files: none.
+
+- Targeted tests: `uv run pytest tests/test_runner.py tests/test_report_series_contrast.py -q` → **6 passed**.
+- Fresh run:
+  - command: `uv run portfolio-optimizer run studies/seven-asset-frontier-e2e/experiments/001-base-r11-us3m-tbill-validation.yaml`
+  - run: `runs/20260829-us3m-tbill-validation/`
+  - HTML: `runs/20260829-us3m-tbill-validation/report.html`
+  - Pages URL: `https://comus93.github.io/portfolio-optimizer-kr/runs/20260829-us3m-tbill-validation/report.html`
+- `us_3m_tbill` runtime evidence:
+  - FDR source `FRED:TB3MS`; 120 required observation months; first 2016-08 0.30%; last 2026-07 3.73%.
+  - arithmetic mean / persisted effective annual RF: **2.37350%** (`0.023735`).
+  - former 2.35595% calibration difference: **+0.01755 percentage points**.
+- Local optimized result: QQQ 24.39765%, SPMO 41.08251%, GLD 30.00000%, XLE 4.51983%; expected return 17.20583%; volatility 13.10305%; ex-ante Sharpe 1.13198.
+- PV live current reference (`sl=3n4DZ247sp7s5oMf4Umzc5`) maximum-Sharpe: QQQ 24.21%, SPMO 40.86%, GLD 30.00%, XLE 4.94%; expected return 17.19%; volatility 13.08%; Sharpe 1.134. Exact deltas are in the validation file.
+- Up/down local count: 84 positive / 36 negative benchmark months. Known local/PV source deviation remains July 2026 SPY -0.68027% vs PV +0.03%.
+- Browser report: YES via localhost HTTP. No screen blocker.
+  - Portfolio Growth: blue `stroke=#2563eb`; second green `stroke=#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Annual Returns: blue/green `fill=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Annualized Active Return: blue/green `fill=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+  - Drawdowns, Rolling 3Y Returns, Rolling 5Y Returns: blue/green `stroke=#2563eb/#22c55e`; legend green `rgb(34, 197, 94)`.
+- Full raw evidence: `runs/20260829-us3m-tbill-validation/validation/visual-comparison.md`.
+- Artifact commit: `982cdfc40e56199a23e3e987868b2f356f73bec2`.
