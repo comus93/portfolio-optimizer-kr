@@ -19,13 +19,32 @@ openspec/changes/<change>/      active proposal/spec/design/tasks
 openspec/changes/archive/       completed changes
 ```
 
-Existing detailed contracts in `docs/` remain the baseline for capabilities not yet migrated to OpenSpec. New or modified behavior is planned through OpenSpec and archived into `openspec/specs/` over time.
+Target capability model:
 
-Current feature work:
+```text
+Product
+- portfolio-optimization
+- portfolio-backtest
+
+Shared
+- market-data
+- portfolio-simulation
+- portfolio-analytics
+- run-artifacts
+- research-report
+```
+
+Optimization 1차 baseline은 `migrate-optimizer-to-openspec` change를 통해 기존 `docs/` contract에서 OpenSpec으로 이관한다. Migration parity가 확인되기 전까지 기존 docs가 baseline이며, 이관 완료된 capability는 `openspec/specs/`가 normative source다.
+
+Backtest는 `bt-module` change에서 신규 capability로 정의한다. Shared capability를 변경하면 영향을 받는 기존 product capability의 regression 범위를 함께 관리한다.
+
+Current feature branch:
 
 ```text
 branch: bt-module
-change: openspec/changes/bt-module/
+changes:
+- openspec/changes/migrate-optimizer-to-openspec/
+- openspec/changes/bt-module/
 ```
 
 Codex uses the OpenSpec skills installed by `openspec init --tools codex`; its workflow is invoked with names such as `$openspec-propose` and `$openspec-apply-change`.
