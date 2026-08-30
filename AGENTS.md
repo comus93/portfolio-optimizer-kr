@@ -2,7 +2,7 @@
 
 ## OpenSpec / Source of truth
 
-이 repository는 OpenSpec으로 **변경 요구사항과 진행 상태**를 관리한다.
+이 repository는 OpenSpec으로 **요구사항과 변경 상태**를 관리한다.
 
 ```text
 openspec/specs/                 현재 capability requirements
@@ -10,7 +10,24 @@ openspec/changes/<change>/      진행 중 change의 proposal/spec/design/tasks
 openspec/changes/archive/       완료된 change history
 ```
 
-기존 capability 중 아직 OpenSpec으로 이관되지 않은 상세 contract는 기존 `docs/` 문서가 baseline이다. 해당 capability를 변경할 때 OpenSpec delta를 작성하고, 완료 후 archive/sync를 통해 `openspec/specs/`로 점진적으로 옮긴다.
+Target capability model:
+
+```text
+Product
+- portfolio-optimization
+- portfolio-backtest
+
+Shared
+- market-data
+- portfolio-simulation
+- portfolio-analytics
+- run-artifacts
+- research-report
+```
+
+Optimization과 Backtest는 별도 product capability다. 공통 데이터, 계산, simulation, artifact, presentation 규칙은 shared capability에 한 번만 정의한다.
+
+기존 capability 중 아직 OpenSpec으로 이관되지 않은 상세 contract는 기존 `docs/` 문서가 baseline이다. `migrate-optimizer-to-openspec` change가 완료되어 migration parity가 확인된 capability부터 `openspec/specs/`가 normative source가 되고 동일 요구의 기존 `docs/` 내용은 reference/설명 역할로 전환한다.
 
 개발 전 우선 확인 순서:
 
@@ -22,17 +39,20 @@ openspec/changes/archive/       완료된 change history
 
 현재 LLM 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
 
-Normative responsibility:
+Active OpenSpec delta가 존재하면 해당 change 범위에서 기존 baseline에 대한 명시적 변경 계약이다. 외부 서비스, PV 결과, screenshot, historical golden은 non-normative reference다.
+
+### Shared capability impact rule
+
+shared capability를 변경하면 다음을 change artifact에 명시한다.
 
 ```text
-Change scope / status           OpenSpec
-Finance / calculation semantics docs/specification.md (until migrated)
-Report UI / interaction         docs/report-ui-specification.md (until migrated)
-Architecture / responsibility   docs/architecture.md
-Validation procedure            docs/visual-acceptance-contract.md
+changed shared capability
+reason
+영향받는 product capability
+필요한 affected regression
 ```
 
-Active OpenSpec delta가 존재하면 그 change 범위에서는 delta가 기존 baseline에 대한 명시적 변경 계약이다. 외부 서비스, PV 결과, screenshot, historical golden은 non-normative reference다.
+Backtest를 위해 shared behavior를 변경했더라도 `portfolio-optimization`이 그 capability를 사용하면 Optimization 영향 검토를 생략하지 않는다. 단순 코드 재사용으로 requirement가 바뀌지 않으면 불필요한 spec delta를 만들지 않는다.
 
 요구사항 충돌이나 해석이 materially 달라질 수 있으면 임의로 정답을 바꾸지 말고 evidence와 함께 blocker를 남긴다.
 
@@ -72,6 +92,7 @@ OpenSpec planning artifact가 필요한 change에서는 proposal/spec/design/tas
 - v1 market data source는 FinanceDataReader(FDR)다.
 - 계산/리포트 behavior 변경은 관련 OpenSpec delta를 먼저 정의한다.
 - 아직 OpenSpec으로 이관되지 않은 baseline semantics는 기존 `docs/` contract를 따른다.
+- shared formula/acceptance rule을 Optimization과 Backtest spec에 중복 정의하지 않는다.
 - external reference와 다르다는 이유만으로 requirement를 변경하지 않는다.
 - external reference에서 더 나은 convention/UX를 발견하면 product change proposal로 다룬다.
 - data, stats, optimization, portfolio path, analytics, reporting, viewer 책임을 분리한다.
@@ -101,6 +122,8 @@ Full regression은 다음 경우에 확대한다.
 - 영향 범위가 불명확함
 - targeted failure가 cross-module regression 가능성을 드러냄
 - release/completion gate에 필요
+
+shared capability change에서는 영향을 받는 기존 product capability의 regression을 change task/verification에 포함한다.
 
 테스트를 통과시키기 위해 contract test를 임의로 약화·삭제·skip·xfail하지 않는다. Contract가 잘못됐다고 판단되면 blocker로 보고한다.
 
