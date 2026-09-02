@@ -56,6 +56,11 @@ Backtest Portfolio Growth chart는 x축의 time 의미와 y축의 portfolio bala
 - WHEN Portfolio Growth chart를 표시한다
 - THEN 시작/종료 지점 외에도 중간 기간을 식별할 수 있는 x-axis tick labels가 존재하고 y-axis에도 중간 balance tick labels와 horizontal reference grid가 존재한다
 
+#### Scenario: calendar-aware growth ticks
+- GIVEN 여러 calendar year에 걸친 monthly wealth path가 있다
+- WHEN x-axis tick을 선택한다
+- THEN data row index를 등분해 불규칙한 월 label을 만드는 대신 Jan/Jul, 연초, 분기 시작과 같은 규칙적인 calendar anchor 또는 기간 길이에 맞는 동등한 calendar-aware cadence를 사용한다
+
 #### Scenario: growth axis units
 - GIVEN balance path가 통화 단위로 표시된다
 - WHEN chart를 읽는다
@@ -73,6 +78,40 @@ Growth chart는 screenshot에만 의존하지 않고 실제 browser interaction�
 - GIVEN 사용자가 keyboard로 inspect 가능한 chart target에 focus한다
 - WHEN focus가 이동한다
 - THEN mouse hover와 동등한 핵심 identity/date/balance 정보를 확인할 수 있다
+
+### Requirement: User-facing report must not expose raw artifact schema
+Backtest report는 raw/review artifact를 presentation source로 사용할 수 있지만 사용자-facing section을 내부 CSV/JSON schema의 단순 dump로 렌더링해서는 안 된다(MUST NOT). Internal snake_case field name, debug column, storage-only metadata는 사용자가 분석 의미를 이해하는 데 필요한 label/table/chart로 변환해야 한다(MUST).
+
+#### Scenario: Active Return Series artifact
+- GIVEN persisted artifact에 `portfolio_return`, `benchmark_return`, `active_return`, `rolling_tracking_error_pct` 같은 내부 필드가 있다
+- WHEN Active Returns section을 렌더링한다
+- THEN 전체 raw observation table을 그대로 노출하지 않고 canonical active-return analysis 의미에 맞는 summary/chart/table presentation을 제공한다
+
+#### Scenario: Metrics artifact
+- GIVEN portfolio metrics가 `portfolio / metric / value` long-format으로 저장되어 있다
+- WHEN Metrics section을 표시한다
+- THEN raw long-format storage table을 그대로 사용자-facing primary presentation으로 사용하지 않고 비교 가능한 metric matrix 또는 동등한 분석 presentation으로 변환한다
+
+### Requirement: User-facing labels and units
+Backtest report의 column/row label은 사용자-facing 용어를 사용해야 하며 canonical unit은 formatting 또는 header 의미로 표현해야 한다(MUST). `_pct`, snake_case 같은 storage suffix 또는 `unit=pct|balance|ratio` 같은 implementation metadata를 일반 사용자-facing data column으로 노출해서는 안 된다(MUST NOT).
+
+#### Scenario: Trailing Returns
+- GIVEN canonical artifact에 `3m_pct`, `1y_pct`, `3y_annualized_volatility_pct` field가 있다
+- WHEN Trailing Returns를 표시한다
+- THEN `3 Month`, `1 Year`, `3 Year`, `3 Year Annualized Standard Deviation`처럼 읽을 수 있는 label과 `%` formatting을 사용한다
+
+#### Scenario: Performance Summary unit metadata
+- GIVEN Performance Summary artifact가 metric별 unit metadata를 가진다
+- WHEN summary table을 렌더링한다
+- THEN `unit` 자체를 일반 data column으로 표시하지 않고 balance는 currency, return/risk는 %, ratio는 decimal로 표현한다
+
+### Requirement: Stable portfolio display order
+Backtest report는 canonical input에서 정의된 portfolio collection 순서를 사용자-facing 비교 순서로 보존해야 한다(MUST). Target Allocation, Performance Summary, chart legend, trailing/annual/monthly/rolling comparison 사이에서 같은 portfolio들이 임의로 재정렬되어서는 안 된다(MUST NOT).
+
+#### Scenario: 두 portfolio 순서
+- GIVEN canonical input portfolio 순서가 `Growth 70/30`, `Balanced 50/50`이다
+- WHEN Summary와 이후 comparison section을 표시한다
+- THEN 모든 사용자-facing portfolio comparison에서 Growth가 Balanced보다 먼저 표시되고 benchmark는 portfolio collection 뒤의 비교 reference로 유지된다
 
 ### Requirement: Backtest summary information hierarchy
 Backtest report는 PV snapshot을 pixel-copy하지 않더라도 Backtest 결과의 정보 성격을 보존해야 하며, canonical data가 존재하는 Summary의 핵심 비교 정보인 portfolio allocation identity, Performance Summary, Portfolio Growth, Trailing Returns를 결과 상단의 한 흐름에서 파악할 수 있도록 구성해야 한다(MUST).
