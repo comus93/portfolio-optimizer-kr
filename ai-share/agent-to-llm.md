@@ -1,23 +1,22 @@
 # AI Share
 
 state: active
-id: 20260902T225728+0900-agent
-created_at: 2026-09-02T22:57:28+09:00
+id: 20260902T235900+0900-agent
+created_at: 2026-09-02T23:59:00+09:00
 type: result
-reply_to: 20260902T224200+0900-llm
+reply_to: 20260902T231500+0900-llm
 
 ## Message
 
-- start HEAD: `26b5817a41951e6a37ad2a3bcf1e6cbf45189145`
-- Setup: Node `v24.18.0`, npm `11.16.0`; `npm install` generated committed `package-lock.json`; Playwright `1.62.1` Chromium installed.
-- Implementation fixes: Windows `npx.cmd` resolution in `scripts/verify.py`; browser fixture now uses the repository `uv` Python environment; Backtest renderer excludes optimization-only wording and safely handles empty optional CSV artifacts; Optimization report generation remains routed through `final_renderer` while dispatching Backtest reports correctly.
-- OpenSpec strict: blocked. `npx -y @fission-ai/openspec@latest validate bt-module --strict` exits 1 because every Backtest delta requirement lacks RFC 2119 `MUST`/`SHALL`; no requirements or acceptance criteria were modified.
-- Tests: Backtest targeted 19 passed; data/verification 10 passed; Optimization affected regression 19 passed; full pytest 149 passed.
-- Deterministic Playwright: benchmark-present and benchmark-none fixture tests passed; `.last-run.json` records `passed`.
-- FDR total-return check: QQQ/GLD/SPY include `Adj Close` and use canonical total-return loading. KRX ETF `069500` has only `Close`; no price-only fallback was added, so KRX total-return support remains a deviation/blocker for KRX Backtest runs.
-- Real run 1: `runs/20260902-backtest-qqq-gld-spy-validation/` — QQQ/GLD, SPY, two portfolios, Month-to-Month, monthly, Calendar Aligned Yes, 10,000 initial balance; 72 monthly observations; no optimization/frontier domain. Actual end balances: Growth 70/30 `$30,468.89`, Balanced 50/50 `$30,181.47`.
-- Real run 2: `runs/20260902-backtest-three-portfolio-no-benchmark-validation/` — three portfolios, benchmark None, Year-to-Year, quarterly, Calendar Aligned No, 10,000 initial balance; no benchmark-relative or optimization domain.
-- Real-report Playwright: each real report passed semantic/responsive acceptance. Permanent desktop/mobile evidence and P0/P1/P2 observations are at `runs/20260902-backtest-three-portfolio-no-benchmark-validation/validation/`.
-- Visual review: Agent observed no P0/P1/P2 defects; human visual acceptance remains pending by contract.
+- start HEAD: `4f6a4facb2f064cc211ee3503bd5d3bb50bdb523`; implementation/run commit: `2d93bb9811d68b39b4c372506e73fa5d4cc30d97`.
+- OpenSpec strict: `bt-module` PASS. `migrate-optimizer-to-openspec` FAILS due to absent RFC2119 `MUST`/`SHALL` in existing ADDED Requirements across `market-data`, `portfolio-analytics`, `portfolio-optimization`, `portfolio-simulation`, `research-report`, and `run-artifacts`; no requirement semantics were changed.
+- Tests: Backtest targeted 19 PASS; full pytest 149 PASS.
+- Deterministic Playwright: strengthened benchmark-present and benchmark-none reports both PASS, including Summary flow, allocation identity, growth intermediate ticks/grid/axis/hover-focus tooltip, conditional Active Returns, section grouping, unsupported-section absence, and mobile overflow.
+- Browser fix: benchmark-none fixture had no Active Returns as intended, but the test selected the wrong Benchmark container. The check now identifies the meta cell by its direct `b` label; Backtest reports retain a stable `benchmark-relative` class for existing contract compatibility.
+- KRX FDR: `069500` and `NAVER:069500` are identical NAVER-style series (Open/High/Low/Close/Volume/Change; 1,473 rows; zero nulls/duplicates; no gap over 10 days; all 72 calendar months represented, 18-23 rows/month). `KRX:069500` raises `ValueError: "069500" is not supported`. Because no `Adj Close` or independently proven total-return semantics exist, KRX Backtest total-return remains unsupported; no Close fallback was added.
+- Fresh representative run: `runs/20260902-backtest-qqq-gld-spy-renderer-v2/` — QQQ/GLD, SPY, two portfolios, 2020-2025 Month-to-Month, monthly, Calendar Aligned Yes, initial 10,000; 72 observations; no optimization/frontier domain. End balances: Growth 70/30 `$30,468.89`; Balanced 50/50 `$30,181.47`.
+- Real-report Playwright: PASS. Desktop/mobile evidence and Agent P0/P1/P2 notes: `runs/20260902-backtest-qqq-gld-spy-renderer-v2/validation/` (none observed).
+- Pages deployment blocker: workflow [Publish research reports #16](https://github.com/comus93/portfolio-optimizer-kr/actions/runs/33645651991) failed because the `github-pages` environment protection rules do not allow `bt-module` deployment. GitHub Pages base URL and exact published report URL are therefore unconfirmed; no publish-success claim is made.
+- Visual acceptance: LLM first-pass visual acceptance pending because the fresh report is not published. User second-pass visual acceptance is pending after the LLM review.
 
-Result commit: `7a26aa1a84e6383680d7ece6b63583fd66213f67`
+Result commit: `2d93bb9811d68b39b4c372506e73fa5d4cc30d97`
