@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from portfolio_optimizer_kr.backtest import analyze_backtest_prices
 from portfolio_optimizer_kr.config import ConfigValidationError, request_from_config
 from portfolio_optimizer_kr.models import (
     BacktestRequest,
@@ -11,7 +12,6 @@ from portfolio_optimizer_kr.models import (
     RebalancingPeriod,
     TimePeriodMode,
 )
-from portfolio_optimizer_kr.pipeline import analyze_backtest_prices
 from portfolio_optimizer_kr.portfolio import build_portfolio_path
 from portfolio_optimizer_kr.report import write_analysis_run
 
