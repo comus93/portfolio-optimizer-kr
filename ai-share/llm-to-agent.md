@@ -1,106 +1,159 @@
 # AI Share
 
 state: active
-id: 20260902T231500+0900-llm
-created_at: 2026-09-02T23:15:00+09:00
+id: 20260903T001800+0900-llm
+created_at: 2026-09-03T00:18:00+09:00
 type: request
-reply_to: 20260902T225728+0900-agent
+reply_to: 20260902T235900+0900-agent
 
 ## Context
 
-이전 Agent 검증에서 Python/Playwright/real-run은 통과했지만 두 문제가 남았다.
+사용자 요청에 따라 LLM이 테스트를 먼저 추가한 뒤 다음 구현 수정까지 GitHub `bt-module`에 반영했다.
 
-1. `bt-module` OpenSpec strict가 Requirement 문장에 RFC2119 keyword가 없어 실패했다.
-2. 첫 report는 machine acceptance는 통과했지만 PV MHTML 대비 정보구조/차트 기능 차이가 너무 커서 visual acceptance 이전 수준의 수정이 필요했다.
+이번 변경의 normative source는 `openspec/changes/bt-module/`이며 legacy `docs/*.md`는 변경하지 않았다.
 
-LLM이 이번에 직접 다음을 수정했다.
+주요 변경:
 
-- 모든 `openspec/changes/bt-module/specs/*/spec.md` Requirement를 실제 `MUST/MUST NOT` normative 문장으로 정리
-- `research-report`에 Summary information hierarchy, growth axis/tick/grid/visible tooltip contract 추가
-- `agent-verification`에 GitHub Pages publish + LLM 1차 visual acceptance + User 2차 visual acceptance 추가
-- `backtest_renderer.py`를 PV result information architecture에 더 가깝게 재구성
-  - Summary: Target Allocation → Performance Summary → Portfolio Growth → Trailing Returns
-  - conditional Active Returns
-  - Metrics / Annual Returns / Monthly Returns / Drawdowns / Assets / Rolling Returns
-  - Growth chart 중간 x/y ticks + y grid + axis titles + visible hover/focus tooltip
-- Playwright acceptance 강화
-- `.github/workflows/publish-reports.yml`이 `bt-module` persisted run도 GitHub Pages에 publish하도록 변경
-- `verification/profile.yaml`, `VERIFICATION.md`를 layered visual acceptance로 변경
+1. FDR source-aware total-return 판정
+   - FDR 한국 6자리 종목 default route는 NAVER이고 NAVER schema에는 별도 `Adj Close`가 없다.
+   - 국내 ETF의 default/NAVER `Close`는 FDR에서 distribution-aware adjusted series로 취급하는 근거가 있으므로 ETF임이 FDR `StockListing("ETF/KR")`로 확인될 때 canonical total-return input으로 허용한다.
+   - explicit `KRX:` source의 `Close`는 자동 승인하지 않는다.
+   - 국내 일반주식에 ETF 정책을 확장하지 않는다.
+   - `select_total_return_price(..., close_is_total_return=True)`는 provider adapter가 source/instrument semantics를 검증한 경우에만 `Close`를 허용한다.
 
-PV pixel copy는 여전히 requirement가 아니다. 다만 canonical data가 있는데 결과 성격/기능을 지나치게 축약한 차이는 LLM 1차 acceptance에서 잡는다.
+2. Backtest report presentation
+   - raw artifact schema를 사용자-facing primary presentation으로 그대로 노출하지 않도록 수정.
+   - Performance Summary의 `unit` storage column 제거.
+   - Trailing Returns의 snake_case/_pct storage label을 사용자 용어 및 % formatting으로 변환.
+   - Metrics long-format `portfolio/metric/value`를 metric × portfolio matrix로 변환.
+   - Active Returns의 월별 raw observation dump를 Benchmark Summary / Annual Active Return / latest Active Return Contribution / Up-Down summary presentation으로 변경.
+   - canonical input portfolio 순서를 allocation/performance/legend/table 비교 전반에 유지.
+   - Growth x-axis를 row-index 등분이 아니라 actual date coordinate + calendar-aware Jan/Jul cadence로 변경.
+   - benchmark는 growth legend 및 table에서 human-readable configured name 사용.
+   - 기타 annual/monthly/drawdown/assets/rolling table도 storage field suffix를 사용자-facing label/unit으로 변환.
+
+3. Test-first additions
+   - `tests/test_backtest_report_presentation.py`
+   - `tests/test_fdr_total_return.py`
+   - 강화된 `verification/browser/backtest-report.spec.mjs`
+
+사용자가 Agent 실행 전에 GitHub `github-pages` environment가 `bt-module` deployment를 허용하도록 설정할 예정이다. 이전 Pages protection blocker는 이번 실행에서는 해소된 것으로 가정하고 실제 publish 성공 여부를 다시 확인한다.
 
 ## Message
 
 ### 0. Sync
 
+반드시 GitHub remote 최신본부터 확인한다.
+
 ```bash
 git pull --ff-only origin bt-module
 ```
 
-임의 merge/rebase 금지.
+임의 merge/rebase 금지. 작업 시작 HEAD를 기록한다.
 
-### 1. OpenSpec strict
+### 1. OpenSpec validation
+
+현재 Backtest delta를 strict validation한다.
 
 ```bash
 npx -y @fission-ai/openspec@latest validate bt-module --strict
-npx -y @fission-ai/openspec@latest validate migrate-optimizer-to-openspec --strict
 ```
 
-이번 RFC2119 수정 후에도 strict failure가 있으면 정확한 requirement/path/error를 보고한다. Requirement 의미를 바꾸어 통과시키지 않는다.
+`migrate-optimizer-to-openspec`도 상태 확인은 하되, 기존 RFC2119 문제를 이번 Backtest 작업을 위해 임의 수정하지 않는다. 별도 blocker/deviation으로만 보고한다.
 
-### 2. Tests + deterministic Playwright
+### 2. Targeted tests first
+
+새 테스트와 affected data/report tests부터 실행한다.
+
+```bash
+uv run pytest -q \
+  tests/test_data.py \
+  tests/test_fdr_total_return.py \
+  tests/test_backtest_report_presentation.py \
+  tests/test_backtest_execution.py \
+  tests/test_backtest.py
+```
+
+실패하면 specification/test를 약화하지 말고 구현 결함을 수정한다. 특히 확인할 것:
+
+- `Adj Close`가 있으면 계속 우선 사용
+- default/NAVER 한국 ETF + Close-only는 성공
+- 일반 한국 주식 Close-only는 strict total-return 기준에서 실패
+- explicit `KRX:` Close-only는 자동 승인하지 않음
+- ETF listing 조회 실패 시 price-only fallback 금지
+- Performance Summary에서 `unit` column 미노출
+- Trailing Returns storage suffix 미노출
+- Metrics raw long-format 미노출
+- portfolio input order 유지
+- Growth Jan/Jul calendar-aware ticks
+- human-readable benchmark identity
+- Active Returns monthly raw schema 미노출
+
+### 3. Full regression + deterministic browser
+
+Targeted PASS 후 전체 회귀와 browser verification을 실행한다.
 
 ```bash
 uv run python scripts/verify.py --openspec --full --browser
 ```
 
-특히 새 browser contract를 확인한다.
+Optimization/shared regression 포함. 테스트를 통과시키기 위한 acceptance 완화 금지.
 
-- Summary primary flow
-- allocation matrix identity
-- Growth x/y intermediate tick >= 4
-- y grid >= 4
-- `Year`, `Portfolio Balance ($)` axis semantics
-- mouse hover visible tooltip
-- keyboard focus visible tooltip
-- conditional Active Returns
-- Metrics / Annual / Monthly / Drawdowns / Assets / Rolling grouping
-- unsupported Style/Factor section fabricated 금지
-- mobile overflow regression
+Playwright에서 최소 확인:
 
-구현 오류는 수정 후 재검증한다. Test/spec을 약화하지 않는다.
+- Summary flow: allocation → performance → growth → trailing
+- allocation/performance portfolio order 동일
+- Performance Summary `unit` header 없음
+- Trailing human labels / percent formatting
+- Metrics first column `Metric`, raw `Portfolio/Value` schema 없음
+- Growth x ticks가 deterministic fixture에서 `Jan/Jul YYYY` cadence
+- y ticks/grid/axis title 유지
+- hover + keyboard visible tooltip
+- configured benchmark name이 legend에 표시
+- Active Returns에서 raw storage names가 화면에 노출되지 않음
+- benchmark=None에서 benchmark-relative section 없음
+- 390px document clipping 없음, wide table/chart scroll 가능
 
-### 3. KRX FinanceDataReader source/data-quality 조사
+### 4. Real FDR validation
 
-LLM 조사 결과 현재 FDR 구현에서 `069500` 같은 6자리 KRX symbol의 default source는 NAVER이고, Naver reader schema는 `Open/High/Low/Close/Volume/Change`로 `Adj Close` column 자체가 없다. 즉 `Adj Close = null`이 아니라 **column absent**인 구조다.
+실제 FinanceDataReader에서 source-aware 정책을 검증한다.
 
-실제 환경에서도 아래를 확인한다.
+#### 4.1 US adjusted path
+
+QQQ / GLD / SPY의 `Adj Close` 사용이 기존대로 정상인지 확인.
+
+#### 4.2 Korean ETF path
+
+최소 `069500`에 대해:
 
 ```python
 import FinanceDataReader as fdr
 
-for symbol in ["069500", "NAVER:069500", "KRX:069500"]:
+listing = fdr.StockListing("ETF/KR")
+print(listing.columns)
+print(listing[listing.astype(str).apply(lambda row: row.str.contains("069500").any(), axis=1)])
+
+for symbol in ["069500", "NAVER:069500"]:
     df = fdr.DataReader(symbol, "2020-01-01", "2025-12-31")
-    print(symbol, df.columns.tolist())
-    print(df.isna().sum())
-    print("rows", len(df), "duplicates", df.index.duplicated().sum())
+    print(symbol, df.columns.tolist(), len(df), df.isna().sum().to_dict())
 ```
 
-추가 확인:
+실제 `FDRLoader().load(AssetSpec("069500", currency="KRW"))`가 성공하고 attrs가 최소 다음 의미를 가지는지 확인:
 
-- default/NAVER `Close`와 explicit KRX `Close`가 동일 의미인지 단정하지 말 것
-- NAVER/default에 interior missing observations, duplicate date, 비정상적으로 긴 gap이 있는지 검사
-- monthly analysis에 필요한 각 calendar month의 usable observation이 존재하는지 검사
-- 가능하면 NAVER와 KRX의 공통 날짜 coverage/price 차이를 비교
-- FDR issue에서 NAVER 일부 종목/날짜 누락 사례가 보고되어 있으므로 단순 `dropna()` 후 성공으로 끝내지 말 것
+```text
+return_semantics = total_return
+source_column = Close
+provider = FinanceDataReader
+provider_route = NAVER
+```
 
-중요: FDR issue #205에는 분배금이 사전 공지되는 국내 ETF의 default `Close`가 배당 고려 수정주가라는 사용자 보고가 있지만, 이것만으로 product contract를 변경하지 않는다. Issue #239에는 NAVER default는 수정주가, explicit KRX는 비수정주가라는 보고도 있다. **현재 구현의 KRX unsupported 정책을 완화하려면 source semantics를 신뢰할 수 있게 입증해야 한다.** 이번 검증에서 근거가 부족하면 blocker/deviation을 유지한다. Price-only silent fallback 금지.
+`KRX:069500`은 total-return으로 자동 승인되지 않아야 한다. 실제 FDR 자체가 symbol을 지원하지 않는 경우에도 product가 이를 total-return 성공으로 오인하지 않는지만 확인한다.
 
-### 4. Fresh real run + report
+### 5. Fresh real runs
 
-기존 validation report를 재사용하지 말고 현재 renderer로 새 unique run을 생성한다.
+기존 persisted report를 재사용하지 말고 현재 HEAD로 새 unique run을 생성한다.
 
-대표 조건:
+#### A. US representative run
 
 ```text
 QQQ / GLD
@@ -113,64 +166,84 @@ Calendar Aligned Yes
 Initial 10,000
 ```
 
-가능하면 benchmark=None 3-portfolio run도 유지한다.
-
-각 report를 실제 Playwright로 검증:
-
-```bash
-uv run python scripts/verify.py --browser-report runs/<new-run-id>/report.html
-```
-
-### 5. Persist + GitHub Pages publish
-
-대표 validation run과 필요한 `validation/` evidence를 commit/push한다. `.github/workflows/publish-reports.yml`의 GitHub Pages deployment가 성공하는지 확인한다.
-
-반드시 다음을 handoff에 기록한다.
-
-- GitHub Pages base URL
-- 대표 run의 **exact published report URL**
-- Pages deployment 성공 여부 / workflow run URL 또는 식별자
-
-로컬 screenshot/file path만으로 visual acceptance를 완료하지 않는다.
-
-### 6. Visual acceptance boundary
-
-Agent는 Playwright machine acceptance와 obvious P0/P1/P2 관찰까지만 수행한다.
-
-그 다음 단계는 Agent가 최종 판정하지 않는다.
+#### B. KRX ETF smoke run
 
 ```text
-Published GitHub Pages report
-        ↓
-LLM 1차 visual acceptance
-  - published page vs captured PV MHTML
-  - information architecture
-  - output data/function character
-  - section grouping
-  - chart semantics/interaction
-        ↓
-문제 있으면 LLM 수정 → Agent reverify/publish
-        ↓
-User 2차 visual acceptance
-  - 실제 page에서 usability/layout/readability/polish 관능 평가
+asset 069500
+benchmark None
+1 portfolio = 100% 069500
+가능한 2020-2025
+Month-to-Month
+Monthly
+Calendar Aligned Yes
+Initial 10,000
 ```
 
-따라서 handoff에는 `human visual pending`만 쓰는 것이 아니라 **`LLM first-pass visual acceptance pending`**이라고 명확히 기록한다.
+KRX run이 실패하면 원인을 조사하고, source-aware implementation defect면 수정 후 재검증한다. FDR 자체/API/network limitation이면 명확한 blocker로 보고한다. Price-only semantics로 우회 금지.
 
-### 7. Result handoff
+### 6. Real-report Playwright
 
-`ai-share/agent-to-llm.md` 전체 교체 후 commit/push.
+새 US representative report를 대상으로 반드시 실행:
 
-최소 보고:
+```bash
+uv run python scripts/verify.py --browser-report runs/<new-us-run-id>/report.html
+```
 
-- start/final HEAD
-- OpenSpec strict 두 change 결과
-- targeted/regression/full pytest
-- deterministic + real-report Playwright
-- KRX default/NAVER/KRX columns, null/missing/duplicate/gap/month coverage 조사 결과
-- 새 real run id/path와 sanity values
-- Pages deployment 상태 + exact published report URL
-- Agent P0/P1/P2 observation
+가능하면 KRX report도 동일 검증.
+
+새 renderer output에서 screenshot evidence를 저장한다. Agent의 visual 역할은 machine acceptance + obvious defect 관찰까지이며 LLM 1차 visual acceptance를 대신하지 않는다.
+
+### 7. Commit/push and GitHub Pages publish
+
+검증 수정, fresh run, validation evidence를 필요한 범위에서 commit/push한다.
+
+그 후 `Publish research reports` GitHub Actions workflow가 **이번 final HEAD**에서 성공할 때까지 확인한다.
+
+중요: 사용자가 실행 전에 Pages environment branch 설정을 수정할 예정이다. 따라서 이전 `bt-module not allowed` 실패를 그대로 재보고하지 말고 새 workflow 결과를 확인한다.
+
+배포 성공 후 실제 published URL을 HTTP/browser로 열어 접근 가능한지 확인한다. deployment success만 보고 URL을 추정하지 않는다.
+
+반드시 다음 두 경로를 회신:
+
+```text
+GitHub Pages base URL
+US representative run exact published report URL
+```
+
+KRX run도 publish되면 exact URL 추가.
+
+예시 형식일 뿐 실제 URL은 workflow/site 결과에서 확인할 것:
+
+```text
+https://<owner>.github.io/<repo>/
+https://<owner>.github.io/<repo>/runs/<run-id>/report.html
+```
+
+그리고 workflow run URL/ID도 남긴다.
+
+### 8. Result handoff
+
+`ai-share/agent-to-llm.md` 전체를 새 result로 교체하고 commit/push한다. push 성공 전에는 전달 완료라고 하지 않는다.
+
+최소 보고 항목:
+
+- start HEAD / final HEAD
+- `bt-module` OpenSpec strict 결과
+- `migrate-optimizer-to-openspec` 상태(기존 문제라면 그대로 분리)
+- targeted pytest 결과
+- full pytest 결과
+- deterministic Playwright 결과
+- real-report Playwright 결과
+- US QQQ/GLD/SPY adjusted-series 확인
+- KRX ETF listing 확인 및 `069500` FDRLoader attrs/result
+- explicit KRX source 처리 결과
+- fresh US run id/path + sanity values
+- fresh KRX smoke run id/path + sanity values 또는 blocker
+- Pages deployment workflow run URL/ID + 성공 여부
+- **GitHub Pages base URL**
+- **US representative exact published report URL**
+- KRX exact published report URL(있으면)
+- screenshot/evidence path
+- Agent가 관찰한 P0/P1/P2
 - `LLM first-pass visual acceptance pending`
-- unresolved KRX total-return blocker/deviation
 - result commit SHA
