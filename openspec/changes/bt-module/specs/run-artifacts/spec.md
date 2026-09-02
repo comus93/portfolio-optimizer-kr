@@ -21,13 +21,34 @@ Backtest YAML은 identity를 가진 portfolio collection과 각 portfolio의 tar
 - WHEN YAML contract를 확장한다
 - THEN 기존 portfolio representation을 재설계하지 않고 collection cardinality만 확장할 수 있다
 
+### Requirement: Backtest Time Period persistence
+Backtest YAML은 `Month-to-Month` 또는 `Year-to-Year` Time Period mode와 해당 requested boundary를 loss 없이 표현해야 한다.
+
+#### Scenario: Month-to-Month round trip
+- GIVEN Start Year, First Month, End Year, Last Month가 있는 Month-to-Month input이 있다
+- WHEN YAML로 저장하고 다시 읽는다
+- THEN mode와 모든 period boundary가 동일하게 복원된다
+
+#### Scenario: Year-to-Year round trip
+- GIVEN Start Year와 End Year가 있는 Year-to-Year input이 있다
+- WHEN YAML로 저장하고 다시 읽는다
+- THEN mode와 year boundaries가 동일하게 복원되고 First/Last Month를 필수값으로 요구하지 않는다
+
 ### Requirement: Backtest configuration persistence
-Persisted Backtest `input.yaml`은 실제 실행에 사용된 analysis period, initial balance, portfolio definitions, optional benchmark, rebalancing policy와 shared market-data settings를 보존해야 한다.
+Persisted Backtest `input.yaml`은 실제 실행에 사용된 Time Period mode와 requested period, initial balance, portfolio definitions, benchmark configuration, effective rebalancing setting과 shared market-data settings를 보존해야 한다.
 
 #### Scenario: run 재현
 - GIVEN 완료된 Backtest run이 있다
 - WHEN `runs/<run_id>/input.yaml`을 확인한다
-- THEN backtest를 다시 구성하는 데 필요한 canonical user input을 확인할 수 있다
+- THEN backtest를 다시 구성하는 데 필요한 canonical user input과 자동 적용된 default를 확인할 수 있다
+
+### Requirement: Backtest defaults are explicit in persisted input
+Research Frontend가 SPY benchmark, initial balance 10,000, Month-to-Month mode, generated portfolio name 같은 default를 적용한 경우에도 persisted input에서 실제 effective 값을 생략해서는 안 된다.
+
+#### Scenario: frontend defaults 사용
+- GIVEN 사용자가 benchmark와 initial balance를 별도로 지정하지 않았다
+- WHEN run이 persist된다
+- THEN effective SPY benchmark와 initial balance 10,000을 `input.yaml`에서 확인할 수 있다
 
 ### Requirement: Backtest canonical result domains
 Backtest run의 `result.json`은 최소 configuration, data_coverage, portfolio_definitions, portfolio_paths, portfolio_performance, optional benchmark_analytics, correlations, return_decomposition, risk_decomposition을 structured domain으로 표현할 수 있어야 한다.
