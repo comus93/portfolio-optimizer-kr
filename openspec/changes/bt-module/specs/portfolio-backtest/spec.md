@@ -49,6 +49,19 @@ Canonical Backtest configuration과 result는 portfolio를 fixed `portfolio1`, `
 - WHEN input validation을 수행한다
 - THEN valid backtest configuration으로 받아들이지 않는다
 
+### Requirement: Time Period mode selection
+Backtest settings는 `Month-to-Month`와 `Year-to-Year` Time Period mode를 선택할 수 있어야 한다.
+
+#### Scenario: Month-to-Month 선택
+- GIVEN 사용자가 `Month-to-Month`를 선택한다
+- WHEN period controls를 구성한다
+- THEN Start Year, First Month, End Year, Last Month를 사용해 requested period를 표현할 수 있다
+
+#### Scenario: Year-to-Year 선택
+- GIVEN 사용자가 `Year-to-Year`를 선택한다
+- WHEN period controls를 구성한다
+- THEN Start Year와 End Year를 사용하고 First/Last Month는 non-applicable로 처리한다
+
 ### Requirement: Common analysis period
 동일 Backtest run의 모든 portfolio와 benchmark는 동일 requested analysis period를 사용해야 한다.
 
@@ -79,15 +92,15 @@ Backtest run은 optional benchmark asset을 지정할 수 있어야 한다.
 - THEN shared benchmark path와 benchmark-relative analytics를 모든 applicable portfolio에 대해 생성한다
 
 ### Requirement: Periodic rebalancing policy selection
-Backtest portfolio는 `none`, `monthly`, `quarterly`, `semiannual`, `yearly` 중 하나의 periodic rebalancing policy를 선택할 수 있어야 한다.
+Backtest settings는 `none`, `yearly`, `semiannual`, `quarterly`, `monthly` 중 하나의 periodic rebalancing policy를 선택할 수 있어야 한다. Rebalance bands는 v1에서 제외한다.
 
 #### Scenario: quarterly policy
-- GIVEN Portfolio A의 rebalancing policy가 quarterly이다
+- GIVEN effective rebalancing policy가 quarterly이다
 - WHEN historical path를 생성한다
-- THEN shared portfolio-simulation의 quarterly semantics를 사용한다
+- THEN shared `portfolio-simulation`의 quarterly semantics를 사용한다
 
 ### Requirement: Independent portfolio paths
-같은 asset return matrix를 사용하는 여러 portfolio라도 각 portfolio의 target allocation과 rebalancing policy에 따라 독립적인 weight, return, wealth path를 가져야 한다.
+같은 asset return matrix를 사용하는 여러 portfolio라도 각 portfolio의 target allocation에 따라 독립적인 weight, return, wealth path를 가져야 한다.
 
 #### Scenario: 같은 자산 다른 비중
 - GIVEN Portfolio A와 Portfolio B가 같은 asset들을 사용하지만 weights가 다르다
@@ -119,7 +132,7 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - THEN shared portfolio-analytics requirement와 동일한 convention을 사용한다
 
 ### Requirement: Backtest input surface
-사용자-facing Backtest 입력은 최소 analysis period, initial balance, 1~3개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, rebalancing policy를 구성할 수 있어야 한다.
+사용자-facing Backtest 입력은 최소 Time Period mode와 period boundaries, initial balance, 1~3개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, rebalancing policy를 구성할 수 있어야 한다.
 
 #### Scenario: UI에서 Backtest 구성
 - GIVEN 사용자가 Backtest product mode를 선택했다
@@ -127,12 +140,12 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - THEN Optimization objective/min-max constraint 없이 Backtest에 필요한 portfolio comparison input을 설정할 수 있다
 
 ### Requirement: V1 scope exclusions
-Backtest v1은 cashflow contribution/withdrawal, rebalance bands, leverage를 canonical input 또는 required calculation behavior로 제공하지 않아야 한다.
+Backtest v1은 cashflow contribution/withdrawal, rebalance bands, leverage, style analysis, factor regression, regime performance를 canonical input 또는 required calculation behavior로 제공하지 않아야 한다. Dividend reinvestment는 별도 toggle로 제공하지 않는다.
 
 #### Scenario: v1 input surface
 - GIVEN 사용자가 Backtest v1을 구성한다
 - WHEN input controls와 YAML contract를 확인한다
-- THEN cashflow, band-rebalancing, leverage 설정을 required/supported v1 field로 노출하지 않는다
+- THEN 제외된 advanced setting을 required/supported v1 field로 노출하지 않는다
 
 ### Requirement: PV reference is non-normative
 Portfolio Visualizer snapshot은 feature/information-architecture reference로만 사용해야 하며 PV의 값이나 UI 구현 차이 자체를 acceptance failure로 간주해서는 안 된다.
@@ -141,3 +154,12 @@ Portfolio Visualizer snapshot은 feature/information-architecture reference로�
 - GIVEN 내부 report가 OpenSpec requirement를 충족하지만 PV와 pixel layout이 다르다
 - WHEN acceptance를 판단한다
 - THEN PV와의 시각적 차이만으로 failure로 판단하지 않는다
+
+## Decision Pending
+
+PV settings 중 다음은 추가 사용자 결정 후 v1 normative requirement를 확정한다.
+
+- `Calendar Aligned: Yes/No` 지원 여부와 `No`의 schedule semantics
+- Rebalancing policy가 run 전체에 공통인지 portfolio별 독립 설정인지
+- Rebalancing 미지정 시 default policy
+- `Display Income: No/Yes` 지원 여부
