@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Canonical total-return semantics
-Optimization과 Backtest의 historical asset return은 price change와 cash distribution의 reinvestment를 반영하는 canonical total-return 의미를 사용해야 한다. Price-only return을 total return으로 조용히 취급해서는 안 된다.
+Optimization과 Backtest의 historical asset return은 price change와 cash distribution의 reinvestment를 반영하는 canonical total-return 의미를 사용해야 한다(MUST). Price-only return을 total return으로 조용히 취급해서는 안 된다(MUST NOT).
 
 #### Scenario: distribution-paying asset
 - GIVEN 분석 asset이 dividend 또는 distribution을 지급한다
@@ -14,7 +14,7 @@ Optimization과 Backtest의 historical asset return은 price change와 cash dist
 - THEN price-only return으로 silent fallback하지 않고 명시적인 unsupported/data-coverage failure를 반환한다
 
 ### Requirement: Shared return identity across products
-동일 asset, currency conversion, requested period와 effective coverage 조건에서 Optimization과 Backtest는 동일 canonical total-return observations를 사용해야 한다.
+동일 asset, currency conversion, requested period와 effective coverage 조건에서 Optimization과 Backtest는 동일 canonical total-return observations를 사용해야 한다(MUST).
 
 #### Scenario: same asset in Optimization and Backtest
 - GIVEN 동일 asset과 analysis period가 Optimization과 Backtest에 사용된다
