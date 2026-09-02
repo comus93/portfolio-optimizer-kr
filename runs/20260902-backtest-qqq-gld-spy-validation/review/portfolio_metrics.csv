@@ -1,0 +1,28 @@
+portfolio,metric,value
+Growth 70/30,beta,0.8189342613746371
+Growth 70/30,alpha,0.07134412337250803
+Growth 70/30,r_squared,0.7917402129920967
+Growth 70/30,treynor_ratio,0.24338896831437112
+Growth 70/30,calmar_ratio,5.335482731794438
+Growth 70/30,modigliani_modigliani,0.21656698060051333
+Growth 70/30,skewness,-0.3162766586821743
+Growth 70/30,excess_kurtosis,-0.06851367570744715
+Growth 70/30,historical_var_95,0.05968641521963036
+Balanced 50/50,beta,0.6298061137729156
+Balanced 50/50,alpha,0.09618516345486365
+Balanced 50/50,r_squared,0.6259421222398498
+Balanced 50/50,treynor_ratio,0.30899257753323317
+Balanced 50/50,calmar_ratio,5.430557491063286
+Balanced 50/50,modigliani_modigliani,0.2444641252999817
+Balanced 50/50,skewness,-0.19986635647466972
+Balanced 50/50,excess_kurtosis,-0.0820005197995366
+Balanced 50/50,historical_var_95,0.05082063231976002
+benchmark,beta,0.9999999999999998
+benchmark,alpha,4.163336342344337e-17
+benchmark,r_squared,1.0
+benchmark,treynor_ratio,0.1562707138494132
+benchmark,calmar_ratio,2.7835053725888628
+benchmark,modigliani_modigliani,0.15627071384941318
+benchmark,skewness,-0.42152786957526955
+benchmark,excess_kurtosis,0.1836077874454487
+benchmark,historical_var_95,0.0806483153986991

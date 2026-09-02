@@ -30,7 +30,7 @@ def test_playwright_browser_verification_files_are_wired():
 
     assert "@playwright/test" in package["devDependencies"]
     assert package["scripts"]["verify:browser"].startswith(
-        "python scripts/prepare_browser_fixture.py"
+        "uv run python scripts/prepare_browser_fixture.py"
     )
     assert (root / "playwright.config.mjs").is_file()
     assert (root / "scripts" / "prepare_browser_fixture.py").is_file()

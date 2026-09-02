@@ -37,7 +37,12 @@ def _ratio(value: Any) -> str:
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path) if path.is_file() else pd.DataFrame()
+    if not path.is_file() or path.stat().st_size == 0:
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
 
 
 def _table(frame: pd.DataFrame, *, table_id: str | None = None) -> str:
@@ -261,7 +266,7 @@ th {{ position:sticky; top:0; background:#f8fafc; color:#475569; }}
 <header>
   <h1>Portfolio Backtest</h1>
   <p>Run ID: {_esc(configuration.get('run_id'))}</p>
-  <p>Realized historical comparison. Optimization / Efficient Frontier 결과는 포함하지 않는다.</p>
+  <p>Realized historical comparison. Optimization-specific results are not included.</p>
 </header>
 <nav>{nav}</nav>
 <main>

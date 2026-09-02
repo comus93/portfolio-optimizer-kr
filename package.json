@@ -5,7 +5,7 @@
   "description": "Repository-local browser acceptance checks for generated portfolio reports.",
   "scripts": {
     "browser:install": "playwright install chromium",
-    "verify:browser": "python scripts/prepare_browser_fixture.py && playwright test",
+    "verify:browser": "uv run python scripts/prepare_browser_fixture.py && playwright test",
     "verify:browser:report": "playwright test"
   },
   "devDependencies": {

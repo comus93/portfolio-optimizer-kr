@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -18,7 +19,12 @@ def _run(command: str, *, extra_env: dict[str, str] | None = None) -> None:
     env = os.environ.copy()
     if extra_env:
         env.update(extra_env)
-    subprocess.run(shlex.split(command), cwd=ROOT, check=True, env=env)
+    args = shlex.split(command)
+    if os.name == "nt":
+        command_path = shutil.which(f"{args[0]}.cmd") or shutil.which(args[0])
+        if command_path:
+            args[0] = command_path
+    subprocess.run(args, cwd=ROOT, check=True, env=env)
 
 
 def main(argv: list[str] | None = None) -> int:

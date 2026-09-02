@@ -1,6 +1,5 @@
 from .builder import build_report_model, build_report_model_from_artifacts
-from .final_renderer import render_report
-from .generate import generate_report
+from .final_renderer import generate_report, render_report
 from .loader import RunArtifacts, load_run_artifacts
 from .report_model import ReportModel
 

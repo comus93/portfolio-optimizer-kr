@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import replace
 from pathlib import Path
@@ -275,6 +276,14 @@ def generate_report(
     template_path: str | Path | None = None,
 ) -> Path:
     root = Path(run_dir)
+    result_path = root / "result.json"
+    if result_path.is_file():
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        configuration = result.get("configuration", {})
+        if isinstance(configuration, dict) and configuration.get("product_mode") == "backtest":
+            from .backtest_renderer import generate_backtest_report
+
+            return generate_backtest_report(root, output_path=output_path)
     model = build_report_model(root)
     target = Path(output_path) if output_path is not None else root / "report.html"
     return render_report(model, target, template_path=template_path)
