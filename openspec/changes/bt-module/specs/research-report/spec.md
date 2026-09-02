@@ -8,6 +8,14 @@ Research report는 `portfolio-backtest` product mode에서 optimization-only sec
 - WHEN report를 생성한다
 - THEN Efficient Frontier 없이 Backtest overview, allocation comparison, historical performance와 applicable shared analytics를 표시한다
 
+### Requirement: Existing report interaction contract inheritance
+Backtest report는 기존 internal report contract의 identity, unit, missing/N/A, semantic axis, tooltip, responsive/readability 원칙을 그대로 적용해야 한다. Backtest delta가 명시적으로 바꾸지 않은 shared presentation behavior를 별도 convention으로 재정의해서는 안 된다.
+
+#### Scenario: missing historical metric
+- GIVEN Backtest portfolio의 어떤 trailing metric이 observation 부족으로 unavailable이다
+- WHEN report를 렌더링한다
+- THEN 0으로 표시하지 않고 기존 shared `N/A` semantics를 유지한다
+
 ### Requirement: Backtest overview
 Backtest report 상단은 requested/effective period, initial balance, benchmark, portfolio names, 각 portfolio의 rebalancing policy를 확인할 수 있어야 한다.
 
@@ -24,6 +32,14 @@ Backtest report는 portfolio별 target allocation을 asset Name/Ticker와 함께
 - WHEN allocation comparison을 표시한다
 - THEN 각 portfolio의 실제 target allocation과 asset identity를 구분할 수 있다
 
+### Requirement: Backtest balance semantics
+Backtest report의 Start Balance와 wealth/balance chart는 run에 입력된 actual initial balance를 사용해야 하며 Optimization report의 normalized-wealth display convention을 Backtest initial balance로 덮어써서는 안 된다.
+
+#### Scenario: initial balance 50,000
+- GIVEN Backtest initial balance가 50,000이다
+- WHEN Performance Summary와 growth/balance chart를 표시한다
+- THEN 각 portfolio의 시작 balance는 50,000이며 임의의 10,000 normalized display로 바꾸지 않는다
+
 ### Requirement: Growth and balance comparison
 Backtest report는 동일 initial balance에서 시작한 각 portfolio의 canonical wealth/balance path를 같은 time axis에서 비교할 수 있어야 한다.
 
@@ -32,8 +48,21 @@ Backtest report는 동일 initial balance에서 시작한 각 portfolio의 canon
 - WHEN 특정 month를 inspect한다
 - THEN 해당 month의 portfolio identity와 balance를 구분해 확인할 수 있다
 
+### Requirement: Backtest Performance Summary applicability
+Backtest Performance Summary는 historical/realized metric을 중심으로 구성하고 Optimization 전용 ex-ante Expected Return, ex-ante Sharpe, optimized-weight 결과를 required row로 요구해서는 안 된다.
+
+#### Scenario: benchmark 있는 Backtest summary
+- GIVEN benchmark가 있는 Backtest run이 있다
+- WHEN Performance Summary를 표시한다
+- THEN 최소 Start Balance, End Balance, CAGR, realized Annualized Return, Standard Deviation, Best Year, Worst Year, Maximum Drawdown, ex-post Sharpe, Sortino와 applicable Active Return/Tracking Error/Information Ratio를 portfolio별로 비교할 수 있다
+
+#### Scenario: benchmark 없는 Backtest summary
+- GIVEN benchmark가 없는 Backtest run이 있다
+- WHEN Performance Summary를 표시한다
+- THEN absolute historical metrics를 표시하고 benchmark-relative metrics는 non-applicable 의미를 유지한다
+
 ### Requirement: Shared historical sections for Backtest
-Backtest report는 available canonical result에 대해 shared Performance Summary, trailing returns, annual returns, monthly returns, drawdowns, asset performance, correlations, return/risk decomposition, rolling returns를 적용할 수 있어야 한다.
+Backtest report는 available canonical result에 대해 shared Performance Summary, trailing returns, annual returns, monthly returns, drawdowns, asset performance, correlations, return/risk decomposition, annual asset returns, rolling returns를 적용할 수 있어야 한다.
 
 #### Scenario: shared section reuse
 - GIVEN Backtest run에 canonical shared analytics가 존재한다
@@ -41,7 +70,7 @@ Backtest report는 available canonical result에 대해 shared Performance Summa
 - THEN product-specific 재계산 없이 shared report semantics로 해당 section을 표시한다
 
 ### Requirement: Benchmark-relative sections are conditional
-Benchmark가 존재할 때만 active return, tracking error, information ratio, rolling active/risk, Up/Down 등 benchmark-relative section을 적용해야 한다.
+Benchmark가 존재할 때만 active return, tracking error, information ratio, active contribution, rolling active/risk, Up/Down 등 benchmark-relative section을 적용해야 한다.
 
 #### Scenario: benchmark 없는 Backtest
 - GIVEN Backtest run에 benchmark가 없다
@@ -55,3 +84,11 @@ Backtest chart/table은 여러 portfolio를 동시에 비교할 때 portfolio id
 - GIVEN 세 portfolio의 rolling return series가 있다
 - WHEN chart를 표시한다
 - THEN legend/label/tooltip에서 각 portfolio name을 확인할 수 있다
+
+### Requirement: Product-specific section exclusion
+Backtest report는 Efficient Frontier, Frontier Transition, optimization constraints, optimized allocation 같은 `optimization-only` section을 빈 placeholder로 표시하지 않아야 한다.
+
+#### Scenario: Backtest report navigation
+- GIVEN Backtest run에 optimization result domain이 없다
+- WHEN report section/navigation을 구성한다
+- THEN optimization-only section을 N/A card로 채우지 않고 적용 대상에서 제외한다
