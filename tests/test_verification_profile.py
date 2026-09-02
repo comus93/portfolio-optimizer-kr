@@ -20,8 +20,13 @@ def test_agent_verification_profile_has_backtest_and_regression_stages():
     assert profile["browser"]["real_report_env"] == "BACKTEST_REPORT_PATH"
     assert "npm install" in profile["browser"]["one_time_setup"]
     assert "npx playwright install chromium" in profile["browser"]["one_time_setup"]
-    assert profile["human_visual_review"]["when"] == "material_layout_or_interaction_change"
-    assert "human reviewer" in profile["human_visual_review"]["rule"]
+
+    assert profile["publishing"]["required_for_material_report_changes"] is True
+    assert profile["publishing"]["workflow"] == ".github/workflows/publish-reports.yml"
+    assert profile["visual_acceptance"]["when"] == "material_layout_or_interaction_change"
+    assert profile["visual_acceptance"]["first_pass"]["owner"] == "LLM"
+    assert profile["visual_acceptance"]["second_pass"]["owner"] == "user"
+    assert "do not own final visual acceptance" in profile["visual_acceptance"]["rule"]
 
 
 def test_playwright_browser_verification_files_are_wired():
