@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
-import shutil
 from typing import Any
 
 import pandas as pd
+import yaml
 
 from portfolio_optimizer_kr.backtest import analyze_backtest_prices
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
@@ -59,8 +59,6 @@ def _tbill_effective_annual_rate(
             f"U.S. 3-Month T-Bill coverage is missing required months: {preview}{suffix}"
         )
 
-    # TB3MS is quoted in annual percentage points. Preserve that annual-rate
-    # convention and convert only the unit from percentage points to decimal.
     return float(by_month.reindex(required_months).mean() / 100.0)
 
 
@@ -75,8 +73,6 @@ def _resolve_annual_rf(
     if request.risk_free.mode is RiskFreeMode.FIXED:
         return supplied_annual_rf
 
-    # Keep the explicit argument only as a compatibility/debug injection.
-    # Normal canonical execution reaches this branch with None and loads TB3MS.
     if supplied_annual_rf is not None:
         return float(supplied_annual_rf)
 
@@ -86,6 +82,44 @@ def _resolve_annual_rf(
     end = observation_index.max().to_period("M").end_time.date().isoformat()
     tbill = loader.load_economic_series(US_3M_TBILL_SERIES, start=start, end=end)
     return _tbill_effective_annual_rate(tbill, observation_index)
+
+
+def _effective_backtest_input(source: Mapping[str, Any], spec: RunConfig) -> dict[str, Any]:
+    """Materialize parser defaults so persisted Backtest input is reproducible."""
+    effective = dict(source)
+    request = spec.request
+    effective["product_mode"] = ProductMode.BACKTEST.value
+    effective.setdefault("initial_balance", request.initial_balance)
+
+    time_period = effective.get("time_period")
+    if not isinstance(time_period, Mapping):
+        time_period = {}
+    time_period = dict(time_period)
+    time_period.setdefault("mode", request.time_period_mode.value)  # type: ignore[attr-defined]
+    effective["time_period"] = time_period
+
+    rebalancing = effective.get("rebalancing")
+    if not isinstance(rebalancing, Mapping):
+        rebalancing = {}
+    rebalancing = dict(rebalancing)
+    rebalancing.setdefault("period", request.rebalancing.value)
+    rebalancing.setdefault("calendar_aligned", request.calendar_aligned)  # type: ignore[attr-defined]
+    effective["rebalancing"] = rebalancing
+
+    raw_portfolios = effective.get("portfolios")
+    if isinstance(raw_portfolios, list):
+        rows: list[Any] = []
+        canonical = list(request.portfolios)  # type: ignore[attr-defined]
+        for index, raw in enumerate(raw_portfolios):
+            if isinstance(raw, Mapping):
+                row = dict(raw)
+                if index < len(canonical):
+                    row["name"] = canonical[index].name
+                rows.append(row)
+            else:
+                rows.append(raw)
+        effective["portfolios"] = rows
+    return effective
 
 
 def execute_run(
@@ -145,6 +179,9 @@ def run_yaml(
     writer: Callable[[dict[str, Any], str | Path], None] | None = None,
 ) -> Path:
     source = Path(config_path)
+    loaded = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if not isinstance(loaded, Mapping):
+        raise ValueError("YAML root must be a mapping")
     spec = load_run_config(source)
     output_dir = execute_run(
         spec,
@@ -154,7 +191,16 @@ def run_yaml(
         analyze_fn=analyze_fn,
         writer=writer,
     )
-    shutil.copyfile(source, output_dir / "input.yaml")
+    if spec.product_mode is ProductMode.BACKTEST:
+        effective = _effective_backtest_input(loaded, spec)
+        (output_dir / "input.yaml").write_text(
+            yaml.safe_dump(effective, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+    else:
+        (output_dir / "input.yaml").write_text(
+            source.read_text(encoding="utf-8"), encoding="utf-8"
+        )
     if (output_dir / "result.json").is_file():
         from portfolio_optimizer_kr.viewer import generate_report
 
