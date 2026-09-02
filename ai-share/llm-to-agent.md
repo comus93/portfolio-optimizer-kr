@@ -1,69 +1,63 @@
 # AI Share
 
 state: active
-id: 20260902T174100+0900-llm
-created_at: 2026-09-02T17:41:00+09:00
+id: 20260902T184800+0900-llm
+created_at: 2026-09-02T18:48:00+09:00
 type: request
 reply_to: none
 
 ## Context
 
-PV Backtest 페이지를 외부 비규범 reference로 보관한다. LLM이 `bt-module`에 package 설치 없이 Chromium CDP를 직접 사용하는 캡처 스크립트를 추가했다.
+기존 PV Backtest MHTML은 이미 다음 경로에 저장되어 있다.
 
 ```text
-scripts/capture-reference.mjs
+references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/page.mhtml
 ```
 
-Node는 기존 확인된 v24.18.0이면 충분하다. Playwright/MCP/npm package 설치는 하지 않는다. Windows의 기존 Microsoft Edge 또는 Chrome을 자동 탐지한다. 탐지 실패 시에만 `BROWSER_PATH`로 설치된 Chromium browser executable을 지정한다.
+LLM이 이 원본 소스를 직접 읽을 수 있도록 MHTML의 text MIME parts(HTML/CSS/JS/JSON/XML/text)를 기계적으로 추출하는 스크립트를 추가했다.
 
-PV는 구현의 정답, 금융 계산 contract, acceptance criterion, golden fixture가 아니라 기능·디자인 참고자료다.
+```text
+scripts/extract-mhtml-source.mjs
+```
+
+요약/해석/재작성은 하지 않는다. 비텍스트 이미지·폰트 등은 원본 `page.mhtml`에 그대로 보존하고 추출본에서는 제외한다. 큰 text part는 LLM/GitHub connector가 읽기 쉽도록 자동 분할한다. 추가 npm package는 필요 없다.
 
 ## Message
 
-최신 `bt-module`을 먼저 pull한 뒤 아래 PV shared URL을 MHTML로 캡처해서 repo에 commit/push해라.
-
-Source URL:
+최신 `bt-module`을 먼저 pull한 뒤, 기존 MHTML을 재캡처하지 말고 아래 명령을 실행해 source extraction을 생성해라.
 
 ```text
-https://www.portfoliovisualizer.com/backtest-portfolio?s=y&sl=5NMHg7UEDbksVuZQFdAdFG
+node scripts/extract-mhtml-source.mjs "references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/page.mhtml" "references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/source"
 ```
 
-실행:
-
-```text
-node scripts/capture-reference.mjs "https://www.portfoliovisualizer.com/backtest-portfolio?s=y&sl=5NMHg7UEDbksVuZQFdAdFG" "references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG"
-```
-
-스크립트가 다음 두 파일을 생성한다.
+예상 구조:
 
 ```text
 references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/
 ├─ page.mhtml
-└─ README.md
+├─ README.md
+└─ source/
+   ├─ page.html 또는 page.part-*.html
+   ├─ style-*.css
+   ├─ script-*.js
+   ├─ data-*.json / xml-*.xml / text-*.txt (존재 시)
+   └─ manifest.json
 ```
-
-`README.md`에는 source URL, capture timestamp, SHA-256, size, non-normative scope가 자동 기록된다.
 
 검증:
 
-1. `page.mhtml`이 0 byte가 아닌지 확인한다.
-2. capture output의 SHA-256과 README의 SHA-256이 일치하는지 확인한다.
-3. MHTML 안에 Portfolio Visualizer/backtest page content가 실제로 포함됐는지 간단히 확인하고, browser error/challenge page만 저장된 것이 아닌지 확인한다.
-4. headless 접근이 차단된 경우에만 다음처럼 visible browser로 한 번 재시도한다.
+1. `source/manifest.json`이 생성됐는지 확인한다.
+2. 최소 하나의 HTML output이 생성됐는지 확인한다.
+3. `manifest.json`의 `source_sha256`이 기존 `README.md`의 `page.mhtml` SHA-256과 일치하는지 확인한다.
+4. `page.html` 또는 분할 HTML에 Portfolio Visualizer Backtest 실제 페이지 content가 있는지 간단히 확인한다.
+5. 추출 결과를 임의로 요약하거나 정리하지 않는다. 스크립트 산출물을 그대로 보존한다.
 
-```text
-CAPTURE_HEADFUL=1 node scripts/capture-reference.mjs "https://www.portfoliovisualizer.com/backtest-portfolio?s=y&sl=5NMHg7UEDbksVuZQFdAdFG" "references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG"
-```
+성공하면 `source/` 전체를 commit/push하고 `agent-to-llm.md`에 아래만 간단히 회신한다.
 
-PowerShell에서 환경변수 문법이 다르면 동등한 방식으로 `CAPTURE_HEADFUL=1`을 설정한다.
-
-추가 browser/npm package는 임의 설치하지 않는다. 기존 Edge/Chrome을 찾지 못하거나 network/browser policy 때문에 캡처할 수 없으면 blocker로 회신한다.
-
-성공하면 생성된 reference 두 파일만 commit/push하고 `agent-to-llm.md`에 아래를 남긴다.
-
-- browser used
-- capture path
-- MHTML size
-- SHA-256
-- basic content check result
+- extraction command result
+- 생성된 text part/file 수
+- source SHA-256 일치 여부
+- source 경로
 - commit SHA
+
+실패하면 원인을 blocker로 회신하고 임의의 외부 package를 설치하지 않는다.
