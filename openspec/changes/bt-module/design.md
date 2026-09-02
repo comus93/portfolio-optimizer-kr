@@ -2,14 +2,14 @@
 
 이번 change는 기존 Optimization 제품에 독립적인 Portfolio Backtest capability를 추가한다.
 
-외부 feature/UI 설계 레퍼런스:
+Backtest 기능 및 화면 구조의 외부 설계 레퍼런스:
 
 ```text
 references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/page.mhtml
 references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/source/
 ```
 
-PV snapshot에서 Settings / Portfolio Assets, 최대 3개 portfolio, benchmark, initial amount, periodic rebalancing, advanced options, performance/active/drawdown/rolling/asset 분석 구조를 확인했다.
+PV snapshot에서 Settings / Portfolio Assets, 최대 3개 portfolio, benchmark, initial amount, Time Period, periodic rebalancing, advanced options, performance/active/drawdown/rolling/asset 분석 구조를 확인했다.
 
 PV는 비규범 reference다. PV의 계산값, 구현 방식, hidden field, 문구, pixel layout은 acceptance criterion이 아니다.
 
@@ -28,9 +28,7 @@ LLM research input               docs/llm-research-input-contract.md
 Optimizer result analysis        docs/llm-analysis-framework.md
 ```
 
-`docs/report-visual-overrides-20260829.md`는 Optimization report correction history로 유지한다. Backtest requirement를 새로 정의하는 source로 사용하지 않는다.
-
-Backtest-specific 신규/변경 사항만 `openspec/changes/bt-module/`에 작성한다.
+`docs/report-visual-overrides-20260829.md`는 Optimization report correction history로 유지한다. Backtest-specific 신규/변경 사항만 `openspec/changes/bt-module/`에 작성한다.
 
 ## Product and Shared Boundary
 
@@ -53,7 +51,7 @@ market-data
   → run-artifacts / research-report
 ```
 
-### `portfolio-optimization`
+### Product-specific: `portfolio-optimization`
 
 Optimization만 소유한다.
 
@@ -63,9 +61,7 @@ Optimization만 소유한다.
 - solver/residual validation
 - Efficient Frontier 및 frontier allocation
 
-Backtest는 weights를 찾는 제품이 아니므로 위 계산을 요구하지 않는다.
-
-### `portfolio-backtest`
+### Product-specific: `portfolio-backtest`
 
 Backtest만 소유한다.
 
@@ -73,9 +69,10 @@ Backtest만 소유한다.
 - named portfolio collection
 - portfolio별 user-defined target allocation
 - v1 사용자-facing 최대 3개 비교
+- Time Period mode와 requested boundaries
 - optional benchmark
 - initial balance
-- portfolio별 periodic rebalancing policy
+- periodic rebalancing setting
 - optimization objective/constraint 없이 historical comparison 수행
 
 ### Shared `market-data`
@@ -93,7 +90,7 @@ Backtest만 소유한다.
 
 - target weights + asset returns → portfolio path
 - weight drift
-- rebalancing semantics
+- periodic rebalancing semantics
 - benchmark path
 - normalized/actual initial-balance wealth path
 
@@ -105,7 +102,7 @@ CAGR, realized return/volatility, Sharpe/Sortino, MDD, drawdown, annual/monthly/
 
 ### Shared `run-artifacts`
 
-YAML runner, `input.yaml`, `result.json`, raw/review, validation evidence, report artifact, existing-run viewer independence는 공유한다. Product-specific result domain만 분리한다.
+YAML runner, `input.yaml`, `result.json`, raw/review, validation evidence, report artifact, existing-run viewer independence는 공유한다. Product-specific input/result domain만 분리한다.
 
 ### Shared `research-report`
 
@@ -135,62 +132,147 @@ Backtest request는 `OptimizationRequest`에 억지로 끼워 넣지 않는다. 
 
 Backtest UI는 두 번째 finance execution path를 만들지 않는다. 완료된 run은 다시 계산하지 않고 persisted artifact만으로 Viewer에서 열 수 있어야 한다.
 
-## Confirmed V1 Decisions
+## Confirmed Product Decisions
 
-- Cashflow: v1 제외
-- Rebalance bands: v1 제외
-- Leverage: v1 제외
-- Portfolio count: v1 UI/validation 최대 3개
-- Portfolio model: fixed `portfolio1/2/3`이 아닌 extensible collection
-- Dividend handling: 별도 reinvest toggle 없이 shared canonical total return
-- PV style/factor/regime/provider exposure/imported portfolio/imported benchmark/lazy preset/non-calendar schedule: v1 제외
+### D1 Experiment identity: union ticker set
 
-## PV Mapping
+Backtest Experiment identity는 비교 portfolio 전체의 union asset ticker set이다.
 
-### Adopt
+```text
+union ticker set 동일 → 같은 Experiment, 새 Run
+union ticker 추가/삭제/교체 → 새 Experiment
+```
 
-- Settings와 Portfolio Assets를 개념적으로 분리
-- custom portfolio name
-- shared asset rows + portfolio별 allocation
-- optional benchmark
-- initial amount
-- 동일 기간 multi-portfolio 비교
-- No / Monthly / Quarterly / Semi-annual / Annual rebalancing
-- allocation / growth / performance / annual / monthly / drawdown / rolling / asset / benchmark-relative 결과 구조
+Portfolio별 asset membership, weights, portfolio count/name, period, rebalancing, benchmark, initial balance가 바뀌어도 union ticker set이 같으면 같은 Experiment다.
 
-### Do not copy
+### D2 Research Frontend benchmark default: SPY
 
-- PV 계산값 또는 provider convention
-- pixel layout
-- hidden/internal field
-- provider-dependent exposure
-- v1 제외 advanced feature
+Core Backtest capability의 benchmark는 optional이다. 다만 Research Frontend에서 사용자가 별도 지정하지 않으면 SPY를 기본 적용한다. 사용자는 다른 benchmark 또는 benchmark 없음으로 override할 수 있다.
+
+### D3 Initial balance default: 10,000
+
+Core capability는 positive initial balance를 받는다. Research Frontend에서 미지정 시 10,000을 적용한다. Report는 actual input balance를 사용하며 Optimization report의 normalized 10,000 convention으로 덮어쓰지 않는다.
+
+### D4 Analysis period default: full common period
+
+사용자가 구체 기간을 지정하지 않으면 required asset과 적용 가능한 benchmark의 전체 common effective period를 사용한다. 실제 requested/effective boundaries는 artifact에 기록한다.
+
+### D5 Time Period mode
+
+사용자-facing Time Period는 다음 두 mode를 제공한다.
+
+```text
+Month-to-Month  ← default
+Year-to-Year
+```
+
+`Month-to-Month`:
+
+```text
+Start Year
+First Month
+End Year
+Last Month
+```
+
+`Year-to-Year`:
+
+```text
+Start Year
+End Year
+```
+
+Year selector에 PV snapshot의 1985~2026 목록을 hard-code하지 않는다. 실제 supported date range에 따라 동적으로 구성한다.
+
+### D6 Portfolio name default
+
+이름이 없으면 입력 순서대로 `Portfolio 1`, `Portfolio 2`, `Portfolio 3`을 자동 생성한다.
+
+### D7 Backtest LLM analysis boundary
+
+기존 `docs/llm-analysis-framework.md`는 Optimization/Frontier 분석 전용으로 그대로 둔다. Backtest는 별도 `research-analysis` capability/guide에서 historical comparison을 다룬다.
+
+분석 기본 순서:
+
+```text
+1. Effective data coverage
+2. Return / risk comparison
+3. Drawdown / recovery
+4. Annual / rolling consistency
+5. Benchmark-relative behavior (when benchmark exists)
+6. Contribution / diversification evidence
+7. Evidence limitation / next Backtest
+```
+
+Backtest 결과만으로 optimal/efficient frontier/적정 최적 비중을 주장하지 않는다.
+
+### D8 Human visual review gate
+
+Machine-judgeable browser semantic verification은 applicable report change에서 수행한다. Human visual review는 layout/interaction이 materially 변경된 경우에만 completion gate로 요구한다.
+
+## PV Settings Mapping
+
+사용자가 제공한 PV Settings 요소를 v1 관점에서 다음처럼 매핑한다.
+
+| PV setting | v1 상태 |
+|---|---|
+| Time Period | 채택, Month-to-Month / Year-to-Year |
+| Start Year | 채택 |
+| First Month | Month-to-Month에서 채택 |
+| End Year | 채택 |
+| Last Month | Month-to-Month에서 채택 |
+| Calendar Aligned | 추가 결정 필요 |
+| Initial Amount | 채택, frontend default 10,000 |
+| Cashflows | v1 제외 |
+| Rebalancing | 채택, bands 제외. scope/default 추가 결정 필요 |
+| Leverage Type | v1 제외 |
+| Reinvest Dividends | 별도 toggle 제외, canonical total return으로 대체 |
+| Display Income | 추가 결정 필요 |
+| Style Analysis | v1 제외 |
+| Factor Regression | v1 제외 |
+| Show Regime Performance | v1 제외 |
 
 ## Total-return Design
 
 Optimization과 Backtest 모두 distribution reinvestment를 반영한 canonical total-return 의미를 사용한다.
 
-Price-only return을 total return으로 silent fallback하지 않는다. 현재 FDR 구조에서 total return을 신뢰성 있게 만들 수 있는지 구현 단계에서 조사하며, 필요한 data-source 보강은 별도 technical design으로 결정한다.
+Price-only return을 total return으로 silent fallback하지 않는다. 현재 FDR 구조에서 total return을 신뢰성 있게 만들 수 있는지 구현 전에 조사하며, 필요한 data-source 보강은 최소 변경으로 설계한다.
 
 이 shared 변경은 Optimization historical regression을 요구한다.
 
 ## Rebalancing Design
 
-Canonical simulation은 monthly return observations 기준으로 다음 calendar-aligned policy를 지원한다.
+v1은 다음 policy를 지원한다.
 
-- `none`: 첫 active period에 target weights를 적용한 뒤 계속 drift
-- `monthly`: 매 active month 시작에 target weights 적용
-- `quarterly`: 첫 active period + 1/4/7/10월 첫 available period
-- `semiannual`: 첫 active period + 1/7월 첫 available period
-- `yearly`: 첫 active period + 각 calendar year 첫 available period
+```text
+none
+yearly
+semiannual
+quarterly
+monthly
+```
 
-중간 시점에서 analysis가 시작되면 첫 active period에는 target weights를 적용하고 이후 정상 schedule을 따른다.
+`rebalance bands`는 v1 제외다.
+
+현재 shared simulation delta에는 `Calendar Aligned = Yes`일 때의 calendar schedule을 정의한다.
+
+```text
+yearly      → Jan
+semiannual  → Jan / Jul
+quarterly   → Jan / Apr / Jul / Oct
+monthly     → every active month
+none        → initial target 이후 drift
+```
+
+Analysis가 schedule 중간에서 시작하면 첫 active period에 target weights를 적용하고 이후 해당 schedule을 따른다.
+
+`Calendar Aligned = No` 지원 여부와 anchor semantics, rebalancing setting의 run/global vs portfolio-specific scope, 미지정 default는 아래 Remaining Decisions에서 확정한다.
 
 ## Portfolio Comparison Model
 
 비교 portfolio들의 asset union을 common row set으로 표현할 수 있다. 각 portfolio는 각 asset에 독립적인 target weight를 가지며 미사용 asset은 0%로 표현할 수 있다.
 
-각 portfolio target weights 합은 100%다. 각 portfolio는 독립적인 rebalancing/drift/return/wealth path를 가진다.
+각 portfolio target weights 합은 100%다. 각 portfolio는 독립적인 return/wealth/weight path를 가진다.
 
 v1의 3개 제한은 product validation policy다. Canonical schema 자체는 portfolio collection이므로 향후 cardinality만 늘릴 수 있어야 한다.
 
@@ -198,7 +280,7 @@ v1의 3개 제한은 product validation policy다. Canonical schema 자체는 po
 
 Backtest canonical result는 최소 다음을 구분한다.
 
-- configuration / product mode
+- configuration / product mode / Time Period
 - portfolio definitions / target allocations
 - effective data coverage
 - portfolio return / weight / wealth paths
@@ -211,7 +293,7 @@ Backtest는 optimization-specific ex-ante statistics나 Efficient Frontier를 �
 
 Backtest report hierarchy:
 
-1. run identity / requested-effective period / benchmark / portfolio / rebalancing
+1. run identity / Time Period / requested-effective period / benchmark / portfolio / rebalancing
 2. target allocation comparison
 3. actual initial-balance growth / Performance Summary
 4. annual / monthly / trailing / rolling returns
@@ -219,11 +301,9 @@ Backtest report hierarchy:
 6. asset performance / correlations / decomposition
 7. benchmark가 있을 때 active analytics
 
-Backtest Start Balance는 user input actual initial balance다. Optimization report의 normalized 1.0 → 10,000 presentation convention을 Backtest에 강제하지 않는다.
+## Research Execution
 
-## Research Execution Draft
-
-기존 `docs/research-operation-pipeline.md`의 Study / Experiment / Run / `control/execute.yaml` 구조를 그대로 재사용하는 방향으로 초안을 작성했다.
+기존 Study / Experiment / Run / `control/execute.yaml` 구조를 재사용한다.
 
 ```text
 User <-> ChatGPT
@@ -239,43 +319,18 @@ runs/<run_id>/
 
 Backtest 전용 orchestration DB, request id, 별도 Agent execution engine은 만들지 않는다.
 
-아직 미확정인 핵심은 **Backtest Experiment identity**다. 아래 Open Decision D1에서 결정한다.
+## Research Input
 
-## Research Input Draft
-
-기존 `docs/llm-research-input-contract.md`의 원칙을 유지한다.
+기존 Research Frontend 원칙을 유지한다.
 
 - 이미 받은 정보는 다시 묻지 않음
 - 기계적 검증은 시스템이 먼저 수행
-- 투자/연구 결과를 바꾸는 사용자 결정만 질문
-- canonical default는 필요 시 고지 후 자동 적용하고 effective input에 명시
-- 사용자가 이미 실행 의도를 밝혔다면 중복 승인 질문을 만들지 않음
+- portfolio 구성/weights 같은 실제 연구결정만 필요한 경우 질문
+- canonical default는 자동 적용하되 effective input에 명시
+- explicit execution intent 후 중복 승인 질문 없음
+- Backtest에서 optimizer objective/min/max/target-vol 질문 없음
 
-Backtest에서는 optimizer min/max/objective/target-vol을 질문하지 않는다. Portfolio 구성/weights가 primary user decision이다.
-
-Benchmark, initial balance, analysis period, rebalancing, default portfolio name의 Research Frontend policy는 아래 D2-D6에서 결정한다.
-
-## Research Analysis Draft
-
-기존 `docs/llm-analysis-framework.md`는 Optimizer/Frontier 해석에 강하게 결합되어 있으므로 Backtest 분석은 다음 순서의 별도 historical-comparison 초안을 작성했다.
-
-```text
-1. Effective data coverage
-2. Return / risk comparison
-3. Drawdown / recovery
-4. Annual / rolling consistency
-5. Benchmark-relative behavior (when benchmark exists)
-6. Contribution / diversification evidence
-7. Evidence limitation / next Backtest
-```
-
-Backtest 결과만으로 `optimal`, `efficient frontier`, `적정 최적 비중`을 주장하지 않는다. Canonical result facts와 경제적 해석/가설을 분리한다.
-
-문서/Capability 경계는 D7에서 결정한다.
-
-## Agent Verification Draft
-
-Backtest change의 verification은 다음 흐름을 따른다.
+## Agent Verification
 
 ```text
 Test
@@ -286,100 +341,50 @@ Test
 → Re-verify
 ```
 
-Agent는 requirement/test/acceptance를 통과 목적으로 변경하지 않는다. Shared change는 affected Optimization regression을 포함한다.
+Shared capability change는 affected Optimization regression을 포함한다. Browser verification은 PV pixel parity가 아니라 internal OpenSpec semantic contract를 검사한다.
 
-Browser verification은 PV pixel parity가 아니라 내부 semantic contract를 검사한다. 정성적 visual polish human-review gate 범위는 D8에서 결정한다.
+## Remaining Decisions
 
-## Open Decisions
+### D9. Calendar Aligned
 
-아래 항목만 현재 사용자 결정이 필요하다. 추천안은 초안일 뿐 확정이 아니다.
+**A. Yes/No 모두 v1 지원**
 
-### D1. Backtest Experiment identity
+추천 semantics:
 
-**A. 비교 portfolio 전체의 union asset ticker set**
-- weights, portfolio count/name, rebalancing, benchmark가 바뀌어도 같은 Experiment의 새 Run
-- 기존 Optimization의 `Asset Universe = Experiment` 원칙과 가장 유사
-- **추천**: 단순하고 기존 운영 습관과 일치
+- `Yes`: calendar year/quarter 기준. Yearly=Jan, Semiannual=Jan/Jul, Quarterly=Jan/Apr/Jul/Oct
+- `No`: 첫 active month를 anchor로 Yearly=12개월, Semiannual=6개월, Quarterly=3개월 주기
 
-**B. portfolio별 asset membership 구조**
-- union이 같더라도 어떤 portfolio에 어떤 asset이 속하는지가 바뀌면 새 Experiment
-- Backtest 비교 정의를 더 강하게 보존하지만 identity가 복잡해짐
+**B. v1은 Yes만 지원**
 
-**C. weights까지 포함한 portfolio definitions**
-- weights 변경도 새 Experiment
-- Run과 Experiment가 지나치게 세분될 가능성이 커 비추천
+구현과 검증은 단순하지만 PV settings 일부를 줄인다.
 
-### D2. Research Frontend benchmark default
+### D10. Rebalancing setting scope/default
 
-**A. 기본 SPY, 사용자가 명시하면 변경/없음 허용**
-- 기존 research frontend와 일치
-- active analytics를 기본 제공
-- **추천**
+**A. run 전체에 하나의 rebalancing setting 적용, default=Monthly**
+- PV Settings 구조와 동일
+- 여러 portfolio를 같은 조건에서 비교하기 쉬움
+- 추천
 
-**B. Backtest에서는 truly optional, 미지정 시 benchmark 없음**
-- core product의 optional semantics와 가장 직접적
+**B. portfolio별 독립 rebalancing 허용, default=Monthly**
+- 한 run에서 전략 차이까지 비교 가능
+- input/report 복잡도 증가
 
-### D3. Initial balance default
+**C. run 전체 공통이지만 default 없이 사용자 선택 필수**
 
-**A. 10,000을 canonical frontend default로 사용**
-- 수익률에는 영향이 없고 PV/reference 및 기존 report scale과 친숙
-- **추천**
+### D11. Display Income
 
-**B. 매 Backtest마다 사용자에게 입력 요구**
+**A. v1 제외**
+- canonical total return은 유지하되 dividend/income breakdown은 별도 data contract가 필요함
+- 추천
 
-### D4. Analysis period default
-
-**A. 모든 required asset의 전체 common effective period**
-- 기존 Optimization research frontend와 일치
-- **추천**
-
-**B. 항상 사용자에게 period 요구**
-
-### D5. Rebalancing default
-
-**A. Monthly**
-- 기존 canonical default와 일치
-- **추천**
-
-**B. 항상 사용자에게 명시 요구**
-
-**C. None**
-- buy-and-hold baseline에는 자연스럽지만 기존 project default와 달라짐
-
-### D6. Portfolio name default
-
-**A. 이름이 없으면 `Portfolio 1`, `Portfolio 2`, `Portfolio 3` 자동 생성**
-- user 질문을 줄임
-- **추천**
-
-**B. 모든 portfolio name을 사용자에게 요구**
-
-### D7. Backtest LLM analysis framework 문서 경계
-
-**A. Optimization용 기존 framework는 그대로 두고 Backtest analysis를 별도 capability/guide로 유지**
-- Frontier/Optimizer 해석과 historical comparison을 섞지 않음
-- **추천**
-
-**B. 기존 `llm-analysis-framework.md` 개념을 하나의 통합 framework로 일반화**
-- 문서 수는 줄지만 기존 문서를 수정해야 하고 mode별 분기가 커짐
-
-### D8. Human visual review completion gate
-
-**A. layout/interaction이 materially 변경된 경우만 human visual review 요구**
-- DOM/semantic browser 검증은 항상 applicable scope에서 수행
-- 정성적 polish 검토는 필요한 변화에만 사용
-- **추천**
-
-**B. 모든 report 변경에서 human visual review 필수**
-
-**C. automated browser verification만 completion gate로 사용**
+**B. v1 지원**
+- distribution income series와 report presentation contract를 추가 정의해야 함
 
 ## After Decisions
 
-D1-D8 확정 후:
+D9-D11 확정 후:
 
-1. `research-execution`, `research-input`, `research-analysis`, `agent-verification` draft requirement를 확정한다.
-2. `proposal.md`의 draft capability 표시를 정리한다.
-3. `tasks.md`의 decision-gated task를 확정한다.
-4. OpenSpec strict validation을 수행한다.
-5. 구현 전에 total-return data-source feasibility만 별도 technical investigation으로 닫는다.
+1. `portfolio-backtest`, `portfolio-simulation`, `research-input`, `research-report`의 pending 문구를 최종 requirement로 치환한다.
+2. `tasks.md` decision gate를 닫는다.
+3. OpenSpec strict validation을 수행한다.
+4. 구현 전에 total-return data-source feasibility를 technical investigation으로 닫는다.
