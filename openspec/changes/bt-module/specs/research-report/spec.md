@@ -17,12 +17,12 @@ Backtest report는 기존 internal report contract의 identity, unit, missing/N/
 - THEN 0으로 표시하지 않고 기존 shared `N/A` semantics를 유지한다
 
 ### Requirement: Backtest overview
-Backtest report 상단은 requested/effective period, initial balance, benchmark, portfolio names, 각 portfolio의 rebalancing policy를 확인할 수 있어야 한다.
+Backtest report 상단은 Time Period mode, requested/effective period, initial balance, benchmark, portfolio names와 실제 적용된 rebalancing setting을 확인할 수 있어야 한다.
 
-#### Scenario: 세 portfolio overview
-- GIVEN 서로 다른 rebalancing policy의 세 portfolio가 있다
+#### Scenario: Month-to-Month Backtest overview
+- GIVEN Month-to-Month mode로 여러 portfolio를 backtest했다
 - WHEN report header/overview를 표시한다
-- THEN 사용자는 어떤 portfolio가 어떤 policy로 동일 기간에 비교되었는지 식별할 수 있다
+- THEN 사용자는 requested/effective month boundaries와 어떤 rebalancing setting이 적용되었는지 식별할 수 있다
 
 ### Requirement: Target allocation comparison
 Backtest report는 portfolio별 target allocation을 asset Name/Ticker와 함께 비교할 수 있어야 하며 0% asset을 숨기더라도 canonical allocation을 왜곡해서는 안 된다.
