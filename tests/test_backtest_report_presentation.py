@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+
 import pandas as pd
 
 from portfolio_optimizer_kr.viewer.backtest_renderer import (
@@ -14,6 +16,7 @@ from portfolio_optimizer_kr.viewer.backtest_renderer import (
 
 PORTFOLIOS = ["Growth 70/30", "Balanced 50/50"]
 BENCHMARK = "SPDR S&P 500 ETF Trust"
+BENCHMARK_HTML = html.escape(BENCHMARK)
 
 
 def test_allocation_and_performance_preserve_input_order_and_hide_storage_metadata():
@@ -42,7 +45,7 @@ def test_allocation_and_performance_preserve_input_order_and_hide_storage_metada
     summary_html = _performance_summary(performance, benchmark, PORTFOLIOS, BENCHMARK)
 
     assert allocation_html.index("Growth 70/30") < allocation_html.index("Balanced 50/50")
-    assert summary_html.index("Growth 70/30") < summary_html.index("Balanced 50/50") < summary_html.index(BENCHMARK)
+    assert summary_html.index("Growth 70/30") < summary_html.index("Balanced 50/50") < summary_html.index(BENCHMARK_HTML)
     assert "<th>unit</th>" not in summary_html.lower()
     assert "$10,000" in summary_html
     assert "15.40%" in summary_html
@@ -108,7 +111,7 @@ def test_trailing_returns_and_metrics_use_human_labels_and_units():
     assert "3m_pct" not in trailing_html
     assert "_pct" not in trailing_html
     assert "34.14%" in trailing_html
-    assert BENCHMARK in trailing_html
+    assert BENCHMARK_HTML in trailing_html
 
     assert "Metric" in metrics_html
     assert "Beta" in metrics_html
@@ -140,7 +143,7 @@ def test_growth_chart_uses_calendar_anchors_and_human_benchmark_identity():
     assert "Jul 2020" in chart
     assert "Jan 2021" in chart
     assert "Jun 2020" not in chart
-    assert BENCHMARK in chart
+    assert BENCHMARK_HTML in chart
     assert ">benchmark<" not in chart
 
 
