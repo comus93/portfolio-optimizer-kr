@@ -1,26 +1,29 @@
 ## 1. Decision Gate
 
-- [ ] D1 Backtest Experiment identity 확정
-- [ ] D2 Research Frontend benchmark default 확정
-- [ ] D3 initial balance default 확정
-- [ ] D4 analysis period default 확정
-- [ ] D5 rebalancing default 확정
-- [ ] D6 portfolio name default 확정
-- [ ] D7 Backtest LLM analysis framework 문서/Capability 경계 확정
-- [ ] D8 human visual review completion gate 확정
-- [ ] 확정 결과를 `proposal.md`, `design.md`, 관련 draft spec에 반영
+- [x] D1 Backtest Experiment identity = union ticker set
+- [x] D2 Research Frontend benchmark default = SPY, explicit override/none 허용
+- [x] D3 initial balance default = 10,000
+- [x] D4 analysis period default = full common effective period
+- [x] D5 Time Period = Month-to-Month / Year-to-Year, default Month-to-Month
+- [x] D6 portfolio name default = Portfolio 1..3
+- [x] D7 Backtest LLM analysis = 별도 research-analysis capability/guide
+- [x] D8 human visual review = material layout/interaction change에만 completion gate
+- [ ] D9 Calendar Aligned v1 지원 범위/No semantics 확정
+- [ ] D10 Rebalancing scope/default 확정
+- [ ] D11 Display Income v1 지원 여부 확정
+- [ ] D9-D11 결과를 관련 spec/design에 최종 반영
 
 ## 2. OpenSpec Completion
 
 - [ ] `portfolio-backtest` requirement 최종 parity review
 - [ ] `market-data` total-return delta review
 - [ ] `portfolio-simulation` rebalancing/wealth delta review
-- [ ] `run-artifacts` product-mode/multi-portfolio delta review
+- [ ] `run-artifacts` product-mode/multi-portfolio/Time-Period delta review
 - [ ] `research-report` Backtest section/applicability/balance semantics review
-- [ ] `research-execution` decision-gated requirement 확정
-- [ ] `research-input` default/decision boundary 확정
-- [ ] `research-analysis` mode boundary 확정
-- [ ] `agent-verification` human-review gate 확정
+- [ ] `research-execution` union-ticker Experiment identity review
+- [ ] `research-input` confirmed defaults/decision boundary review
+- [ ] `research-analysis` separate Backtest analysis boundary review
+- [ ] `agent-verification` conditional human-review gate review
 - [ ] OpenSpec strict validation 수행
 
 ## 3. Total-return Feasibility
@@ -36,17 +39,27 @@
 - [ ] explicit product mode를 canonical YAML contract에 추가
 - [ ] Backtest-specific request model 추가
 - [ ] portfolio collection schema 구현, v1 validation limit=3 적용
-- [ ] portfolio name / target allocations / initial balance / optional benchmark / rebalancing 입력 구현
-- [ ] cashflow / band rebalance / leverage field는 v1에서 노출하지 않음
+- [ ] portfolio name / target allocations / initial balance / optional benchmark 입력 구현
+- [ ] `Month-to-Month` / `Year-to-Year` Time Period mode 구현
+- [ ] Month-to-Month의 Start Year / First Month / End Year / Last Month 입력 구현
+- [ ] Year-to-Year의 Start Year / End Year 입력 및 month non-applicable 처리
+- [ ] period selector year range를 data-supported range에서 동적으로 구성
+- [ ] D9 결정에 따른 Calendar Aligned input 구현
+- [ ] D10 결정에 따른 rebalancing input scope/default 구현
+- [ ] cashflow / band rebalance / leverage / style / factor / regime field는 v1에서 노출하지 않음
+- [ ] dividend reinvest toggle은 만들지 않고 canonical total return 사용
+- [ ] D11 결정에 따른 Display Income 처리
 - [ ] YAML round-trip과 exact `input.yaml` persistence 테스트
 
 ## 5. Shared Simulation
 
 - [ ] `none` rebalancing path 구현 및 drift 검증
-- [ ] quarterly calendar-aligned rebalancing 구현
-- [ ] semiannual calendar-aligned rebalancing 구현
-- [ ] monthly/yearly existing behavior regression
+- [ ] calendar-aligned quarterly rebalancing 구현
+- [ ] calendar-aligned semiannual rebalancing 구현
+- [ ] calendar-aligned yearly behavior regression
+- [ ] monthly existing behavior regression
 - [ ] mid-schedule analysis start behavior 검증
+- [ ] D9에서 non-calendar 지원 시 start-anchored schedule 구현/검증
 - [ ] actual initial-balance wealth path 구현
 - [ ] multi-portfolio independent path identity 검증
 
@@ -57,10 +70,13 @@
 - [ ] shared `portfolio-analytics` 재사용, duplicate formula 생성 금지
 - [ ] benchmark 없음/있음 양쪽 실행 검증
 - [ ] common effective period / coverage evidence 보존
+- [ ] Month-to-Month / Year-to-Year requested period가 canonical market-data period로 올바르게 전달되는지 검증
 
 ## 7. Artifacts
 
 - [ ] Backtest `result.json` canonical domain 구현
+- [ ] product mode와 Time Period mode/boundaries persistence 구현
+- [ ] frontend default(SPY/10,000/Portfolio n/Month-to-Month)가 effective `input.yaml`에 명시되는지 검증
 - [ ] portfolio collection identity가 raw/review에서 유지되도록 구현
 - [ ] `(portfolio, asset)` series identity 보존
 - [ ] existing run directory silent overwrite 방지 regression
@@ -70,15 +86,20 @@
 
 - [ ] Optimization / Backtest product mode 선택 경계 추가
 - [ ] Backtest Settings / Portfolio Assets 정보구조 구현
+- [ ] Time Period selector: Month-to-Month / Year-to-Year, default Month-to-Month
+- [ ] period mode에 따라 month selector show/hide 또는 applicable state 처리
+- [ ] Initial Amount default 10,000
 - [ ] asset search/add/remove/edit existing behavior 재사용
 - [ ] shared asset rows + portfolio별 allocation 입력 구현
 - [ ] v1 최대 3 portfolio UI/validation 적용, model은 collection 유지
+- [ ] 이름 미지정 시 Portfolio 1..3 자동 생성
 - [ ] Optimization objective/min-max control을 Backtest mode에서 요구하지 않음
-- [ ] 결정된 frontend defaults 반영
+- [ ] D9-D11 확정 settings 반영
 
 ## 9. Research Report
 
 - [ ] Backtest overview 구현
+- [ ] Time Period mode / requested-effective boundaries / effective rebalancing 표시
 - [ ] target allocation comparison 구현
 - [ ] actual initial-balance growth comparison 구현
 - [ ] Backtest realized-only Performance Summary 적용
@@ -86,10 +107,13 @@
 - [ ] benchmark-relative section conditional applicability 구현
 - [ ] Optimization-only Frontier section을 Backtest에서 제외
 - [ ] identity/unit/N/A/axis/tooltip/responsive existing contract regression
+- [ ] D11이 지원이면 income presentation contract 구현/검증
 
 ## 10. Research Workflow
 
-- [ ] 확정된 D1에 따라 Backtest Experiment identity 구현
+- [ ] union ticker set 기반 Backtest Experiment identity 구현
+- [ ] union 동일 + portfolio membership/weights 변경은 same Experiment/new Run인지 검증
+- [ ] union ticker 변경은 new Experiment인지 검증
 - [ ] Study / Experiment / Run provenance에 product mode 보존
 - [ ] `control/execute.yaml`에서 Backtest experiment 실행 가능하도록 generalize
 - [ ] explicit run intent 없이 experiment 수정만으로 실행되지 않는지 확인
@@ -99,10 +123,14 @@
 
 - [ ] product-intent-aware input flow 구현/가이드 반영
 - [ ] Backtest에서 optimizer objective/min-max 질문 금지
-- [ ] 결정된 benchmark/initial-balance/period/rebalancing/name defaults 반영
+- [ ] benchmark default SPY, explicit none/override 반영
+- [ ] initial balance 10,000 default 반영
+- [ ] period 미지정 시 full common period 적용
+- [ ] Time Period default Month-to-Month 적용
+- [ ] portfolio name default 반영
 - [ ] mechanical validation 후 필요한 사용자 decision만 질문
 - [ ] explicit execution intent 후 redundant approval 방지
-- [ ] 확정된 D7 방식으로 Backtest historical-comparison analysis guide 반영
+- [ ] 별도 Backtest historical-comparison analysis guide 반영
 
 ## 12. Agent Verification Framework
 
@@ -112,7 +140,7 @@
 - [ ] report change에서 browser semantic verification 추가
 - [ ] shared change의 Optimization affected regression 포함
 - [ ] requirement/test/acceptance를 Agent가 임의 변경하지 않는 blocker rule 유지
-- [ ] 결정된 D8 human visual review gate 적용
+- [ ] material layout/interaction change에서만 human visual review gate 적용
 
 ## 13. Completion Verification
 
@@ -121,7 +149,10 @@
 - [ ] 실제 1-portfolio Backtest run 검증
 - [ ] 실제 3-portfolio Backtest run 검증
 - [ ] benchmark 없음/있음 real run 검증
+- [ ] Month-to-Month / Year-to-Year real run 검증
 - [ ] monthly/quarterly/semiannual/yearly/none policy 검증
+- [ ] D9 non-calendar 지원 시 해당 schedule 검증
 - [ ] generated report browser semantic verification
+- [ ] material visual change가 있으면 human visual review 완료
 - [ ] P0/P1 blocker 없음
 - [ ] validation evidence와 result commit 기록
