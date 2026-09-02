@@ -7,10 +7,11 @@ from typing import Any
 
 import pandas as pd
 
+from portfolio_optimizer_kr.backtest import analyze_backtest_prices
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.errors import DataValidationError
-from portfolio_optimizer_kr.models import AssetSpec, RiskFreeMode
+from portfolio_optimizer_kr.models import AssetSpec, ProductMode, RiskFreeMode
 from portfolio_optimizer_kr.pipeline import analyze_prices, prepare_monthly_returns
 from portfolio_optimizer_kr.report import write_analysis_run
 
@@ -79,7 +80,7 @@ def _resolve_annual_rf(
     if supplied_annual_rf is not None:
         return float(supplied_annual_rf)
 
-    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
+    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)  # type: ignore[arg-type]
     observation_index = monthly_returns.index
     start = observation_index.min().to_period("M").start_time.date().isoformat()
     end = observation_index.max().to_period("M").end_time.date().isoformat()
@@ -105,7 +106,12 @@ def execute_run(
         raise FileExistsError(f"run output already exists: {output_dir}")
 
     loader = loader or FDRLoader()
-    analyze_fn = analyze_fn or analyze_prices
+    if analyze_fn is None:
+        analyze_fn = (
+            analyze_backtest_prices
+            if spec.product_mode is ProductMode.BACKTEST
+            else analyze_prices
+        )
     writer = writer or write_analysis_run
     load_start = _warmup_start(request.start)
     prices = loader.load_many(_market_assets(spec), start=load_start, end=request.end)
