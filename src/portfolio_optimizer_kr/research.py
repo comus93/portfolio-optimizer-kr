@@ -10,6 +10,7 @@ import yaml
 
 from portfolio_optimizer_kr.config import request_from_config
 from portfolio_optimizer_kr.data import FDRLoader
+from portfolio_optimizer_kr.models import ProductMode
 from portfolio_optimizer_kr.runner import execute_run
 
 
@@ -48,12 +49,55 @@ def _load_mapping(path: Path, *, label: str) -> dict[str, Any]:
     return dict(loaded)
 
 
+def _is_backtest(config: Mapping[str, Any]) -> bool:
+    value = str(config.get("product_mode") or "optimization").strip().lower().replace("-", "_")
+    return value in {"backtest", "portfolio_backtest"}
+
+
 def _apply_research_defaults(config: Mapping[str, Any]) -> dict[str, Any]:
-    """Return the effective Research Frontend input with canonical defaults materialized."""
+    """Materialize Research Frontend defaults while preserving explicit overrides."""
     effective = dict(config)
-    benchmark = effective.get("benchmark")
-    if benchmark is None or (isinstance(benchmark, str) and not benchmark.strip()):
+
+    # Benchmark is a Research Frontend default, not a core-product requirement.
+    # Key absence means "use the frontend default"; an explicit null means
+    # "no benchmark" and must not be overwritten.
+    if "benchmark" not in effective:
         effective["benchmark"] = dict(DEFAULT_RESEARCH_BENCHMARK)
+
+    if not _is_backtest(effective):
+        return effective
+
+    effective["product_mode"] = ProductMode.BACKTEST.value
+    effective.setdefault("initial_balance", 10000)
+
+    time_period = effective.get("time_period")
+    if not isinstance(time_period, Mapping):
+        time_period = {}
+    time_period = dict(time_period)
+    time_period.setdefault("mode", "month_to_month")
+    effective["time_period"] = time_period
+
+    rebalancing = effective.get("rebalancing")
+    if not isinstance(rebalancing, Mapping):
+        rebalancing = {}
+    rebalancing = dict(rebalancing)
+    rebalancing.setdefault("period", "monthly")
+    rebalancing.setdefault("calendar_aligned", True)
+    effective["rebalancing"] = rebalancing
+
+    raw_portfolios = effective.get("portfolios")
+    if isinstance(raw_portfolios, list):
+        portfolios: list[Any] = []
+        for index, raw in enumerate(raw_portfolios):
+            if not isinstance(raw, Mapping):
+                portfolios.append(raw)
+                continue
+            row = dict(raw)
+            if not str(row.get("name") or "").strip():
+                row["name"] = f"Portfolio {index + 1}"
+            portfolios.append(row)
+        effective["portfolios"] = portfolios
+
     return effective
 
 
@@ -138,6 +182,7 @@ def execute_controlled_experiment(
         "run_id": spec.request.run_id,
         "study": target.study_relative.as_posix(),
         "experiment": target.experiment_relative.as_posix(),
+        "product_mode": spec.product_mode.value,
     }
     (output_dir / "context.yaml").write_text(
         yaml.safe_dump(context, sort_keys=False, allow_unicode=True),
