@@ -4,7 +4,15 @@ context: |
   Project: portfolio-optimizer-kr, a Python 3.11 portfolio research system.
   Write OpenSpec artifacts in Korean.
   Portfolio Visualizer is an external reference, not a normative source.
-  Existing detailed contracts remain in docs/ until the relevant capability is migrated into OpenSpec.
+  Existing internal contracts remain the migration baseline until the relevant capability is migrated into OpenSpec.
+  The migration baseline is not limited to docs/specification.md. Preserve applicable semantics from:
+  - docs/specification.md for finance/calculation behavior
+  - docs/report-ui-specification.md for report UI/interaction behavior
+  - docs/input-ui-contract.md for input/YAML/runner/viewer behavior
+  - docs/architecture.md for architecture and responsibility boundaries
+  - docs/visual-acceptance-contract.md for validation procedure and completion checks
+  Historical correction/reference documents may inform parity review only when consistent with the current internal contracts.
+  External references such as Portfolio Visualizer may fill product-design gaps but must not override existing internal contracts automatically.
   Target product capabilities are portfolio-optimization and portfolio-backtest.
   Shared capabilities are market-data, portfolio-simulation, portfolio-analytics, run-artifacts, and research-report.
   Product specs define product-specific behavior; shared rules and formulas live only in the shared capability that owns them.
@@ -19,13 +27,16 @@ rules:
   specs:
     - Define observable behavior and testable scenarios, not implementation steps.
     - State financial formulas explicitly when they are part of the behavior contract.
+    - Preserve applicable existing internal contract semantics during migration; do not use docs/specification.md as the only baseline.
     - Do not duplicate a shared formula or acceptance rule in portfolio-optimization and portfolio-backtest specs.
   design:
-    - Reuse existing data, portfolio, analytics, report, and viewer layers before creating parallel implementations.
+    - Reuse existing data, portfolio, analytics, report, viewer, YAML runner, and persistence layers before creating parallel implementations.
+    - Map applicable existing internal design/architecture contracts to the owning OpenSpec capability or design decision.
     - For shared changes, document impact on both portfolio-optimization and portfolio-backtest when applicable.
   tasks:
     - Prefer affected-scope tests during iteration and include real-run/browser checks when the change needs them.
     - Include regression tasks for every existing product capability affected by a shared capability change.
+    - Include parity review against applicable existing internal contracts before treating migrated OpenSpec as the sole normative source.
 
 operations:
   apply:
