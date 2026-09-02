@@ -1,0 +1,14 @@
+{
+  "name": "portfolio-optimizer-kr-browser-verification",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Repository-local browser acceptance checks for generated portfolio reports.",
+  "scripts": {
+    "browser:install": "playwright install chromium",
+    "verify:browser": "python scripts/prepare_browser_fixture.py && playwright test",
+    "verify:browser:report": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
