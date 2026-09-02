@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -133,11 +134,34 @@ risk_free:
 
 
 def _minimal_writer(result, output_dir):
-    Path(output_dir, "result.json").write_text("{}\n", encoding="utf-8")
+    Path(output_dir, "result.json").write_text(
+        json.dumps(result) + "\n", encoding="utf-8"
+    )
 
 
 def _minimal_analyze(request, prices, usdkrw=None, annual_rf=None):
-    return {"product_mode": "backtest", "run_id": request.run_id}
+    return {
+        "configuration": {
+            "product_mode": "backtest",
+            "run_id": request.run_id,
+            "time_period_mode": str(request.time_period_mode),
+            "analysis_period": {"start": None, "end": None},
+            "initial_balance": request.initial_balance,
+            "benchmark": (
+                {"symbol": request.benchmark.symbol}
+                if request.benchmark is not None
+                else None
+            ),
+            "rebalancing_period": str(request.rebalancing),
+            "calendar_aligned": request.calendar_aligned,
+            "return_semantics": "canonical_total_return",
+        },
+        "data_coverage": {"backtest_monthly_returns": {}},
+        "portfolio_definitions": {
+            portfolio.name: {"target_weights": dict(portfolio.target_weights)}
+            for portfolio in request.portfolios
+        },
+    }
 
 
 def test_research_backtest_materializes_frontend_defaults_and_product_provenance(tmp_path):
