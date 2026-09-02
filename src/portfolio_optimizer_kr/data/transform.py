@@ -7,17 +7,47 @@ import pandas as pd
 from portfolio_optimizer_kr.errors import DataValidationError
 
 
+def _numeric_price_column(frame: pd.DataFrame, column: str) -> pd.Series:
+    out = pd.to_numeric(frame[column], errors="coerce").dropna().astype(float)
+    if out.empty:
+        raise DataValidationError(f"{column} price series has no valid observations")
+    out.index = pd.DatetimeIndex(out.index)
+    return out.sort_index()
+
+
 def select_canonical_price(frame: pd.DataFrame) -> pd.Series:
+    """Select a generic price-like series.
+
+    This helper remains appropriate for FX and other non-asset price series where
+    total-return semantics are not required. Asset investment returns use
+    ``select_total_return_price`` instead.
+    """
     if frame.empty:
         raise DataValidationError("price frame is empty")
     column = "Adj Close" if "Adj Close" in frame.columns else "Close"
     if column not in frame.columns:
         raise DataValidationError("price frame has neither 'Adj Close' nor 'Close'")
-    out = pd.to_numeric(frame[column], errors="coerce").dropna().astype(float)
-    if out.empty:
-        raise DataValidationError("canonical price series has no valid observations")
-    out.index = pd.DatetimeIndex(out.index)
-    return out.sort_index()
+    return _numeric_price_column(frame, column)
+
+
+def select_total_return_price(frame: pd.DataFrame) -> pd.Series:
+    """Return an explicitly dividend/distribution-adjusted asset price series.
+
+    A plain ``Close`` column is intentionally not accepted here. The Backtest
+    and Optimization historical-return contract requires total return and must
+    not silently relabel a price-only series as total return.
+    """
+    if frame.empty:
+        raise DataValidationError("price frame is empty")
+    if "Adj Close" not in frame.columns:
+        raise DataValidationError(
+            "canonical total-return asset data is unavailable: provider response "
+            "does not contain dividend/distribution-adjusted 'Adj Close'"
+        )
+    out = _numeric_price_column(frame, "Adj Close")
+    out.attrs["return_semantics"] = "total_return"
+    out.attrs["source_column"] = "Adj Close"
+    return out
 
 
 def convert_usd_price_to_krw(price_usd: pd.Series, usdkrw: pd.Series) -> pd.Series:
@@ -29,7 +59,9 @@ def convert_usd_price_to_krw(price_usd: pd.Series, usdkrw: pd.Series) -> pd.Seri
         raise DataValidationError(
             f"no same-day or earlier USD/KRW rate for {first_missing.date()}"
         )
-    return (prices * aligned_fx).rename(price_usd.name)
+    out = (prices * aligned_fx).rename(price_usd.name)
+    out.attrs.update(price_usd.attrs)
+    return out
 
 
 def align_common_prices(
