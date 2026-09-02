@@ -55,16 +55,21 @@ def _is_backtest(config: Mapping[str, Any]) -> bool:
 
 
 def _apply_research_defaults(config: Mapping[str, Any]) -> dict[str, Any]:
-    """Materialize Research Frontend defaults while preserving explicit overrides."""
+    """Materialize Research Frontend defaults while preserving product semantics."""
     effective = dict(config)
+    backtest = _is_backtest(effective)
 
-    # Benchmark is a Research Frontend default, not a core-product requirement.
-    # Key absence means "use the frontend default"; an explicit null means
-    # "no benchmark" and must not be overwritten.
-    if "benchmark" not in effective:
-        effective["benchmark"] = dict(DEFAULT_RESEARCH_BENCHMARK)
-
-    if not _is_backtest(effective):
+    if backtest:
+        # Backtest permits an explicit no-benchmark choice. Only a missing key
+        # receives the Research Frontend SPY default.
+        if "benchmark" not in effective:
+            effective["benchmark"] = dict(DEFAULT_RESEARCH_BENCHMARK)
+    else:
+        # Preserve the established Optimization Research Frontend contract:
+        # missing/null/blank benchmark materializes to SPY.
+        benchmark = effective.get("benchmark")
+        if benchmark is None or (isinstance(benchmark, str) and not benchmark.strip()):
+            effective["benchmark"] = dict(DEFAULT_RESEARCH_BENCHMARK)
         return effective
 
     effective["product_mode"] = ProductMode.BACKTEST.value
