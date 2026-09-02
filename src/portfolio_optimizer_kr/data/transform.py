@@ -30,23 +30,34 @@ def select_canonical_price(frame: pd.DataFrame) -> pd.Series:
     return _numeric_price_column(frame, column)
 
 
-def select_total_return_price(frame: pd.DataFrame) -> pd.Series:
-    """Return an explicitly dividend/distribution-adjusted asset price series.
+def select_total_return_price(
+    frame: pd.DataFrame,
+    *,
+    close_is_total_return: bool = False,
+) -> pd.Series:
+    """Return a provider-verified total-return-capable asset price series.
 
-    A plain ``Close`` column is intentionally not accepted here. The Backtest
-    and Optimization historical-return contract requires total return and must
-    not silently relabel a price-only series as total return.
+    ``Adj Close`` remains the preferred explicit signal. Some providers expose
+    adjusted/distribution-aware series under ``Close`` instead of a dedicated
+    column. Callers may opt into that path only after verifying the provider and
+    instrument semantics at the adapter boundary.
     """
     if frame.empty:
         raise DataValidationError("price frame is empty")
-    if "Adj Close" not in frame.columns:
+
+    if "Adj Close" in frame.columns:
+        column = "Adj Close"
+    elif close_is_total_return and "Close" in frame.columns:
+        column = "Close"
+    else:
         raise DataValidationError(
             "canonical total-return asset data is unavailable: provider response "
-            "does not contain dividend/distribution-adjusted 'Adj Close'"
+            "does not expose a verified dividend/distribution-adjusted series"
         )
-    out = _numeric_price_column(frame, "Adj Close")
+
+    out = _numeric_price_column(frame, column)
     out.attrs["return_semantics"] = "total_return"
-    out.attrs["source_column"] = "Adj Close"
+    out.attrs["source_column"] = column
     return out
 
 
