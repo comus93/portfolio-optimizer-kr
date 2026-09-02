@@ -19,7 +19,6 @@ from portfolio_optimizer_kr.analytics import (
     rolling_return_summary,
     rolling_returns,
     trailing_returns,
-    wealth_series,
 )
 from portfolio_optimizer_kr.models import BacktestRequest
 from portfolio_optimizer_kr.pipeline import (
@@ -60,11 +59,27 @@ def _performance_table(
     return summary, pd.DataFrame(rows)
 
 
+def _wealth_with_initial(returns: pd.Series, initial_balance: float) -> pd.Series:
+    if returns.empty:
+        return pd.Series(dtype=float, name="balance")
+    first = pd.Timestamp(returns.index[0])
+    start_marker = first.to_period("M").start_time.normalize()
+    compounded = (1.0 + returns).cumprod().mul(float(initial_balance))
+    initial = pd.Series(
+        [float(initial_balance)],
+        index=pd.DatetimeIndex([start_marker]),
+        name="balance",
+    )
+    if start_marker in compounded.index:
+        compounded = compounded.drop(index=start_marker)
+    return pd.concat([initial, compounded]).sort_index()
+
+
 def _growth_table(
     paths: Mapping[str, PortfolioPath | _BenchmarkPath], initial_balance: float
 ) -> pd.DataFrame:
     values = {
-        f"{name}_balance": wealth_series(path.returns, initial_balance)
+        f"{name}_balance": _wealth_with_initial(path.returns, initial_balance)
         for name, path in paths.items()
     }
     return pd.DataFrame(values).rename_axis("date").reset_index()
@@ -281,6 +296,7 @@ def analyze_backtest_prices(
     for portfolio in request.portfolios:
         path = paths[portfolio.name]
         assert isinstance(path, PortfolioPath)
+        wealth = _wealth_with_initial(path.returns, request.initial_balance)
         portfolio_paths[portfolio.name] = {
             "returns": {str(index.date()): float(value) for index, value in path.returns.items()},
             "weights": [
@@ -292,9 +308,7 @@ def analyze_backtest_prices(
             ],
             "wealth": {
                 str(index.date()): float(value)
-                for index, value in wealth_series(
-                    path.returns, request.initial_balance
-                ).items()
+                for index, value in wealth.items()
             },
         }
         return_decomp[portfolio.name] = return_decomposition(
@@ -369,6 +383,10 @@ def analyze_backtest_prices(
             },
             "benchmark_overlap": benchmark_summary.get("coverage"),
             "asset_prices": asset_price_coverage,
+        },
+        "asset_statistics": {
+            "correlation": stats.correlation.to_dict(),
+            "asset_performance": asset_performance,
         },
         "portfolio_definitions": portfolio_definitions,
         "portfolio_paths": portfolio_paths,
