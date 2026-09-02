@@ -6,6 +6,7 @@ from portfolio_optimizer_kr.data import (
     convert_usd_price_to_krw,
     month_end_prices,
     select_canonical_price,
+    select_total_return_price,
     to_monthly_returns,
 )
 from portfolio_optimizer_kr.errors import DataValidationError
@@ -15,6 +16,25 @@ def test_adj_close_has_priority():
     index = pd.to_datetime(["2024-01-01", "2024-01-02"])
     frame = pd.DataFrame({"Close": [100, 200], "Adj Close": [10, 20]}, index=index)
     assert select_canonical_price(frame).tolist() == [10.0, 20.0]
+
+
+def test_total_return_price_requires_adjusted_close():
+    index = pd.to_datetime(["2024-01-01", "2024-01-02"])
+    frame = pd.DataFrame({"Close": [100, 101]}, index=index)
+
+    with pytest.raises(DataValidationError, match="total-return"):
+        select_total_return_price(frame)
+
+
+def test_total_return_price_uses_adjusted_close():
+    index = pd.to_datetime(["2024-01-01", "2024-01-02"])
+    frame = pd.DataFrame({"Close": [100, 101], "Adj Close": [95, 97]}, index=index)
+
+    out = select_total_return_price(frame)
+
+    assert out.tolist() == [95.0, 97.0]
+    assert out.attrs["return_semantics"] == "total_return"
+    assert out.attrs["source_column"] == "Adj Close"
 
 
 def test_common_period_is_intersection():
