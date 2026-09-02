@@ -8,13 +8,18 @@ Canonical YAML run contract은 Optimization과 Backtest를 명확히 구분할 �
 - WHEN YAML contract로 serialize한다
 - THEN runner가 Optimization이 아니라 Backtest 실행 경계를 선택할 수 있는 명시적 mode가 존재한다
 
-### Requirement: Backtest portfolio definitions in YAML
-Backtest YAML은 1~3개의 named portfolio와 각 portfolio의 target allocation을 loss 없이 표현해야 한다.
+### Requirement: Backtest portfolio collection in YAML
+Backtest YAML은 identity를 가진 portfolio collection과 각 portfolio의 target allocation을 loss 없이 표현해야 한다. v1 사용자-facing validation은 1~3개 portfolio를 허용하지만 YAML schema를 fixed `portfolio1`, `portfolio2`, `portfolio3` field로 설계해서는 안 된다.
 
 #### Scenario: 세 portfolio 입력 보존
 - GIVEN 서로 다른 이름과 weights를 가진 세 portfolio가 있다
 - WHEN input YAML을 저장하고 다시 읽는다
 - THEN portfolio identity와 target weights가 동일하게 복원된다
+
+#### Scenario: 향후 limit 확장
+- GIVEN 향후 product policy가 4개 이상의 portfolio를 허용한다
+- WHEN YAML contract를 확장한다
+- THEN 기존 portfolio representation을 재설계하지 않고 collection cardinality만 확장할 수 있다
 
 ### Requirement: Backtest configuration persistence
 Persisted Backtest `input.yaml`은 실제 실행에 사용된 analysis period, initial balance, portfolio definitions, optional benchmark, rebalancing policy와 shared market-data settings를 보존해야 한다.
