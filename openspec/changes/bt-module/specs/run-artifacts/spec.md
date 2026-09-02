@@ -34,8 +34,16 @@ Backtest YAML은 `Month-to-Month` 또는 `Year-to-Year` Time Period mode와 해�
 - WHEN YAML로 저장하고 다시 읽는다
 - THEN mode와 year boundaries가 동일하게 복원되고 First/Last Month를 필수값으로 요구하지 않는다
 
+### Requirement: Backtest schedule settings persistence
+Backtest YAML은 run-level rebalancing policy와 `Calendar Aligned` setting을 loss 없이 표현해야 한다.
+
+#### Scenario: non-calendar quarterly round trip
+- GIVEN rebalancing=quarterly, Calendar Aligned=No인 Backtest input이 있다
+- WHEN YAML로 저장하고 다시 읽는다
+- THEN 두 setting이 동일하게 복원되고 first-active-month anchored schedule을 선택할 수 있다
+
 ### Requirement: Backtest configuration persistence
-Persisted Backtest `input.yaml`은 실제 실행에 사용된 Time Period mode와 requested period, initial balance, portfolio definitions, benchmark configuration, effective rebalancing setting과 shared market-data settings를 보존해야 한다.
+Persisted Backtest `input.yaml`은 실제 실행에 사용된 Time Period mode와 requested period, initial balance, portfolio definitions, benchmark configuration, run-level rebalancing policy, Calendar Aligned와 shared market-data settings를 보존해야 한다.
 
 #### Scenario: run 재현
 - GIVEN 완료된 Backtest run이 있다
@@ -43,12 +51,12 @@ Persisted Backtest `input.yaml`은 실제 실행에 사용된 Time Period mode�
 - THEN backtest를 다시 구성하는 데 필요한 canonical user input과 자동 적용된 default를 확인할 수 있다
 
 ### Requirement: Backtest defaults are explicit in persisted input
-Research Frontend가 SPY benchmark, initial balance 10,000, Month-to-Month mode, generated portfolio name 같은 default를 적용한 경우에도 persisted input에서 실제 effective 값을 생략해서는 안 된다.
+Research Frontend가 SPY benchmark, initial balance 10,000, Month-to-Month mode, Calendar Aligned=Yes, rebalancing=Monthly, generated portfolio name 같은 default를 적용한 경우에도 persisted input에서 실제 effective 값을 생략해서는 안 된다.
 
 #### Scenario: frontend defaults 사용
-- GIVEN 사용자가 benchmark와 initial balance를 별도로 지정하지 않았다
+- GIVEN 사용자가 benchmark, initial balance, calendar alignment와 rebalancing을 별도로 지정하지 않았다
 - WHEN run이 persist된다
-- THEN effective SPY benchmark와 initial balance 10,000을 `input.yaml`에서 확인할 수 있다
+- THEN effective SPY benchmark, initial balance 10,000, Calendar Aligned=Yes, rebalancing=Monthly를 `input.yaml`에서 확인할 수 있다
 
 ### Requirement: Backtest canonical result domains
 Backtest run의 `result.json`은 최소 configuration, data_coverage, portfolio_definitions, portfolio_paths, portfolio_performance, optional benchmark_analytics, correlations, return_decomposition, risk_decomposition을 structured domain으로 표현할 수 있어야 한다.
