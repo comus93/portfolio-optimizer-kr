@@ -93,11 +93,14 @@ def _table(frame: pd.DataFrame, *, table_id: str | None = None) -> str:
 
 
 def _portfolio_order(frame: pd.DataFrame, requested: list[str]) -> list[str]:
-    available: set[str] = set()
+    available: list[str] = []
     if "portfolio" in frame.columns:
-        available.update(str(value) for value in frame["portfolio"].dropna())
+        candidates = (str(value) for value in frame["portfolio"].dropna())
     else:
-        available.update(str(column) for column in frame.columns)
+        candidates = (str(column) for column in frame.columns)
+    for candidate in candidates:
+        if candidate not in available:
+            available.append(candidate)
     ordered = [name for name in requested if name in available]
     for name in available:
         if name not in ordered and name != "benchmark":
@@ -494,8 +497,31 @@ def _metrics_matrix(
     frame: pd.DataFrame,
     portfolio_order: list[str] | None = None,
     benchmark_label: str | None = None,
+    fallback_performance: pd.DataFrame | None = None,
 ) -> str:
     if frame.empty or not {"portfolio", "metric", "value"}.issubset(frame.columns):
+        if (
+            fallback_performance is not None
+            and not fallback_performance.empty
+            and "metric" in fallback_performance.columns
+        ):
+            requested = portfolio_order or []
+            columns = [name for name in requested if name in fallback_performance.columns]
+            columns.extend(
+                column
+                for column in fallback_performance.columns
+                if column not in {"metric", "unit"} and column not in columns
+            )
+            formatted = pd.DataFrame({"Metric": fallback_performance["metric"]})
+            for column in columns:
+                values = fallback_performance[column]
+                if "unit" in fallback_performance.columns:
+                    values = [
+                        _pct(value) if unit == "pct" else _money(value) if unit == "balance" else _ratio(value)
+                        for value, unit in zip(values, fallback_performance["unit"])
+                    ]
+                formatted[_display_portfolio(column, benchmark_label)] = values
+            return _table(formatted.reset_index(drop=True), table_id="portfolio-metrics")
         return _friendly_table(
             frame,
             portfolio_order=portfolio_order,
@@ -725,7 +751,9 @@ def generate_backtest_report(
         if isinstance(benchmark_cfg, dict)
         else None
     )
-    portfolio_order = list((result.get("portfolio_definitions") or {}).keys())
+    portfolio_order = _portfolio_order(allocations, [])
+    if not portfolio_order:
+        portfolio_order = list((result.get("portfolio_definitions") or {}).keys())
     coverage = result.get("data_coverage", {}).get("backtest_monthly_returns", {}) or {}
     alignment = "Yes" if configuration.get("calendar_aligned") else "No"
     effective_label = f"{coverage.get('start')} - {coverage.get('end')}"
@@ -842,7 +870,7 @@ tbody tr:nth-child(even) {{ background:#fafbfc; }}
   <div id="trailing" class="summary-block"><h3>Trailing Returns</h3>{_trailing_returns_table(trailing, portfolio_order, benchmark_label)}</div>
 </section>
 {active_section}
-<section id="metrics" class="result-section"><h2>Metrics</h2>{_metrics_matrix(portfolio_metrics, portfolio_order, benchmark_label)}</section>
+<section id="metrics" class="result-section"><h2>Metrics</h2>{_metrics_matrix(portfolio_metrics, portfolio_order, benchmark_label, performance)}</section>
 <section id="annualReturns" class="result-section"><h2>Annual Returns</h2>{_friendly_table(annual, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="monthlyReturns" class="result-section"><h2>Monthly Returns</h2>{_friendly_table(monthly, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="drawdowns" class="result-section"><h2>Drawdowns</h2>{_friendly_table(drawdowns, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>

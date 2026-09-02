@@ -1,0 +1,23 @@
+product_mode: backtest
+run_id: 20260903-backtest-069500-krx-etf-smoke-v2
+time_period:
+  mode: month_to_month
+  start_year: 2020
+  first_month: Jan
+  end_year: 2025
+  last_month: Dec
+assets:
+  - symbol: "069500"
+    name: KODEX 200
+    currency: KRW
+portfolios:
+  - name: KODEX 200 100%
+    weights_pct: {"069500": 100}
+benchmark: null
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 0

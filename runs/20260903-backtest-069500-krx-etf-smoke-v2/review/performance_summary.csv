@@ -1,0 +1,11 @@
+metric,unit,KODEX 200 100%
+Start Balance,balance,10000.0
+End Balance,balance,23277.488927402283
+CAGR,pct,15.12138913383323
+Annualized Return,pct,16.56406053463328
+Standard Deviation,pct,22.350992629289166
+Best Year,pct,94.22217937594395
+Worst Year,pct,-24.150391702526786
+Maximum Drawdown,pct,-34.18313471111782
+Sharpe Ratio (ex-post),ratio,0.7410883628017227
+Sortino Ratio,ratio,1.362094871148121
