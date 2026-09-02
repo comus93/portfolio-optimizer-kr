@@ -91,16 +91,29 @@ Backtest run은 optional benchmark asset을 지정할 수 있어야 한다.
 - WHEN backtest를 실행한다
 - THEN shared benchmark path와 benchmark-relative analytics를 모든 applicable portfolio에 대해 생성한다
 
-### Requirement: Periodic rebalancing policy selection
-Backtest settings는 `none`, `yearly`, `semiannual`, `quarterly`, `monthly` 중 하나의 periodic rebalancing policy를 선택할 수 있어야 한다. Rebalance bands는 v1에서 제외한다.
+### Requirement: Calendar alignment selection
+Backtest settings는 `Calendar Aligned = Yes`와 `Calendar Aligned = No`를 모두 지원해야 한다. Calendar alignment는 periodic rebalancing schedule의 anchor semantics를 결정하며 모든 비교 portfolio에 동일하게 적용된다.
+
+#### Scenario: calendar aligned yes
+- GIVEN Calendar Aligned가 Yes이고 quarterly rebalancing이 선택되었다
+- WHEN historical path를 생성한다
+- THEN shared `portfolio-simulation`의 calendar-quarter schedule을 사용한다
+
+#### Scenario: calendar aligned no
+- GIVEN Calendar Aligned가 No이고 quarterly rebalancing이 선택되었다
+- WHEN historical path를 생성한다
+- THEN shared `portfolio-simulation`의 first-active-month anchored 3-month schedule을 사용한다
+
+### Requirement: Run-level periodic rebalancing setting
+한 Backtest run의 모든 portfolio는 동일한 periodic rebalancing setting을 사용해야 하며 `none`, `yearly`, `semiannual`, `quarterly`, `monthly` 중 하나를 선택할 수 있어야 한다. Rebalance bands는 v1에서 제외한다.
 
 #### Scenario: quarterly policy
-- GIVEN effective rebalancing policy가 quarterly이다
-- WHEN historical path를 생성한다
-- THEN shared `portfolio-simulation`의 quarterly semantics를 사용한다
+- GIVEN run-level effective rebalancing policy가 quarterly이다
+- WHEN 여러 portfolio의 historical path를 생성한다
+- THEN 모든 portfolio는 동일한 calendar-alignment setting과 quarterly schedule semantics를 사용한다
 
 ### Requirement: Independent portfolio paths
-같은 asset return matrix를 사용하는 여러 portfolio라도 각 portfolio의 target allocation에 따라 독립적인 weight, return, wealth path를 가져야 한다.
+같은 asset return matrix와 같은 run-level rebalancing setting을 사용하는 여러 portfolio라도 각 portfolio의 target allocation에 따라 독립적인 weight, return, wealth path를 가져야 한다.
 
 #### Scenario: 같은 자산 다른 비중
 - GIVEN Portfolio A와 Portfolio B가 같은 asset들을 사용하지만 weights가 다르다
@@ -132,7 +145,7 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - THEN shared portfolio-analytics requirement와 동일한 convention을 사용한다
 
 ### Requirement: Backtest input surface
-사용자-facing Backtest 입력은 최소 Time Period mode와 period boundaries, initial balance, 1~3개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, rebalancing policy를 구성할 수 있어야 한다.
+사용자-facing Backtest 입력은 최소 Time Period mode와 period boundaries, Calendar Aligned, initial balance, 1~3개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, run-level rebalancing policy를 구성할 수 있어야 한다.
 
 #### Scenario: UI에서 Backtest 구성
 - GIVEN 사용자가 Backtest product mode를 선택했다
@@ -140,7 +153,7 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - THEN Optimization objective/min-max constraint 없이 Backtest에 필요한 portfolio comparison input을 설정할 수 있다
 
 ### Requirement: V1 scope exclusions
-Backtest v1은 cashflow contribution/withdrawal, rebalance bands, leverage, style analysis, factor regression, regime performance를 canonical input 또는 required calculation behavior로 제공하지 않아야 한다. Dividend reinvestment는 별도 toggle로 제공하지 않는다.
+Backtest v1은 cashflow contribution/withdrawal, rebalance bands, leverage, display income, style analysis, factor regression, regime performance를 canonical input 또는 required calculation behavior로 제공하지 않아야 한다. Dividend reinvestment는 별도 toggle로 제공하지 않는다.
 
 #### Scenario: v1 input surface
 - GIVEN 사용자가 Backtest v1을 구성한다
@@ -154,12 +167,3 @@ Portfolio Visualizer snapshot은 feature/information-architecture reference로�
 - GIVEN 내부 report가 OpenSpec requirement를 충족하지만 PV와 pixel layout이 다르다
 - WHEN acceptance를 판단한다
 - THEN PV와의 시각적 차이만으로 failure로 판단하지 않는다
-
-## Decision Pending
-
-PV settings 중 다음은 추가 사용자 결정 후 v1 normative requirement를 확정한다.
-
-- `Calendar Aligned: Yes/No` 지원 여부와 `No`의 schedule semantics
-- Rebalancing policy가 run 전체에 공통인지 portfolio별 독립 설정인지
-- Rebalancing 미지정 시 default policy
-- `Display Income: No/Yes` 지원 여부
