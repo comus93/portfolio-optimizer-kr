@@ -1072,3 +1072,158 @@ efficient frontier optimality
 ```text
 portfolio-optimizer-kr의 ai-share/llm-to-llm.md를 읽고 현재 Backtest 작업을 이어서 진행하자.
 ```
+
+---
+
+## 23. Latest Update — Presentation Fix and LLM-only Handover
+
+updated_at: 2026-09-03T07:30:00+09:00
+current_remote_head: `7a7de302a8ee4612103df24de38234147b18ead4`
+
+이 절은 기존 handover 내용을 삭제하지 않고 이후 진행 상황을 추가한 최신 부록이다. 앞 절의 `Current State`, `Known Open Issues`, `Immediate Next`와 충돌하는 내용은 이 절을 우선한다.
+
+### 23.1 Work completed after the previous handover
+
+Agent는 `2567fa3` 기준 요청을 검증하고 다음 결과를 GitHub에 반영했다.
+
+```text
+implementation/run commit: 74a38b1a04c3b0291c587cdb70012bef4006a915
+handover commit:           4d728bd
+bt-module OpenSpec strict: PASS
+targeted tests:            27 passed
+full pytest:               157 passed
+deterministic Playwright:  2 passed, 1 skipped
+real US report Playwright: 1 passed, 2 skipped
+real KRX report Playwright: 1 passed, 2 skipped
+```
+
+Agent live-data findings:
+
+- US `QQQ`, `GLD`, `SPY`는 FDR/Yahoo `Adj Close`를 사용했다.
+- KRX ETF `069500`은 default/NAVER route에서 Close-only로 조회됐고, 현재 source policy에 따라 canonical total return으로 처리됐다.
+- explicit `KRX:069500` route는 unsupported이며 total return으로 승인하지 않았다.
+- US/KRX 실데이터 run과 desktop/mobile screenshot evidence를 각 run의 `validation/`에 생성했다.
+
+LLM이 실제 published Pages와 screenshot을 다시 검토한 결과, machine/browser PASS가 놓친 다음 P1 presentation defect를 발견했다.
+
+- `month_to_month`, `canonical_total_return` 같은 storage identifier 노출
+- Annual Asset Returns의 raw fraction/full precision 노출
+- correlation full precision, ticker title-casing, generic `benchmark` identity
+- Return Decomposition의 `contribution_*` row와 미포맷 balance
+- KRX ticker `069500`의 숫자 coercion 위험
+- KRX balance/growth/decomposition에 USD 기호 사용
+
+기존 `research-report` OpenSpec이 user-facing label/unit과 currency-identifiable balance를 이미 요구하므로 spec delta는 만들지 않았다. 다음 파일을 test-first로 수정했다.
+
+```text
+src/portfolio_optimizer_kr/viewer/backtest_renderer.py
+tests/test_backtest_report_presentation.py
+verification/browser/backtest-report.spec.mjs
+runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
+runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
+ai-share/llm-to-agent.md
+```
+
+최종 구현 commit:
+
+```text
+7a7de302a8ee4612103df24de38234147b18ead4
+fix: format backtest report values for users
+```
+
+LLM-side verification evidence:
+
+```text
+presentation tests:              8 passed
+targeted affected suite:         31 passed
+full pytest:                     161 passed
+generated HTML semantic checks:  passed
+git diff --check:                passed
+```
+
+현재 환경에서는 Playwright Chromium 설치가 CDN timeout/allowlist로 실패했다. 따라서 `7a7de30`에 대한 독립 browser/Playwright 재검증은 Agent에게 요청한 상태다. 현재 요청은 다음 파일에 있다.
+
+```text
+ai-share/llm-to-agent.md
+id: 20260903T070800+0900-llm
+reply_to: 20260903T064500+0900-agent
+```
+
+### 23.2 Published Pages and LLM visual review
+
+`7a7de30` Pages workflow는 성공했다.
+
+```text
+workflow:
+https://github.com/comus93/portfolio-optimizer-kr/actions/runs/33689038845
+
+base:
+https://comus93.github.io/portfolio-optimizer-kr/
+
+US report:
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
+
+KRX report:
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
+```
+
+LLM은 수정 후 실제 published US/KRX Pages를 열어 다음 사항을 확인했다.
+
+US:
+
+- meta가 `Month-to-Month`, `Monthly`, `Total Return`으로 표시됨
+- Annual Asset Returns가 `%`로 표시됨
+- correlation이 소수 둘째 자리이며 `QQQ`/`GLD` ticker casing을 보존함
+- configured SPY benchmark 이름이 row/column identity에 표시됨
+- Return Decomposition이 ticker와 USD balance/percentage로 표시됨
+
+KRX:
+
+- initial amount가 `₩10,000`으로 표시됨
+- growth axis/point label이 KRW를 사용함
+- ticker `069500`을 보존함
+- Annual Asset Returns가 `%`로 표시됨
+- Return Decomposition balance가 KRW로 표시됨
+
+따라서 수정된 presentation semantics에 대한 **LLM 1차 visual re-review는 PASS**다. 다만 Agent의 최신 HEAD 독립 재검증과 사용자의 2차 관능 평가는 아직 남아 있다.
+
+### 23.3 Current workflow mode
+
+사용자는 현재 ChatGPT 창을 **LLM 전용 역할**로 전환했다.
+
+```text
+LLM = 요구사항 판단 + OpenSpec/결과 리뷰 + acceptance 판정 + Agent 지시 작성
+Agent = 구현 + 실제 checkout test/CLI/browser 검증 + commit/push
+```
+
+다음 LLM 창은 사용자가 명시적으로 다시 구현을 요청하지 않는 한 직접 코드 수정/실행보다 Agent 결과 검토와 다음 지시 작성에 집중한다.
+
+AI Share는 자동 양방향 실행 채널이 아니다. GitHub의 `llm-to-agent.md`와 `agent-to-llm.md`가 메시지 bridge이며, 각 상대 세션 실행은 사용자가 호출해야 한다.
+
+### 23.4 Remaining work
+
+1. 사용자가 별도 Agent/Codex 창에 `LLM 전달사항 확인하고 검증해`라고 요청한다.
+2. Agent가 `7a7de30` 이후 최신 remote를 pull하고 `20260903T070800+0900-llm` 요청을 수행한다.
+3. Agent가 targeted/full pytest, deterministic/real-report Playwright, screenshot, Pages URL을 최신 HEAD 기준으로 재검증한다.
+4. Agent가 `ai-share/agent-to-llm.md`를 최신 result로 교체하고 commit/push한다.
+5. 다음 LLM 창이 해당 result, screenshot, published Pages를 확인해 P0/P1/P2 및 deviation을 판정한다.
+6. P0/P1이 없으면 사용자 2차 visual acceptance로 진행한다.
+
+현재 별도 이슈:
+
+- `migrate-optimizer-to-openspec` strict RFC2119 cleanup은 Backtest 범위와 분리한다.
+- Korean common stock total-return source 문제는 아직 해결되지 않았다.
+- explicit KRX route를 canonical total return으로 silent 승인하지 않는다.
+
+### 23.5 New-window starting point
+
+새 LLM 창에서는 다음 순서로 시작한다.
+
+```text
+1. GitHub remote의 bt-module 최신 HEAD 확인
+2. ai-share/PROTOCOL.md와 이 handover 확인
+3. ai-share/llm-to-agent.md의 request id 확인
+4. ai-share/agent-to-llm.md에 20260903T070800+0900-llm 이후 결과가 있는지 확인
+5. 최신 Agent 결과가 없으면 사용자에게 Agent 실행이 필요하다고 알림
+6. 최신 Agent 결과가 있으면 evidence와 published Pages를 LLM 관점에서 리뷰
+```
