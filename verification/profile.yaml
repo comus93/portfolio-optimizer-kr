@@ -36,19 +36,48 @@ browser:
     - traces and failure screenshots under test-results/playwright/
     - passing desktop/mobile screenshots emitted into each Playwright test output directory
   checks:
-    - Backtest overview exposes time period, requested/effective period, initial amount, benchmark, rebalancing, calendar alignment, and return semantics
-    - target allocation exposes readable portfolio, ticker, and target-weight identities
+    - Summary exposes time period, requested/effective period, initial amount, benchmark, rebalancing, calendar alignment, and return semantics
+    - Summary keeps target allocation, Performance Summary, Portfolio Growth, and Trailing Returns in the primary result flow
+    - target allocation exposes readable portfolio, asset, and target-weight identities
     - growth chart contains portfolio identity, date, and actual balance semantics
+    - growth chart exposes multiple intermediate x/y ticks, horizontal grid references, and semantic axis titles
+    - growth chart exposes visible mouse-hover and keyboard-focus inspect feedback with date, portfolio identity, and balance
+    - result navigation separates Summary, conditional Active Returns, Metrics, Annual Returns, Monthly Returns, Drawdowns, Assets, and Rolling Returns
     - optimization-only Efficient Frontier and Optimized Portfolio identity are absent
+    - unsupported Style Analysis and Factor Regression are not fabricated
     - benchmark-relative section is present only when benchmark is configured
-    - required report sections are present when applicable
     - 390px viewport has no document-level horizontal clipping
     - overflowing tables and growth chart remain horizontally scrollable rather than clipping information
 
-human_visual_review:
+publishing:
+  required_for_material_report_changes: true
+  workflow: .github/workflows/publish-reports.yml
+  requirements:
+    - persist the representative validation run under runs/<run-id>/ and commit/push it
+    - verify the GitHub Pages deployment completes successfully
+    - record the exact published report URL in validation evidence and agent handoff
+    - do not use a local file path or screenshot as the sole visual-acceptance target
+
+visual_acceptance:
   when: material_layout_or_interaction_change
-  evidence_source: Playwright desktop/mobile screenshots
-  rule: Agent may prepare evidence and severity observations, but the human reviewer owns the visual acceptance decision
+  first_pass:
+    owner: LLM
+    basis:
+      - published GitHub Pages report
+      - captured Portfolio Visualizer MHTML reference
+      - OpenSpec research-report and applicable internal report contracts
+    checks:
+      - information architecture and section grouping
+      - output data character and applicable result domains
+      - chart axis/legend/tooltip semantics
+      - obvious functional or information-loss mismatch before aesthetic review
+  second_pass:
+    owner: user
+    basis:
+      - published GitHub Pages report after first-pass blockers are resolved
+    checks:
+      - usability, layout balance, readability, and subjective polish
+  rule: Agent and automated Playwright checks prepare evidence but do not own final visual acceptance
 
 rules:
   - do not weaken, skip, or rewrite requirements/tests to make verification pass
