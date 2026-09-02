@@ -18,14 +18,16 @@ const fixtureWithoutBenchmark = '/.playwright/backtest-browser/without-benchmark
 
 async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
   await page.goto(reportUrl);
-  await expect(page.locator('header h1')).toHaveText('Portfolio Backtest');
+  await expect(page.locator('.result-header')).toContainText('Portfolio Analysis Results');
 
   const overview = page.locator('#overview');
   await expect(overview).toBeVisible();
+  await expect(overview.locator('h2')).toHaveText('Summary');
   for (const label of [
-    'Time Period Mode',
-    'Requested Period',
-    'Effective Period',
+    'Run ID',
+    'Time Period',
+    'Requested',
+    'Effective',
     'Initial Amount',
     'Benchmark',
     'Rebalancing',
@@ -35,12 +37,13 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     await expect(overview.getByText(label, { exact: true })).toBeVisible();
   }
 
-  await expect(page.locator('#allocation h2')).toHaveText('Target Allocation');
+  await expect(page.locator('#allocation h3')).toHaveText('Target Allocation');
   const allocationHeaders = await page.locator('#allocation th').allTextContents();
-  expect(allocationHeaders.map(value => value.trim().toLowerCase())).toEqual(
-    expect.arrayContaining(['portfolio', 'ticker', 'target_weight_pct']),
-  );
+  expect(allocationHeaders.map(value => value.trim().toLowerCase())).toContain('asset');
   expect(await page.locator('#allocation tbody tr').count()).toBeGreaterThan(0);
+
+  await expect(page.locator('#performance h3')).toHaveText('Performance Summary');
+  await expect(page.locator('#trailing h3')).toHaveText('Trailing Returns');
 
   const growth = page.locator('#growth');
   await expect(growth.locator('svg[role="img"]')).toHaveAttribute(
@@ -48,31 +51,58 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     'Portfolio balance growth over time',
   );
   expect(await growth.locator('.legend-item').count()).toBeGreaterThan(0);
-  const firstPointLabel = await growth.locator('circle[aria-label]').first().getAttribute('aria-label');
+  expect(await growth.locator('.x-tick-label').count()).toBeGreaterThanOrEqual(4);
+  expect(await growth.locator('.y-tick-label').count()).toBeGreaterThanOrEqual(4);
+  expect(await growth.locator('.grid-line').count()).toBeGreaterThanOrEqual(4);
+  await expect(growth.getByText('Year', { exact: true })).toBeVisible();
+  await expect(growth.getByText('Portfolio Balance ($)', { exact: true })).toBeVisible();
+
+  const firstPoint = growth.locator('circle[aria-label]').first();
+  const firstPointLabel = await firstPoint.getAttribute('aria-label');
   expect(firstPointLabel).toMatch(/^\d{4}-\d{2}-\d{2} \| .+: \$[\d,]+$/);
+  await firstPoint.hover({ force: true });
+  await expect(growth.locator('#growth-tooltip')).toBeVisible();
+  await expect(growth.locator('#growth-tooltip')).toContainText(firstPointLabel.split(' | ')[0]);
+  await firstPoint.focus();
+  await expect(growth.locator('#growth-tooltip')).toBeVisible();
 
   for (const id of [
-    'performance',
-    'annual',
-    'monthly',
+    'metrics',
+    'annualReturns',
+    'monthlyReturns',
     'drawdowns',
-    'rolling',
-    'correlations',
-    'decomposition',
+    'assets',
+    'rollingReturns',
   ]) {
     await expect(page.locator(`#${id}`)).toBeVisible();
   }
 
+  for (const label of [
+    'Summary',
+    'Metrics',
+    'Annual Returns',
+    'Monthly Returns',
+    'Drawdowns',
+    'Assets',
+    'Rolling Returns',
+  ]) {
+    await expect(page.locator('.sidebar').getByText(label, { exact: true })).toBeVisible();
+  }
+
   expect(await page.getByText(/Efficient Frontier/i).count()).toBe(0);
   expect(await page.getByText(/Optimized Portfolio/i).count()).toBe(0);
+  expect(await page.getByText(/Style Analysis/i).count()).toBe(0);
+  expect(await page.getByText(/Factor Regression/i).count()).toBe(0);
 
   const benchmarkBlock = overview.locator('.meta div').filter({ hasText: 'Benchmark' }).first();
   const benchmarkText = (await benchmarkBlock.innerText()).replace('Benchmark', '').trim();
   if (benchmarkText === 'None') {
-    expect(await page.locator('#active').count()).toBe(0);
+    expect(await page.locator('#activeReturns').count()).toBe(0);
+    expect(await page.locator('.sidebar').getByText('Active Returns', { exact: true }).count()).toBe(0);
   } else {
-    await expect(page.locator('#active')).toBeVisible();
-    await expect(page.locator('#active h2')).toHaveText('Benchmark-relative Analytics');
+    await expect(page.locator('#activeReturns')).toBeVisible();
+    await expect(page.locator('#activeReturns h2')).toHaveText('Active Returns');
+    await expect(page.locator('.sidebar').getByText('Active Returns', { exact: true })).toBeVisible();
   }
 
   await page.screenshot({
@@ -116,7 +146,7 @@ test.describe('deterministic Backtest browser fixture', () => {
 
   test('benchmark report exposes applicable semantics', async ({ page }, testInfo) => {
     await assertCoreReport(page, fixtureWithBenchmark, testInfo, 'fixture-benchmark');
-    await expect(page.locator('#active')).toBeVisible();
+    await expect(page.locator('#activeReturns')).toBeVisible();
     await expect(page.locator('#allocation')).toContainText('Growth Tilt');
     await expect(page.locator('#allocation')).toContainText('Balanced');
     await expect(page.locator('#allocation')).toContainText('QQQ');
@@ -125,7 +155,7 @@ test.describe('deterministic Backtest browser fixture', () => {
 
   test('benchmark-none report omits benchmark-relative analytics', async ({ page }, testInfo) => {
     await assertCoreReport(page, fixtureWithoutBenchmark, testInfo, 'fixture-no-benchmark');
-    expect(await page.locator('#active').count()).toBe(0);
+    expect(await page.locator('#activeReturns').count()).toBe(0);
     await expect(page.locator('#overview')).toContainText('None');
   });
 });
