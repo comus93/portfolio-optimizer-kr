@@ -7,14 +7,27 @@ from typing import Mapping
 import pandas as pd
 
 
+class ProductMode(StrEnum):
+    OPTIMIZATION = "optimization"
+    BACKTEST = "backtest"
+
+
 class OptimizationObjective(StrEnum):
     MAX_SHARPE = "max_sharpe"
     TARGET_VOLATILITY = "target_volatility"
 
 
 class RebalancingPeriod(StrEnum):
+    NONE = "none"
     MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    SEMIANNUAL = "semiannual"
     YEARLY = "yearly"
+
+
+class TimePeriodMode(StrEnum):
+    MONTH_TO_MONTH = "month_to_month"
+    YEAR_TO_YEAR = "year_to_year"
 
 
 class RiskFreeMode(StrEnum):
@@ -50,6 +63,27 @@ class OptimizationRequest:
     rebalancing: RebalancingPeriod = RebalancingPeriod.MONTHLY
     risk_free: RiskFreeConfig = field(default_factory=RiskFreeConfig)
     frontier_points: int = 100
+
+
+@dataclass(frozen=True)
+class BacktestPortfolio:
+    name: str
+    target_weights: Mapping[str, float]
+
+
+@dataclass(frozen=True)
+class BacktestRequest:
+    assets: tuple[AssetSpec, ...]
+    portfolios: tuple[BacktestPortfolio, ...]
+    run_id: str | None = None
+    start: str | pd.Timestamp | None = None
+    end: str | pd.Timestamp | None = None
+    time_period_mode: TimePeriodMode = TimePeriodMode.MONTH_TO_MONTH
+    benchmark: AssetSpec | None = None
+    initial_balance: float = 10000.0
+    rebalancing: RebalancingPeriod = RebalancingPeriod.MONTHLY
+    calendar_aligned: bool = True
+    risk_free: RiskFreeConfig = field(default_factory=RiskFreeConfig)
 
 
 @dataclass(frozen=True)
