@@ -171,6 +171,7 @@ def test_controlled_execution_generates_effective_input_and_context(tmp_path):
         "run_id": output.name,
         "study": "studies/demo-study/study.md",
         "experiment": "studies/demo-study/experiments/001-base-r01.yaml",
+        "product_mode": "optimization",
     }
     assert (output / "result.json").exists()
 
