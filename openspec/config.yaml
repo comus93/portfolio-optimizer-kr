@@ -11,10 +11,14 @@ context: |
   - docs/input-ui-contract.md for input/YAML/runner/viewer behavior
   - docs/architecture.md for architecture and responsibility boundaries
   - docs/visual-acceptance-contract.md for validation procedure and completion checks
+  - docs/research-operation-pipeline.md for user research execution behavior
+  - docs/llm-research-input-contract.md for LLM/User research input behavior
+  - docs/llm-analysis-framework.md for Optimization-specific LLM analysis behavior
   Historical correction/reference documents may inform parity review only when consistent with the current internal contracts.
   External references such as Portfolio Visualizer may fill product-design gaps but must not override existing internal contracts automatically.
   Target product capabilities are portfolio-optimization and portfolio-backtest.
-  Shared capabilities are market-data, portfolio-simulation, portfolio-analytics, run-artifacts, and research-report.
+  Shared finance/presentation capabilities are market-data, portfolio-simulation, portfolio-analytics, run-artifacts, and research-report.
+  Research/tooling capabilities may include research-execution, research-input, research-analysis, and agent-verification when a change introduces observable workflow or verification behavior.
   Product specs define product-specific behavior; shared rules and formulas live only in the shared capability that owns them.
   A shared capability change must identify affected product capabilities and the required affected-scope regression.
   Keep scope concise and avoid restating the same constraint in multiple forms.
@@ -29,8 +33,9 @@ rules:
     - State financial formulas explicitly when they are part of the behavior contract.
     - Preserve applicable existing internal contract semantics during migration; do not use docs/specification.md as the only baseline.
     - Do not duplicate a shared formula or acceptance rule in portfolio-optimization and portfolio-backtest specs.
+    - Keep research/tooling capability behavior separate from finance formulas unless the behavior directly changes a finance contract.
   design:
-    - Reuse existing data, portfolio, analytics, report, viewer, YAML runner, and persistence layers before creating parallel implementations.
+    - Reuse existing data, portfolio, analytics, report, viewer, YAML runner, research execution, and persistence layers before creating parallel implementations.
     - Map applicable existing internal design/architecture contracts to the owning OpenSpec capability or design decision.
     - For shared changes, document impact on both portfolio-optimization and portfolio-backtest when applicable.
   tasks:
