@@ -171,7 +171,9 @@ def test_backtest_pipeline_produces_realized_multi_portfolio_result():
 
     growth = result["_tables"]["portfolio_growth"]
     assert {"Balanced_balance", "Portfolio 2_balance", "benchmark_balance"}.issubset(growth.columns)
-    assert growth.iloc[0]["Balanced_balance"] != pytest.approx(1.0)
+    assert growth.iloc[0]["Balanced_balance"] == pytest.approx(10000.0)
+    assert growth.iloc[0]["Portfolio 2_balance"] == pytest.approx(10000.0)
+    assert len(growth) == 7
 
 
 def test_backtest_writer_persists_canonical_result_without_optimizer_fields(tmp_path):
