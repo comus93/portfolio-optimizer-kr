@@ -1,8 +1,16 @@
 ## Purpose
 
-LLM이 Backtest 결과를 Optimization 결과와 혼동하지 않고 historical comparison 관점에서 해석하는 연구 분석 behavior를 정의한다.
+LLM이 Backtest 결과를 Optimization 결과와 혼동하지 않고 historical comparison 관점에서 해석하는 연구 분석 behavior를 정의한다. 기존 optimizer 중심 `docs/llm-analysis-framework.md`는 그대로 두고 Backtest 분석은 별도 capability/guide로 유지한다.
 
 ## ADDED Requirements
+
+### Requirement: Separate Backtest analysis boundary
+Backtest LLM analysis는 optimizer/efficient-frontier 해석과 별도 analysis mode로 유지해야 하며 기존 Optimization 분석 framework를 Backtest 의미에 맞추기 위해 일반화하거나 수정하는 것을 요구해서는 안 된다.
+
+#### Scenario: Backtest 결과 분석
+- GIVEN optimization 결과 없이 Backtest 결과만 존재한다
+- WHEN LLM이 분석한다
+- THEN Efficient Frontier/optimizer structure 단계 없이 Backtest historical-comparison contract를 사용한다
 
 ### Requirement: Backtest analysis is historical comparison
 Backtest 분석은 이미 정의된 portfolio들의 historical realized behavior를 비교해야 하며 결과를 Optimization 또는 optimal allocation의 증거로 표현해서는 안 된다.
@@ -75,7 +83,3 @@ LLM은 canonical result에서 직접 관측된 사실과 그 사실에 대한 �
 - GIVEN portfolio 우위가 특정 historical 구간에 집중되어 있다
 - WHEN robustness 결론이 부족하다
 - THEN 다른 기간 또는 조건의 follow-up Backtest를 다음 연구로 제안한다
-
-## Decision Pending
-
-이 Backtest 분석 계약을 기존 optimizer 중심 `docs/llm-analysis-framework.md`에 통합할지, 별도 Backtest 분석 프레임워크로 유지할지는 `design.md`의 Open Decisions에서 사용자 확정 후 정리한다.
