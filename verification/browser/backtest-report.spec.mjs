@@ -38,12 +38,20 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
   }
 
   await expect(page.locator('#allocation h3')).toHaveText('Target Allocation');
-  const allocationHeaders = await page.locator('#allocation th').allTextContents();
-  expect(allocationHeaders.map(value => value.trim().toLowerCase())).toContain('asset');
+  const allocationHeaders = (await page.locator('#allocation th').allTextContents()).map(value => value.trim());
+  expect(allocationHeaders[0].toLowerCase()).toBe('asset');
   expect(await page.locator('#allocation tbody tr').count()).toBeGreaterThan(0);
 
   await expect(page.locator('#performance h3')).toHaveText('Performance Summary');
+  const performanceHeaders = (await page.locator('#performance th').allTextContents()).map(value => value.trim());
+  expect(performanceHeaders.map(value => value.toLowerCase())).not.toContain('unit');
+
   await expect(page.locator('#trailing h3')).toHaveText('Trailing Returns');
+  const trailingHeaders = (await page.locator('#trailing th').allTextContents()).map(value => value.trim());
+  for (const header of ['Portfolio', '3 Month', 'YTD', '1 Year', '3 Year Annualized Return', 'Full Period CAGR']) {
+    expect(trailingHeaders).toContain(header);
+  }
+  expect(trailingHeaders.some(value => value.includes('_pct') || value.includes('_'))).toBe(false);
 
   const growth = page.locator('#growth');
   await expect(growth.locator('svg[role="img"]')).toHaveAttribute(
@@ -56,6 +64,10 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
   expect(await growth.locator('.grid-line').count()).toBeGreaterThanOrEqual(4);
   await expect(growth.getByText('Year', { exact: true })).toBeVisible();
   await expect(growth.getByText('Portfolio Balance ($)', { exact: true })).toBeVisible();
+  const xTickLabels = (await growth.locator('.x-tick-label').allTextContents()).map(value => value.trim());
+  for (const label of xTickLabels) {
+    expect(label).toMatch(/^(Jan|Jul) \d{4}$/);
+  }
 
   const firstPoint = growth.locator('circle[aria-label]').first();
   const firstPointLabel = await firstPoint.getAttribute('aria-label');
@@ -65,6 +77,11 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
   await expect(growth.locator('#growth-tooltip')).toContainText(firstPointLabel.split(' | ')[0]);
   await firstPoint.focus();
   await expect(growth.locator('#growth-tooltip')).toBeVisible();
+
+  const metricsHeaders = (await page.locator('#metrics th').allTextContents()).map(value => value.trim());
+  expect(metricsHeaders[0]).toBe('Metric');
+  expect(metricsHeaders.map(value => value.toLowerCase())).not.toContain('portfolio');
+  expect(metricsHeaders.map(value => value.toLowerCase())).not.toContain('value');
 
   for (const id of [
     'metrics',
@@ -107,6 +124,20 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     await expect(page.locator('#activeReturns')).toBeVisible();
     await expect(page.locator('#activeReturns h2')).toHaveText('Active Returns');
     await expect(page.locator('.sidebar').getByText('Active Returns', { exact: true })).toBeVisible();
+    for (const heading of ['Benchmark Summary', 'Annual Active Return', 'Active Return Contribution', 'Up / Down Market Performance']) {
+      await expect(page.locator('#activeReturns').getByText(heading, { exact: true })).toBeVisible();
+    }
+    const activeText = await page.locator('#activeReturns').innerText();
+    for (const storageName of [
+      'portfolio_return',
+      'benchmark_return',
+      'active_return',
+      'rolling_tracking_error_pct',
+      'cumulative_active_contribution_pct',
+    ]) {
+      expect(activeText).not.toContain(storageName);
+    }
+    await expect(growth.locator('.legend')).toContainText(benchmarkText);
   }
 
   await page.screenshot({
@@ -155,6 +186,10 @@ test.describe('deterministic Backtest browser fixture', () => {
     await expect(page.locator('#allocation')).toContainText('Balanced');
     await expect(page.locator('#allocation')).toContainText('QQQ');
     await expect(page.locator('#allocation')).toContainText('GLD');
+    const allocationHeaders = (await page.locator('#allocation th').allTextContents()).map(value => value.trim());
+    expect(allocationHeaders.slice(1, 3)).toEqual(['Growth Tilt', 'Balanced']);
+    const performanceHeaders = (await page.locator('#performance th').allTextContents()).map(value => value.trim());
+    expect(performanceHeaders.slice(1, 4)).toEqual(['Growth Tilt', 'Balanced', 'SPDR S&P 500 ETF Trust']);
   });
 
   test('benchmark-none report omits benchmark-relative analytics', async ({ page }, testInfo) => {
