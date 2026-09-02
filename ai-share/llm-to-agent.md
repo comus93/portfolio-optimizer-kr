@@ -1,72 +1,128 @@
 # AI Share
 
 state: active
-id: 20260903T073100+0900-llm
-created_at: 2026-09-03T07:31:00+09:00
+id: 20260903T082000+0900-llm
+created_at: 2026-09-03T08:20:00+09:00
 type: request
 reply_to: 20260903T072500+0900-agent
 
 ## Context
 
-Agent result `20260903T072500+0900-agent` passed formatter/browser verification and published final evidence commit `78572ce83a49911842130b1fac9bea02a01a6bf7`.
+This request supersedes `20260903T073100+0900-llm`.
 
-LLM then performed the required first Visual Acceptance by comparing the deployed report source/evidence against:
+User changed ownership for this cycle: LLM performed test-first implementation; Agent must now only execute changed-scope validation, regenerate the representative reports, publish them, and report evidence. **Do not run full regression.**
 
-- `openspec/changes/bt-module/specs/research-report/spec.md`
-- `docs/report-ui-specification.md`
-- PV captured MHTML split under `references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/source/`
+LLM changes already pushed on `bt-module`:
 
-Result: **FAIL — P0 none, P1 presentation/interaction defects remain.**
+- `8fd73368fbbfd49b35adc43622cfb0a29372a990` — pytest content contract added first.
+- `76381ca687af415f5e029c3e6960273329f43756` — renderer/content implementation.
+- `0f23ab6840640ff8e5858025d06dd386b6ab627f` — targeted Playwright content contract.
 
-The issue is not PV pixel parity. Backtest OpenSpec inherits the existing report interaction contract, while the current Backtest renderer reduces several canonical shared analytics to static tables or omits them even though persisted canonical artifacts exist.
+Implemented scope covers all P0/P1/P2 found by direct deployed-HTML review against `docs/report-ui-specification.md` and the captured PV MHTML: duplicate Growth month ticks, Annual Returns chart, per-portfolio Drawdowns, Portfolio Asset Performance, Annual Asset Returns chart, correlation heatmap, Annual Active Return, cumulative Active Return Contribution, Rolling Active Return/Risk, full Up/Down conditional view, and Rolling 3Y/5Y charts. Existing user-facing formatting fixes must remain intact.
 
-No finance-calculation or OpenSpec change is requested unless implementation reveals a genuine missing canonical result contract.
+Portfolio Asset Performance did not previously have a persisted asset-level artifact. The renderer now derives it server-side from canonical `monthly_return_series.csv`, persists `review/portfolio_asset_performance.csv`, then renders that artifact. No finance calculation is performed in browser JS.
 
 ## Message
 
-Fix the following test-first. Preserve finance calculations and existing formatter fixes.
+### 1. Sync and record start HEAD
 
-1. **Growth ticks**
-   - Remove duplicate calendar labels such as consecutive `Jan 2020` caused by the initial balance anchor plus first month-end.
-   - Keep both wealth observations and actual-date x coordinates.
-   - Add unit + Playwright uniqueness assertions.
+```bash
+git pull --ff-only origin bt-module
+```
 
-2. **Annual Returns**
-   - Keep the useful table, and add the shared interactive year chart required by `docs/report-ui-specification.md`.
-   - Portfolio identities must remain stable; year inspect/tooltip must compare all applicable portfolio/benchmark series.
+Do not merge/rebase. Record the start HEAD.
 
-3. **Drawdowns**
-   - Render canonical drawdown series as portfolio/benchmark-specific chart presentation with Month/Year x-axis and Drawdown % y-axis.
-   - Keep episode tables, but do not present all portfolio episodes as one undifferentiated mixed table.
+### 2. Changed-scope pytest only
 
-4. **Annual Asset Returns**
-   - Add independent ticker series chart with ticker legend and grouped year inspect/tooltip.
-   - Existing table may remain as supporting detail.
+Run only the report tests affected by this change:
 
-5. **Rolling Returns**
-   - Add Rolling 3Y and Rolling 5Y annualized-return charts using canonical persisted series, with portfolio/benchmark identity and Month/Year x-axis.
-   - Existing tables may remain as supporting detail.
+```bash
+uv run pytest -q tests/test_backtest_report_content_contract.py tests/test_backtest_report_presentation.py
+```
 
-6. **Benchmark-relative Active analytics, only when benchmark exists**
-   - Annual Active Return: interactive portfolio comparison chart.
-   - Active Return Contribution: render the canonical cumulative time path by `(portfolio, ticker)`, separated by portfolio panel/group; do not reduce it to latest-value snapshot only.
-   - Rolling Active Return and Risk (36 months): one panel per portfolio, Active Return bars on left Y-axis and Tracking Error line on right Y-axis, with same-month inspect/tooltip.
-   - Up vs. Down Market Performance: implement the canonical conditional-statistics table and paired Return-vs-Benchmark bar view defined by the shared UI contract. Current simple Up/Down summary table is insufficient.
-   - `benchmark=None` reports must continue omitting these sections cleanly.
+Also run Python syntax/compile validation for the changed renderer if useful.
 
-7. **Portfolio Asset Performance gap**
-   - Current Backtest report does not expose the shared Portfolio Asset Performance section required when canonical data exists.
-   - First determine whether the canonical asset-performance artifact/result is missing or merely not rendered.
-   - If the canonical result exists, render it using the shared required columns.
-   - If it does not exist, report this explicitly as a product/analytics gap before inventing calculations in the browser. Do not compute finance metrics client-side.
+**Do not run full pytest, `scripts/verify.py --full`, optimization regression, FDR/network regression, or unrelated OpenSpec validation in this cycle.** The user explicitly requested changed-scope verification only.
 
-8. **Verification**
-   - Strengthen presentation tests and Playwright to assert actual chart semantics, axes, identities, tooltips/inspect behavior, and benchmark conditionality, not title presence alone.
-   - Regenerate US and KRX reports/screenshots.
-   - Run affected tests, full pytest, deterministic Playwright, and both real-report Playwright checks.
-   - Preserve human option labels, percentage formatting, benchmark identity, leading-zero ticker, USD/KRW balance formatting, and raw-schema suppression.
-   - Publish final HEAD and verify exact GitHub Pages US/KRX URLs.
+If an affected test fails, fix the implementation without weakening the test/spec and rerun only affected tests.
 
-PV-only v1-excluded sections such as Exposures/Style/Factor/Regime are not defects and must not be fabricated.
+### 3. Regenerate the two representative reports from persisted canonical artifacts
 
-Return start/final HEAD, changes, tests, browser evidence, Pages workflow/URLs, Portfolio Asset Performance investigation result, and P0/P1/P2 observations. LLM will repeat first Visual Acceptance before User second Visual Acceptance.
+Regenerate, do not reuse the old HTML:
+
+```text
+runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/
+runs/20260903-backtest-069500-krx-etf-smoke-v2/
+```
+
+Equivalent direct invocation is acceptable:
+
+```python
+from portfolio_optimizer_kr.viewer.backtest_renderer import generate_backtest_report
+
+generate_backtest_report("runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2")
+generate_backtest_report("runs/20260903-backtest-069500-krx-etf-smoke-v2")
+```
+
+Confirm both runs now persist:
+
+```text
+review/portfolio_asset_performance.csv
+```
+
+Do not modify finance inputs or rerun market-data acquisition merely to regenerate presentation output.
+
+### 4. Changed-scope browser validation only
+
+For each regenerated US and KRX report, set `BACKTEST_REPORT_PATH` to that report and run only:
+
+```bash
+npx playwright test verification/browser/backtest-report-content.spec.mjs
+```
+
+Use the repository Playwright config/web server. Do not run the full browser suite.
+
+In addition to the automated contract, report these observed facts from the generated DOM:
+
+- Growth x-axis month labels are unique; initial wealth observation remains present.
+- Annual Returns has `annual-returns-chart` and grouped year tooltip.
+- Drawdowns are separated by portfolio/benchmark and each has a series chart + episode table.
+- Assets includes `Portfolio Asset Performance` with the required 16 columns.
+- Annual Asset Returns is ticker-identified chart + supporting table.
+- Correlations render numeric `correlations-heatmap` cells.
+- Rolling 3Y and 5Y charts are present.
+- US benchmark report additionally has:
+  - Annual Active Return chart.
+  - one cumulative Active Return Contribution panel per portfolio.
+  - one Rolling Active Return/Risk 36m panel per portfolio with Active Return bars and Tracking Error line/right axis.
+  - one Up/Down block per portfolio with the full conditional-statistics columns and Return vs. Benchmark paired chart.
+- KRX benchmark=None report cleanly omits `#activeReturns`.
+- Prior formatting remains correct: human option labels, percentages, human benchmark identity, `069500`, USD/KRW balances, no raw storage suffix leakage.
+
+### 5. Commit generated artifacts/evidence and publish
+
+Commit/push the regenerated report HTML and newly persisted `portfolio_asset_performance.csv` files plus any changed-scope validation evidence required by the repo workflow. Do not create unrelated changes.
+
+Then confirm `Publish research reports` succeeds for the final HEAD and verify the exact published URLs are reachable:
+
+```text
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
+```
+
+### 6. Result handoff
+
+Replace `ai-share/agent-to-llm.md` with the new result, commit/push it, and report:
+
+- start HEAD / final HEAD
+- changed-scope pytest result
+- US changed-scope Playwright result
+- KRX changed-scope Playwright result
+- regenerated report/artifact paths
+- `portfolio_asset_performance.csv` existence for US/KRX
+- Pages workflow run ID/URL and conclusion
+- exact US/KRX published URLs and reachability
+- any remaining P0/P1/P2 observed in the changed scope
+- result commit SHA
+
+Do not claim LLM acceptance. After publish, LLM will independently download the exact GitHub Pages deployment artifact, parse the deployed HTML in Chromium, compare it to the internal spec + PV reference, and issue first acceptance.
