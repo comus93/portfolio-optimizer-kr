@@ -1,34 +1,33 @@
 # AI Share
 
 state: active
-id: 20260902T224200+0900-llm
-created_at: 2026-09-02T22:42:00+09:00
+id: 20260902T231500+0900-llm
+created_at: 2026-09-02T23:15:00+09:00
 type: request
-reply_to: none
+reply_to: 20260902T225728+0900-agent
 
 ## Context
 
-Backtest v1 구현과 테스트가 `bt-module`에 반영되어 있다. 이번 요청의 Agent 역할은 요구사항 재설계가 아니라 **실제 checkout에서 dependency setup → test → real run → Playwright browser verification → evidence/reporting → 필요 시 구현 수정/재검증**이다.
+이전 Agent 검증에서 Python/Playwright/real-run은 통과했지만 두 문제가 남았다.
 
-사용자 환경 참고:
+1. `bt-module` OpenSpec strict가 Requirement 문장에 RFC2119 keyword가 없어 실패했다.
+2. 첫 report는 machine acceptance는 통과했지만 PV MHTML 대비 정보구조/차트 기능 차이가 너무 커서 visual acceptance 이전 수준의 수정이 필요했다.
 
-- Codex Full CDP Access는 이미 활성화되어 있다.
-- 그러나 canonical automated browser acceptance는 repository-local **Playwright Chromium**이다.
-- CDP는 추가 진단용으로 사용할 수 있으며 Playwright를 대체하지 않는다.
+LLM이 이번에 직접 다음을 수정했다.
 
-새 browser verification 구성:
+- 모든 `openspec/changes/bt-module/specs/*/spec.md` Requirement를 실제 `MUST/MUST NOT` normative 문장으로 정리
+- `research-report`에 Summary information hierarchy, growth axis/tick/grid/visible tooltip contract 추가
+- `agent-verification`에 GitHub Pages publish + LLM 1차 visual acceptance + User 2차 visual acceptance 추가
+- `backtest_renderer.py`를 PV result information architecture에 더 가깝게 재구성
+  - Summary: Target Allocation → Performance Summary → Portfolio Growth → Trailing Returns
+  - conditional Active Returns
+  - Metrics / Annual Returns / Monthly Returns / Drawdowns / Assets / Rolling Returns
+  - Growth chart 중간 x/y ticks + y grid + axis titles + visible hover/focus tooltip
+- Playwright acceptance 강화
+- `.github/workflows/publish-reports.yml`이 `bt-module` persisted run도 GitHub Pages에 publish하도록 변경
+- `verification/profile.yaml`, `VERIFICATION.md`를 layered visual acceptance로 변경
 
-```text
-package.json
-playwright.config.mjs
-scripts/prepare_browser_fixture.py
-verification/browser/backtest-report.spec.mjs
-verification/profile.yaml
-scripts/verify.py
-VERIFICATION.md
-```
-
-Playwright는 localhost HTTP server에서 report를 검사한다. `file://` 검증이나 PV pixel-diff는 사용하지 않는다.
+PV pixel copy는 여전히 requirement가 아니다. 다만 canonical data가 있는데 결과 성격/기능을 지나치게 축약한 차이는 LLM 1차 acceptance에서 잡는다.
 
 ## Message
 
@@ -38,170 +37,140 @@ Playwright는 localhost HTTP server에서 report를 검사한다. `file://` 검�
 git pull --ff-only origin bt-module
 ```
 
-pull이 안전하지 않으면 임의 merge/rebase하지 말고 blocker를 보고한다.
+임의 merge/rebase 금지.
 
-### 1. One-time Playwright setup
-
-Node/npm 상태를 확인하고 repository root에서 실행한다.
+### 1. OpenSpec strict
 
 ```bash
-node --version
-npm --version
-npm install
-npx playwright install chromium
+npx -y @fission-ai/openspec@latest validate bt-module --strict
+npx -y @fission-ai/openspec@latest validate migrate-optimizer-to-openspec --strict
 ```
 
-- `npm install`로 정상 생성된 `package-lock.json`은 dependency lockfile로 commit/push한다.
-- 설치/Chromium download를 위해 network permission이 필요하면 사용자 승인을 받아 진행한다.
-- 테스트 통과를 위해 Playwright dependency/version 또는 browser check를 임의 제거하지 않는다.
+이번 RFC2119 수정 후에도 strict failure가 있으면 정확한 requirement/path/error를 보고한다. Requirement 의미를 바꾸어 통과시키지 않는다.
 
-### 2. OpenSpec + Python tests + deterministic browser fixture
+### 2. Tests + deterministic Playwright
 
 ```bash
 uv run python scripts/verify.py --openspec --full --browser
 ```
 
-이 명령은 다음을 수행해야 한다.
+특히 새 browser contract를 확인한다.
 
-```text
-OpenSpec strict validation
-→ targeted Backtest tests
-→ affected Optimization regression
-→ full pytest
-→ deterministic Backtest fixture 생성
-→ Playwright semantic/responsive acceptance
-```
+- Summary primary flow
+- allocation matrix identity
+- Growth x/y intermediate tick >= 4
+- y grid >= 4
+- `Year`, `Portfolio Balance ($)` axis semantics
+- mouse hover visible tooltip
+- keyboard focus visible tooltip
+- conditional Active Returns
+- Metrics / Annual / Monthly / Drawdowns / Assets / Rolling grouping
+- unsupported Style/Factor section fabricated 금지
+- mobile overflow regression
 
-Playwright fixture는 benchmark 있음/없음 두 report를 검사한다.
+구현 오류는 수정 후 재검증한다. Test/spec을 약화하지 않는다.
 
-Browser checks:
+### 3. KRX FinanceDataReader source/data-quality 조사
 
-- Overview: Time Period Mode / Requested Period / Effective Period / Initial Amount / Benchmark / Rebalancing / Calendar Aligned / Return Semantics
-- Target Allocation: portfolio / ticker / target weight identity
-- Growth chart: portfolio / date / actual balance semantics
-- Performance / Annual / Monthly / Drawdown / Rolling / Correlation / Decomposition 존재
-- Optimization-only `Efficient Frontier`, `Optimized Portfolio` 없음
-- benchmark=None이면 benchmark-relative section 없음
-- 390px viewport에서 document-level horizontal clipping 없음
-- 넓은 table/chart는 자체 horizontal scroll 가능
+LLM 조사 결과 현재 FDR 구현에서 `069500` 같은 6자리 KRX symbol의 default source는 NAVER이고, Naver reader schema는 `Open/High/Low/Close/Volume/Change`로 `Adj Close` column 자체가 없다. 즉 `Adj Close = null`이 아니라 **column absent**인 구조다.
 
-PASS 시에도 desktop/mobile screenshot이 Playwright test output에 생성된다. 실패 시 trace/screenshot도 남는다.
-
-### 3. FinanceDataReader total-return real-data check
-
-현재 contract는 canonical total return이며 price-only silent fallback은 금지다.
-
-최소 확인:
+실제 환경에서도 아래를 확인한다.
 
 ```python
 import FinanceDataReader as fdr
-print(fdr.DataReader("QQQ", "2025-01-01").columns)
-print(fdr.DataReader("GLD", "2025-01-01").columns)
-print(fdr.DataReader("SPY", "2025-01-01").columns)
-print(fdr.DataReader("069500", "2025-01-01").columns)
+
+for symbol in ["069500", "NAVER:069500", "KRX:069500"]:
+    df = fdr.DataReader(symbol, "2020-01-01", "2025-12-31")
+    print(symbol, df.columns.tolist())
+    print(df.isna().sum())
+    print("rows", len(df), "duplicates", df.index.duplicated().sum())
 ```
 
-- US ETF에서 `Adj Close`와 canonical loader 동작 확인
-- KRX ETF에서 total-return-capable field/source 확인
-- KRX에서 신뢰할 수 있는 total-return route를 확인하지 못하면 `Close` fallback을 추가하지 말고 blocker/deviation으로 보고
+추가 확인:
 
-### 4. Real Backtest run
+- default/NAVER `Close`와 explicit KRX `Close`가 동일 의미인지 단정하지 말 것
+- NAVER/default에 interior missing observations, duplicate date, 비정상적으로 긴 gap이 있는지 검사
+- monthly analysis에 필요한 각 calendar month의 usable observation이 존재하는지 검사
+- 가능하면 NAVER와 KRX의 공통 날짜 coverage/price 차이를 비교
+- FDR issue에서 NAVER 일부 종목/날짜 누락 사례가 보고되어 있으므로 단순 `dropna()` 후 성공으로 끝내지 말 것
 
-`configs/backtest-example.yaml`을 직접 변경/커밋하지 말고 임시 복사본과 unique run_id를 사용한다.
+중요: FDR issue #205에는 분배금이 사전 공지되는 국내 ETF의 default `Close`가 배당 고려 수정주가라는 사용자 보고가 있지만, 이것만으로 product contract를 변경하지 않는다. Issue #239에는 NAVER default는 수정주가, explicit KRX는 비수정주가라는 보고도 있다. **현재 구현의 KRX unsupported 정책을 완화하려면 source semantics를 신뢰할 수 있게 입증해야 한다.** 이번 검증에서 근거가 부족하면 blocker/deviation을 유지한다. Price-only silent fallback 금지.
 
-최소 대표 run:
+### 4. Fresh real run + report
+
+기존 validation report를 재사용하지 말고 현재 renderer로 새 unique run을 생성한다.
+
+대표 조건:
 
 ```text
 QQQ / GLD
 benchmark SPY
 2 portfolios
+2020-2025
 Month-to-Month
-Monthly rebalance
+Monthly
 Calendar Aligned Yes
-Initial Amount 10,000
+Initial 10,000
 ```
 
-가능하면 추가 run:
+가능하면 benchmark=None 3-portfolio run도 유지한다.
 
-```text
-3 portfolios
-benchmark None
-Year-to-Year
-Quarterly
-Calendar Aligned No
-```
-
-확인:
-
-- `result.json`에 optimization/frontier domain 없음
-- portfolio identity/target weights 독립
-- actual initial balance 반영
-- period/observation count 정상
-- `raw/`, `review/`, `report.html` 생성
-- benchmark None이면 benchmark-relative artifact/UI가 허위 생성되지 않음
-- Calendar Aligned No가 first-active-month anchor 의미를 따름
-
-대표 validation run은 기존 overwrite 금지 원칙을 지켜 보존한다.
-
-### 5. Playwright verification against the real report
-
-실제 run의 report를 아래 entrypoint로 검사한다.
+각 report를 실제 Playwright로 검증:
 
 ```bash
-uv run python scripts/verify.py --browser-report runs/<run-id>/report.html
+uv run python scripts/verify.py --browser-report runs/<new-run-id>/report.html
 ```
 
-또는 동등하게 `BACKTEST_REPORT_PATH`를 지정해 `npx playwright test`를 실행할 수 있다.
+### 5. Persist + GitHub Pages publish
 
-Playwright output:
+대표 validation run과 필요한 `validation/` evidence를 commit/push한다. `.github/workflows/publish-reports.yml`의 GitHub Pages deployment가 성공하는지 확인한다.
+
+반드시 다음을 handoff에 기록한다.
+
+- GitHub Pages base URL
+- 대표 run의 **exact published report URL**
+- Pages deployment 성공 여부 / workflow run URL 또는 식별자
+
+로컬 screenshot/file path만으로 visual acceptance를 완료하지 않는다.
+
+### 6. Visual acceptance boundary
+
+Agent는 Playwright machine acceptance와 obvious P0/P1/P2 관찰까지만 수행한다.
+
+그 다음 단계는 Agent가 최종 판정하지 않는다.
 
 ```text
-playwright-report/
-test-results/playwright/
+Published GitHub Pages report
+        ↓
+LLM 1차 visual acceptance
+  - published page vs captured PV MHTML
+  - information architecture
+  - output data/function character
+  - section grouping
+  - chart semantics/interaction
+        ↓
+문제 있으면 LLM 수정 → Agent reverify/publish
+        ↓
+User 2차 visual acceptance
+  - 실제 page에서 usability/layout/readability/polish 관능 평가
 ```
 
-대표 validation evidence를 영구 보존할 필요가 있으면 필요한 desktop/mobile screenshot과 요약을 `runs/<run-id>/validation/`에 복사해 commit한다.
+따라서 handoff에는 `human visual pending`만 쓰는 것이 아니라 **`LLM first-pass visual acceptance pending`**이라고 명확히 기록한다.
 
-### 6. Visual review boundary
+### 7. Result handoff
 
-Agent는 screenshot을 보고 명백한 clipping, overlap, unreadable label, broken layout 등의 P0/P1/P2 관찰을 기록할 수 있다.
-
-하지만 **human visual acceptance의 최종 PASS는 Agent가 대신 선언하지 않는다.** Agent는 screenshot/evidence와 관찰사항을 준비한다. 사용자가 최종 visual gate를 판단한다.
-
-Full CDP Access는 Playwright 실패 원인 추적, DOM/console/network 조사에 자유롭게 사용해도 된다.
-
-### 7. Fix and re-verify
-
-구현 버그는 직접 수정하고 affected 단계부터 다시 실행한다.
-
-금지:
-
-- OpenSpec requirement/사용자 결정 변경
-- finance 계산 규칙을 테스트에 맞춰 임의 변경
-- 테스트 삭제/완화/skip/xfail
-- price-only `Close`를 total return으로 silent fallback
-- 기존 `docs/*.md`를 Backtest normative source로 변경
-- Playwright check를 통과시키기 위해 검사 자체를 약화
-
-새로운 제품/finance 의사결정이 필요하면 blocker로 남긴다.
-
-### 8. Result handoff
-
-완료 후 `ai-share/agent-to-llm.md`를 최신 result 하나로 교체하고 commit/push한다.
+`ai-share/agent-to-llm.md` 전체 교체 후 commit/push.
 
 최소 보고:
 
-- start HEAD / final HEAD
-- Node/npm/Playwright setup 결과와 `package-lock.json` commit 여부
-- OpenSpec strict validation
-- targeted / affected regression / full pytest
-- deterministic Playwright 결과
-- FDR US/KRX total-return 확인
-- real run command / run_id / path / 핵심 sanity values
-- real-report Playwright 결과
-- desktop/mobile screenshot evidence 위치
-- visual P0/P1/P2 관찰사항, human gate는 pending으로 표시
-- unresolved blocker/deviation
+- start/final HEAD
+- OpenSpec strict 두 change 결과
+- targeted/regression/full pytest
+- deterministic + real-report Playwright
+- KRX default/NAVER/KRX columns, null/missing/duplicate/gap/month coverage 조사 결과
+- 새 real run id/path와 sanity values
+- Pages deployment 상태 + exact published report URL
+- Agent P0/P1/P2 observation
+- `LLM first-pass visual acceptance pending`
+- unresolved KRX total-return blocker/deviation
 - result commit SHA
-
-remote push까지 완료되어야 handoff 완료로 간주한다.
