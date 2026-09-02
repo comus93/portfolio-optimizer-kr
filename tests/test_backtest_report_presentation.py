@@ -7,8 +7,13 @@ import pandas as pd
 from portfolio_optimizer_kr.viewer.backtest_renderer import (
     _active_returns_presentation,
     _allocation_matrix,
+    _annual_asset_returns_table,
+    _correlations_table,
+    _decomposition_table,
+    _display_option,
     _growth_svg,
     _metrics_matrix,
+    _money,
     _performance_summary,
     _trailing_returns_table,
 )
@@ -211,3 +216,84 @@ def test_active_returns_primary_presentation_does_not_dump_monthly_storage_schem
         "cumulative_active_contribution_pct",
     ]:
         assert storage_name not in rendered
+
+
+def test_asset_tables_format_canonical_units_and_preserve_identity():
+    annual_assets = pd.DataFrame(
+        [{"year": 2025, "ticker": "069500", "return": 0.3556325823223574}]
+    )
+    correlations = pd.DataFrame(
+        [
+            {"series": "QQQ", "QQQ": 1.0, "benchmark": 0.9181795019152512},
+            {"series": "benchmark", "QQQ": 0.9181795019152512, "benchmark": 1.0},
+        ]
+    )
+
+    annual_html = _annual_asset_returns_table(annual_assets)
+    correlation_html = _correlations_table(correlations, BENCHMARK)
+
+    assert "069500" in annual_html
+    assert "69500.0" not in annual_html
+    assert "35.56%" in annual_html
+    assert "0.3556325823223574" not in annual_html
+    assert "QQQ" in correlation_html
+    assert "Qqq" not in correlation_html
+    assert correlation_html.count(BENCHMARK_HTML) >= 2
+    assert "0.92" in correlation_html
+    assert "0.9181795019152512" not in correlation_html
+
+
+def test_decomposition_tables_remove_storage_labels_and_format_values():
+    returns = pd.DataFrame(
+        [
+            {
+                "asset": "contribution_QQQ",
+                "Growth 70/30_contribution_balance": 13881.150834305976,
+                "Balanced 50/50_contribution_balance": 9708.042798098482,
+            }
+        ]
+    )
+    risk = pd.DataFrame(
+        [
+            {
+                "asset": "QQQ",
+                "Growth 70/30_risk_contribution_pct": 87.76956876859154,
+                "Balanced 50/50_risk_contribution_pct": 63.811227368534794,
+            }
+        ]
+    )
+
+    returns_html = _decomposition_table(returns, PORTFOLIOS, currency="USD")
+    risk_html = _decomposition_table(risk, PORTFOLIOS, currency="USD")
+
+    assert "contribution_QQQ" not in returns_html
+    assert "Contribution Balance" not in returns_html
+    assert "$13,881" in returns_html
+    assert "13881.150834305976" not in returns_html
+    assert "Risk Contribution" not in risk_html
+    assert "87.77%" in risk_html
+
+
+def test_report_options_and_money_are_human_facing():
+    assert _display_option("month_to_month") == "Month-to-Month"
+    assert _display_option("year_to_year") == "Year-to-Year"
+    assert _display_option("canonical_total_return") == "Total Return"
+    assert _display_option("semiannual") == "Semiannual"
+    assert _money(10000, "USD") == "$10,000"
+    assert _money(10000, "KRW") == "\u20a910,000"
+
+
+def test_growth_chart_uses_configured_currency_without_duplicate_symbol():
+    dates = pd.date_range("2025-01-31", "2025-03-31", freq="ME")
+    growth = pd.DataFrame(
+        {
+            "date": dates,
+            "KODEX 200 100%_balance": [10000, 11000, 12000],
+        }
+    )
+
+    chart = _growth_svg(growth, ["KODEX 200 100%"], currency="KRW")
+
+    assert "Portfolio Balance (\u20a9)" in chart
+    assert "\u20a910,000" in chart
+    assert "$10,000" not in chart

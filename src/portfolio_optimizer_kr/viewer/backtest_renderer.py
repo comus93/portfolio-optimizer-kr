@@ -38,6 +38,17 @@ _TRAILING_COLUMNS = [
     ("5y_annualized_volatility_pct", "5 Year Annualized Standard Deviation"),
 ]
 
+_OPTION_LABELS = {
+    "month_to_month": "Month-to-Month",
+    "year_to_year": "Year-to-Year",
+    "canonical_total_return": "Total Return",
+    "none": "None",
+    "yearly": "Yearly",
+    "semiannual": "Semiannual",
+    "quarterly": "Quarterly",
+    "monthly": "Monthly",
+}
+
 
 def _esc(value: Any) -> str:
     return html.escape("" if value is None else str(value))
@@ -58,19 +69,59 @@ def _fraction_pct(value: Any) -> str:
     return f"{float(value) * 100:,.2f}%" if _finite(value) else "N/A"
 
 
-def _money(value: Any) -> str:
-    return f"${float(value):,.0f}" if _finite(value) else "N/A"
+def _currency_label(currency: str) -> str:
+    code = str(currency or "USD").upper()
+    return {"USD": "$", "KRW": "\u20a9"}.get(code, code)
+
+
+def _money(value: Any, currency: str = "USD") -> str:
+    if not _finite(value):
+        return "N/A"
+    code = str(currency or "USD").upper()
+    symbol = {"USD": "$", "KRW": "\u20a9"}.get(code)
+    return f"{symbol}{float(value):,.0f}" if symbol else f"{code} {float(value):,.0f}"
 
 
 def _ratio(value: Any) -> str:
     return f"{float(value):,.3f}" if _finite(value) else "N/A"
 
 
+def _correlation(value: Any) -> str:
+    return f"{float(value):,.2f}" if _finite(value) else "N/A"
+
+
+def _display_option(value: Any) -> str:
+    text = str(value or "")
+    return _OPTION_LABELS.get(text, _human_column(text))
+
+
+def _base_currency(configuration: dict[str, Any]) -> str:
+    currencies = {
+        str(asset.get("currency") or "").upper()
+        for asset in configuration.get("assets", [])
+        if isinstance(asset, dict) and asset.get("currency")
+    }
+    benchmark = configuration.get("benchmark")
+    if isinstance(benchmark, dict) and benchmark.get("currency"):
+        currencies.add(str(benchmark["currency"]).upper())
+    if "KRW" in currencies:
+        return "KRW"
+    return next(iter(currencies)) if len(currencies) == 1 else "USD"
+
+
 def _read_csv(path: Path) -> pd.DataFrame:
     if not path.is_file() or path.stat().st_size == 0:
         return pd.DataFrame()
     try:
-        return pd.read_csv(path)
+        return pd.read_csv(
+            path,
+            dtype={
+                "asset": "string",
+                "portfolio": "string",
+                "series": "string",
+                "ticker": "string",
+            },
+        )
     except pd.errors.EmptyDataError:
         return pd.DataFrame()
 
@@ -147,12 +198,19 @@ def _friendly_table(
     portfolio_order: list[str] | None = None,
     benchmark_label: str | None = None,
     fraction_columns: set[str] | None = None,
+    money_columns: set[str] | None = None,
+    ratio_columns: set[str] | None = None,
+    column_labels: dict[str, str] | None = None,
+    currency: str = "USD",
     table_id: str | None = None,
 ) -> str:
     if frame.empty:
         return '<p class="muted">N/A</p>'
     rendered = frame.copy()
     fraction_columns = fraction_columns or set()
+    money_columns = money_columns or set()
+    ratio_columns = ratio_columns or set()
+    column_labels = column_labels or {}
     if "portfolio" in rendered.columns:
         order = portfolio_order or []
         ranking = {name: index for index, name in enumerate(order)}
@@ -167,9 +225,17 @@ def _friendly_table(
         rendered["portfolio"] = rendered["portfolio"].map(
             lambda value: _display_portfolio(value, benchmark_label)
         )
+    if "series" in rendered.columns:
+        rendered["series"] = rendered["series"].map(
+            lambda value: _display_portfolio(value, benchmark_label)
+        )
     for column in rendered.columns:
         if column in fraction_columns:
             rendered[column] = rendered[column].map(_fraction_pct)
+        elif column in money_columns:
+            rendered[column] = rendered[column].map(lambda value: _money(value, currency))
+        elif column in ratio_columns:
+            rendered[column] = rendered[column].map(_correlation)
         elif column.endswith("_pct"):
             rendered[column] = rendered[column].map(_pct)
         elif column == "date":
@@ -177,9 +243,66 @@ def _friendly_table(
                 lambda value: value.date().isoformat() if not pd.isna(value) else "N/A"
             )
     rendered = rendered.rename(
-        columns={column: _human_column(column, benchmark_label) for column in rendered.columns}
+        columns={
+            column: column_labels.get(column, _human_column(column, benchmark_label))
+            for column in rendered.columns
+        }
     )
     return _table(rendered, table_id=table_id)
+
+
+def _annual_asset_returns_table(frame: pd.DataFrame) -> str:
+    return _friendly_table(frame, fraction_columns={"return"})
+
+
+def _correlations_table(frame: pd.DataFrame, benchmark_label: str | None) -> str:
+    value_columns = set(frame.columns) - {"series"}
+    column_labels = {column: column for column in value_columns}
+    if "benchmark" in column_labels:
+        column_labels["benchmark"] = benchmark_label or "Benchmark"
+    return _friendly_table(
+        frame,
+        benchmark_label=benchmark_label,
+        ratio_columns=value_columns,
+        column_labels=column_labels,
+    )
+
+
+def _decomposition_table(
+    frame: pd.DataFrame,
+    portfolio_order: list[str] | None,
+    *,
+    currency: str,
+) -> str:
+    if frame.empty:
+        return '<p class="muted">N/A</p>'
+    rendered = frame.copy()
+    if "asset" in rendered.columns:
+        rendered["asset"] = rendered["asset"].map(
+            lambda value: str(value).removeprefix("contribution_")
+        )
+    value_columns = [column for column in rendered.columns if column != "asset"]
+    requested = portfolio_order or []
+    suffixes = ("_contribution_balance", "_risk_contribution_pct")
+
+    def identity(column: str) -> str:
+        for suffix in suffixes:
+            if column.endswith(suffix):
+                return column[: -len(suffix)]
+        return column
+
+    ranking = {name: index for index, name in enumerate(requested)}
+    value_columns.sort(key=lambda column: ranking.get(identity(column), len(ranking)))
+    rendered = rendered[[column for column in ["asset", *value_columns] if column in rendered]]
+    labels = {column: identity(column) for column in value_columns}
+    money_columns = {column for column in value_columns if column.endswith("_balance")}
+    return _friendly_table(
+        rendered,
+        portfolio_order=portfolio_order,
+        money_columns=money_columns,
+        column_labels=labels,
+        currency=currency,
+    )
 
 
 def _allocation_matrix(frame: pd.DataFrame, portfolio_order: list[str] | None = None) -> str:
@@ -267,6 +390,7 @@ def _growth_svg(
     frame: pd.DataFrame,
     portfolio_order: list[str] | None = None,
     series_labels: dict[str, str] | None = None,
+    currency: str = "USD",
 ) -> str:
     if frame.empty or "date" not in frame:
         return '<p class="muted">N/A</p>'
@@ -332,7 +456,7 @@ def _growth_svg(
         )
         y_labels.append(
             f'<text x="{margin_left - 12}" y="{y + 4:.2f}" text-anchor="end" '
-            f'class="axis-label y-tick-label">{_esc(_money(tick))}</text>'
+            f'class="axis-label y-tick-label">{_esc(_money(tick, currency))}</text>'
         )
 
     x_ticks: list[str] = []
@@ -370,7 +494,7 @@ def _growth_svg(
                 f'points="{polyline}" class="growth-series" data-series="{_esc(label)}" />'
             )
             for x, y, date, raw_value in coords:
-                title = _esc(f"{date} | {label}: ${raw_value:,.0f}")
+                title = _esc(f"{date} | {label}: {_money(raw_value, currency)}")
                 points.append(
                     f'<circle cx="{x:.2f}" cy="{y:.2f}" r="5" fill="{color}" '
                     f'class="growth-point" tabindex="0" aria-label="{title}" '
@@ -392,7 +516,7 @@ def _growth_svg(
         {''.join(y_labels)}
         {''.join(x_ticks)}
         <text x="{margin_left + plot_w / 2:.2f}" y="{_DEF_HEIGHT - 14}" text-anchor="middle" class="axis-title">Year</text>
-        <text x="22" y="{margin_top + plot_h / 2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 22 {margin_top + plot_h / 2:.2f})">Portfolio Balance ($)</text>
+        <text x="22" y="{margin_top + plot_h / 2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 22 {margin_top + plot_h / 2:.2f})">Portfolio Balance ({_esc(_currency_label(currency))})</text>
         {''.join(paths)}
         {''.join(points)}
       </svg>
@@ -406,6 +530,7 @@ def _performance_summary(
     benchmark: pd.DataFrame,
     portfolio_order: list[str] | None = None,
     benchmark_label: str | None = None,
+    currency: str = "USD",
 ) -> str:
     if frame.empty:
         return '<p class="muted">N/A</p>'
@@ -427,7 +552,7 @@ def _performance_summary(
             if kind == "pct":
                 formatted.append(_pct(value))
             elif kind == "balance":
-                formatted.append(_money(value))
+                formatted.append(_money(value, currency))
             else:
                 formatted.append(_ratio(value))
         rendered[column] = formatted
@@ -498,6 +623,7 @@ def _metrics_matrix(
     portfolio_order: list[str] | None = None,
     benchmark_label: str | None = None,
     fallback_performance: pd.DataFrame | None = None,
+    currency: str = "USD",
 ) -> str:
     if frame.empty or not {"portfolio", "metric", "value"}.issubset(frame.columns):
         if (
@@ -517,7 +643,11 @@ def _metrics_matrix(
                 values = fallback_performance[column]
                 if "unit" in fallback_performance.columns:
                     values = [
-                        _pct(value) if unit == "pct" else _money(value) if unit == "balance" else _ratio(value)
+                        _pct(value)
+                        if unit == "pct"
+                        else _money(value, currency)
+                        if unit == "balance"
+                        else _ratio(value)
                         for value, unit in zip(values, fallback_performance["unit"])
                     ]
                 formatted[_display_portfolio(column, benchmark_label)] = values
@@ -751,6 +881,7 @@ def generate_backtest_report(
         if isinstance(benchmark_cfg, dict)
         else None
     )
+    currency = _base_currency(configuration)
     portfolio_order = _portfolio_order(allocations, [])
     if not portfolio_order:
         portfolio_order = list((result.get("portfolio_definitions") or {}).keys())
@@ -855,31 +986,31 @@ tbody tr:nth-child(even) {{ background:#fafbfc; }}
   <h2>Summary</h2>
   <div class="meta">
     <div><b>Run ID</b>{_esc(configuration.get('run_id'))}</div>
-    <div><b>Time Period</b>{_esc(configuration.get('time_period_mode'))}</div>
+    <div><b>Time Period</b>{_esc(_display_option(configuration.get('time_period_mode')))}</div>
     <div><b>Requested</b>{_esc(period.get('start'))} → {_esc(period.get('end'))}</div>
     <div><b>Effective</b>{_esc(coverage.get('start'))} → {_esc(coverage.get('end'))} ({_esc(coverage.get('observations'))} months)</div>
-    <div><b>Initial Amount</b>{_money(configuration.get('initial_balance'))}</div>
+    <div><b>Initial Amount</b>{_money(configuration.get('initial_balance'), currency)}</div>
     <div><b>Benchmark</b>{_esc(benchmark_label or 'None')}</div>
-    <div><b>Rebalancing</b>{_esc(configuration.get('rebalancing_period'))}</div>
+    <div><b>Rebalancing</b>{_esc(_display_option(configuration.get('rebalancing_period')))}</div>
     <div><b>Calendar Aligned</b>{alignment}</div>
-    <div><b>Return Semantics</b>{_esc(configuration.get('return_semantics'))}</div>
+    <div><b>Return Semantics</b>{_esc(_display_option(configuration.get('return_semantics')))}</div>
   </div>
   <div id="allocation" class="summary-block"><h3>Target Allocation</h3>{_allocation_matrix(allocations, portfolio_order)}</div>
-  <div id="performance" class="summary-block"><h3>Performance Summary</h3>{_performance_summary(performance, benchmark, portfolio_order, benchmark_label)}</div>
-  <div id="growth" class="summary-block"><h3>Portfolio Growth</h3>{_growth_svg(growth, portfolio_order, series_labels)}</div>
+  <div id="performance" class="summary-block"><h3>Performance Summary</h3>{_performance_summary(performance, benchmark, portfolio_order, benchmark_label, currency)}</div>
+  <div id="growth" class="summary-block"><h3>Portfolio Growth</h3>{_growth_svg(growth, portfolio_order, series_labels, currency)}</div>
   <div id="trailing" class="summary-block"><h3>Trailing Returns</h3>{_trailing_returns_table(trailing, portfolio_order, benchmark_label)}</div>
 </section>
 {active_section}
-<section id="metrics" class="result-section"><h2>Metrics</h2>{_metrics_matrix(portfolio_metrics, portfolio_order, benchmark_label, performance)}</section>
+<section id="metrics" class="result-section"><h2>Metrics</h2>{_metrics_matrix(portfolio_metrics, portfolio_order, benchmark_label, performance, currency)}</section>
 <section id="annualReturns" class="result-section"><h2>Annual Returns</h2>{_friendly_table(annual, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="monthlyReturns" class="result-section"><h2>Monthly Returns</h2>{_friendly_table(monthly, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="drawdowns" class="result-section"><h2>Drawdowns</h2>{_friendly_table(drawdowns, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="assets" class="result-section">
   <h2>Assets</h2>
-  <h3>Annual Asset Returns</h3>{_friendly_table(annual_assets, benchmark_label=benchmark_label)}
-  <h3>Correlations</h3>{_friendly_table(correlations, benchmark_label=benchmark_label)}
-  <h3>Return Decomposition</h3>{_friendly_table(returns_decomp, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}
-  <h3>Risk Decomposition</h3>{_friendly_table(risk_decomp, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}
+  <h3>Annual Asset Returns</h3>{_annual_asset_returns_table(annual_assets)}
+  <h3>Correlations</h3>{_correlations_table(correlations, benchmark_label)}
+  <h3>Return Decomposition</h3>{_decomposition_table(returns_decomp, portfolio_order, currency=currency)}
+  <h3>Risk Decomposition</h3>{_decomposition_table(risk_decomp, portfolio_order, currency=currency)}
 </section>
 <section id="rollingReturns" class="result-section"><h2>Rolling Returns</h2><h3>3 Year</h3>{_friendly_table(rolling3, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}<h3>5 Year</h3>{_friendly_table(rolling5, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 </main>
@@ -889,7 +1020,7 @@ tbody tr:nth-child(even) {{ background:#fafbfc; }}
   const tooltip = document.getElementById('growth-tooltip');
   const host = document.querySelector('.growth-chart-wrap');
   if (!tooltip || !host) return;
-  const formatMoney = value => Number(value).toLocaleString(undefined, {{style:'currency', currency:'USD', maximumFractionDigits:0}});
+  const formatMoney = value => Number(value).toLocaleString(undefined, {{style:'currency', currency:{json.dumps(currency)}, maximumFractionDigits:0}});
   const show = (point, event) => {{
     const date = point.dataset.date || '';
     const series = point.dataset.series || '';
