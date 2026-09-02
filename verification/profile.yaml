@@ -1,0 +1,41 @@
+version: 1
+change: bt-module
+
+openspec:
+  - npx -y @fission-ai/openspec@latest validate bt-module --strict
+  - npx -y @fission-ai/openspec@latest validate migrate-optimizer-to-openspec --strict
+
+tests:
+  targeted:
+    - pytest -q tests/test_backtest.py tests/test_backtest_execution.py tests/test_backtest_input_persistence.py tests/test_backtest_scope.py
+    - pytest -q tests/test_data.py tests/test_verification_profile.py
+  affected_regression:
+    - pytest -q tests/test_portfolio.py tests/test_runner.py tests/test_research.py
+  completion:
+    - pytest -q
+
+real_run:
+  config: configs/backtest-example.yaml
+  requirements:
+    - use a unique run_id and do not overwrite an existing run
+    - verify result.json, raw/, review/, report.html
+    - verify portfolio identities and actual initial balance
+    - verify FinanceDataReader asset data uses explicit total-return-capable series
+
+browser:
+  required_for_report_changes: true
+  checks:
+    - Backtest overview is present
+    - target allocation identities are readable
+    - growth chart contains portfolio identity, date, and balance semantics
+    - optimization-only Efficient Frontier is absent
+    - benchmark-relative section is conditional on benchmark presence
+    - required tables remain accessible without information loss on narrow viewport
+
+human_visual_review:
+  when: material_layout_or_interaction_change
+
+rules:
+  - do not weaken, skip, or rewrite requirements/tests to make verification pass
+  - implementation fixes are allowed; requirement changes require a blocker report
+  - shared market-data or simulation changes require affected Optimization regression
