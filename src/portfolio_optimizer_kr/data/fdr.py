@@ -6,7 +6,7 @@ import pandas as pd
 
 from portfolio_optimizer_kr.errors import DataValidationError
 from portfolio_optimizer_kr.models import AssetSpec
-from .transform import select_canonical_price
+from .transform import select_canonical_price, select_total_return_price
 
 
 class FDRLoader:
@@ -16,7 +16,10 @@ class FDRLoader:
         import FinanceDataReader as fdr
 
         frame = fdr.DataReader(asset.symbol, start, end)
-        return select_canonical_price(frame).rename(asset.symbol)
+        out = select_total_return_price(frame).rename(asset.symbol)
+        out.attrs["provider"] = "FinanceDataReader"
+        out.attrs["provider_symbol"] = asset.symbol
+        return out
 
     def load_many(
         self, assets: Iterable[AssetSpec], start=None, end=None
