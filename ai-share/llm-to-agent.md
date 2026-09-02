@@ -1,64 +1,38 @@
 # AI Share
 
 state: active
-id: 20260903T070800+0900-llm
-created_at: 2026-09-03T07:08:00+09:00
+id: 20260903T072400+0900-llm
+created_at: 2026-09-03T07:24:00+09:00
 type: request
 reply_to: 20260903T064500+0900-agent
 
 ## Context
 
-Agent result `20260903T064500+0900-agent` passed machine verification and published the US/KRX reports. LLM first-pass visual acceptance then opened the actual published US report and inspected the latest desktop/mobile evidence.
+This request supersedes `20260903T070800+0900-llm`.
 
-The review found P1 user-facing presentation defects that existing browser checks missed:
+Remote `bt-module` advanced to `78572ce83a49911842130b1fac9bea02a01a6bf7` with refreshed US/KRX validation screenshots, but `agent-to-llm.md` still contains the older 06:45 result.
 
-- Summary exposed `month_to_month` and `canonical_total_return` storage identifiers.
-- Annual Asset Returns exposed full-precision return fractions instead of percentages.
-- Correlations exposed full-precision decimals, title-cased ticker headers, and a generic `benchmark` row identity.
-- Return Decomposition exposed `contribution_*` row names and unformatted balance values.
-- KRX CSV reload could coerce `069500` to `69500.0`.
-- KRX initial balance/growth used USD symbols although the canonical common currency is KRW.
+While independently reviewing the refreshed final HTML, LLM found one remaining P1 presentation defect in both US and KRX reports: the Portfolio Growth x-axis renders `Jan 2020` twice consecutively. The balance path intentionally contains both the initial wealth anchor (`2020-01-01`) and the first monthly observation (`2020-01-31`), and `_calendar_ticks()` currently selects both because both are January dates.
 
-Existing `openspec/changes/bt-module/specs/research-report/spec.md` already requires user-facing labels/units and currency-identifiable balance presentation, so OpenSpec was not changed.
-
-LLM implemented the fix test-first. Local evidence before handoff:
-
-```text
-targeted affected tests: 31 passed
-full pytest: 161 passed
-generated US/KRX HTML semantic checks: passed
-git diff --check: passed
-```
-
-Local Playwright Chromium installation was blocked by the current environment's CDN allowlist, so browser verification remains required in the Agent environment.
+Existing `openspec/changes/bt-module/specs/research-report/spec.md` already requires readable calendar-aware x-axis ticks, so no OpenSpec change is needed.
 
 ## Message
 
-1. Sync `bt-module` with `git pull --ff-only origin bt-module` and record start HEAD.
-2. Run affected tests and full pytest. Do not weaken tests or OpenSpec.
-3. Run deterministic Playwright. The strengthened browser contract now verifies:
-   - human-facing Time Period/Rebalancing/Return Semantics
-   - Annual Asset Returns percentage formatting
-   - two-decimal correlations
-   - no long raw decimal/storage suffix leakage in Assets
-   - configured benchmark identity in correlations
-   - currency-aware growth axis and point labels
-4. Regenerate the two current run reports from their persisted canonical artifacts if needed:
+Fix this test-first without changing finance calculations or removing the initial wealth point.
+
+1. Sync latest `bt-module` and record start HEAD.
+2. Add/strengthen tests so a growth series containing an initial anchor plus month-end observations cannot render duplicate calendar tick labels/anchors for the same month/year. Preserve regular Jan/Jul cadence and at least the existing readable intermediate tick behavior.
+3. Strengthen Playwright to assert x-axis tick labels are unique for the rendered report, in addition to the existing Jan/Jul format checks.
+4. Fix `_calendar_ticks()` / growth tick selection so only one x-axis tick is emitted for a calendar anchor such as Jan 2020, while the wealth series still retains both `2020-01-01` initial balance and `2020-01-31` first monthly point and actual-date x coordinates.
+5. Re-run affected tests, full pytest, deterministic Playwright, and real-report Playwright for both:
 
 ```text
 runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/
 runs/20260903-backtest-069500-krx-etf-smoke-v2/
 ```
 
-5. Run real-report Playwright for both reports and replace their desktop/mobile screenshot evidence with the corrected renderer output.
-6. Confirm at minimum:
-   - US meta displays `Month-to-Month`, `Monthly`, `Total Return`.
-   - US Annual Asset Returns displays `48.41%` rather than a raw fraction.
-   - US correlations preserve `QQQ`/`GLD`, use two decimals, and display the configured SPY name in both row and column identity.
-   - US Return Decomposition shows asset tickers and formatted USD balances.
-   - KRX report preserves `069500`, uses percentages, and formats initial/growth/decomposition balances in KRW (`₩`).
-7. Commit/push any regenerated screenshots or necessary fixes, then confirm the `Publish research reports` workflow succeeds for the final HEAD.
-8. Open the exact published US and KRX report URLs and verify HTTP/browser access.
-9. Replace `ai-share/agent-to-llm.md` with the latest result and commit/push it.
+6. Regenerate reports/screenshots as needed and confirm the first visible x-axis sequence no longer contains duplicate `Jan 2020` labels.
+7. Preserve all previously fixed presentation semantics: human option labels, percentage formatting, benchmark identity, ticker casing/leading zero, USD/KRW balance formatting, and raw-schema suppression.
+8. Commit/push, confirm `Publish research reports` succeeds for final HEAD, open exact published US/KRX URLs, then replace `ai-share/agent-to-llm.md` with the latest result and commit/push it.
 
-Return start/final HEAD, targeted/full/Playwright results, screenshot paths, Pages workflow URL/ID, exact US/KRX published URLs, P0/P1/P2 observations, and result commit SHA. Mark LLM first-pass visual acceptance as pending re-review after republish.
+Return start/final HEAD, targeted/full/Playwright results, updated evidence paths, Pages workflow URL/ID, exact report URLs, and P0/P1/P2 observations. LLM will perform the final re-review before User 2nd Visual Acceptance.
