@@ -12,13 +12,26 @@ Backtest run은 Optimization run과 구분되는 독립 product mode여야 하�
 - WHEN backtest를 실행한다
 - THEN optimization objective를 요구하지 않고 historical portfolio simulation과 analytics를 수행한다
 
-### Requirement: One to three named portfolios
-하나의 Backtest run은 1개 이상 3개 이하의 portfolio를 정의할 수 있어야 하며 각 portfolio는 사용자-facing name을 가져야 한다.
+### Requirement: V1 portfolio comparison limit
+Backtest v1 사용자-facing input은 1개 이상 3개 이하의 named portfolio를 동시에 비교할 수 있어야 한다.
 
 #### Scenario: 세 portfolio 비교
 - GIVEN Portfolio A, Portfolio B, Portfolio C가 정의되어 있다
 - WHEN backtest를 실행한다
 - THEN 세 portfolio의 identity가 결과와 report 전체에서 구분되어 유지된다
+
+#### Scenario: v1에서 네 portfolio 요청
+- GIVEN 사용자-facing v1 configuration에 네 portfolio가 입력된다
+- WHEN input validation을 수행한다
+- THEN v1 comparison limit을 초과한 명시적 validation error를 반환한다
+
+### Requirement: Extensible portfolio collection model
+Canonical Backtest configuration과 result는 portfolio를 fixed `portfolio1`, `portfolio2`, `portfolio3` schema field가 아니라 identity를 가진 collection으로 표현해야 한다. v1의 최대 3개 제한은 product validation policy이며 canonical model 자체의 구조적 최대치로 고정해서는 안 된다.
+
+#### Scenario: 향후 portfolio limit 확장
+- GIVEN 향후 product policy가 3개보다 많은 portfolio를 허용하도록 변경된다
+- WHEN canonical schema를 확장한다
+- THEN 기존 portfolio identity/weight representation을 재설계하지 않고 collection limit 변경으로 확장할 수 있어야 한다
 
 ### Requirement: Shared asset universe with portfolio-specific weights
 비교 portfolio는 asset row의 union을 공유할 수 있어야 하며 각 portfolio는 각 asset에 독립적인 target weight를 가져야 한다. 사용하지 않는 asset은 0% weight로 표현할 수 있어야 한다.
@@ -81,6 +94,14 @@ Backtest portfolio는 `none`, `monthly`, `quarterly`, `semiannual`, `yearly` 중
 - WHEN 같은 기간을 backtest한다
 - THEN 각 portfolio의 path와 analytics는 서로 독립적으로 계산된다
 
+### Requirement: Canonical total-return input
+Backtest는 asset return을 별도의 dividend reinvestment option으로 재정의하지 않고 shared `market-data` capability가 제공하는 canonical total-return series를 사용해야 한다.
+
+#### Scenario: 배당 지급 asset
+- GIVEN distribution을 지급하는 asset이 Backtest portfolio에 포함된다
+- WHEN historical return path를 생성한다
+- THEN price-only return이 아니라 shared canonical total-return semantics를 사용한다
+
 ### Requirement: Historical analytics only
 Backtest product의 primary result는 realized historical analytics여야 하며 optimization-specific expected return, expected covariance frontier, optimized weight 같은 ex-ante 결과를 Backtest 결과로 요구해서는 안 된다.
 
@@ -104,6 +125,14 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - GIVEN 사용자가 Backtest product mode를 선택했다
 - WHEN 입력을 구성한다
 - THEN Optimization objective/min-max constraint 없이 Backtest에 필요한 portfolio comparison input을 설정할 수 있다
+
+### Requirement: V1 scope exclusions
+Backtest v1은 cashflow contribution/withdrawal, rebalance bands, leverage를 canonical input 또는 required calculation behavior로 제공하지 않아야 한다.
+
+#### Scenario: v1 input surface
+- GIVEN 사용자가 Backtest v1을 구성한다
+- WHEN input controls와 YAML contract를 확인한다
+- THEN cashflow, band-rebalancing, leverage 설정을 required/supported v1 field로 노출하지 않는다
 
 ### Requirement: PV reference is non-normative
 Portfolio Visualizer snapshot은 feature/information-architecture reference로만 사용해야 하며 PV의 값이나 UI 구현 차이 자체를 acceptance failure로 간주해서는 안 된다.
