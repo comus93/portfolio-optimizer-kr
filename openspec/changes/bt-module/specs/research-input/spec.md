@@ -110,6 +110,32 @@ Research Frontend는 benchmark 미지정 시 S&P 500(SPY)을 기본 benchmark로
 - WHEN canonical input을 만든다
 - THEN 각각 `Portfolio 1`, `Portfolio 2` identity를 부여한다
 
+### Requirement: Calendar alignment input and default
+Research Frontend는 `Calendar Aligned = Yes/No`를 선택할 수 있게 해야 하며 사용자가 별도 지정하지 않으면 기존 calendar-aligned behavior를 보존하기 위해 `Yes`를 기본값으로 사용해야 한다.
+
+#### Scenario: Calendar Aligned 미지정
+- GIVEN 사용자가 calendar alignment를 지정하지 않았다
+- WHEN Backtest input을 구성한다
+- THEN `Calendar Aligned = Yes`를 effective setting으로 사용하고 persisted input에 명시한다
+
+#### Scenario: Calendar Aligned No 지정
+- GIVEN 사용자가 Calendar Aligned를 No로 지정한다
+- WHEN canonical input을 구성한다
+- THEN first-active-month anchored schedule을 사용하도록 setting을 보존한다
+
+### Requirement: Run-level rebalancing input and default
+Research Frontend는 한 Backtest run 전체에 공통으로 적용되는 rebalancing setting을 제공해야 하며 `No rebalancing`, `Annually`, `Semi-annually`, `Quarterly`, `Monthly`를 지원하고 기본값은 `Monthly`여야 한다.
+
+#### Scenario: rebalancing 미지정
+- GIVEN 사용자가 rebalancing을 지정하지 않았다
+- WHEN canonical Backtest input을 만든다
+- THEN run-level `Monthly`를 effective setting으로 사용하고 모든 portfolio에 동일하게 적용한다
+
+#### Scenario: quarterly 지정
+- GIVEN 사용자가 Quarterly를 지정한다
+- WHEN 한 run에 세 portfolio를 구성한다
+- THEN 세 portfolio 모두 동일한 quarterly setting을 사용한다
+
 ### Requirement: V1 comparison limit communication
 Research Frontend는 v1에서 동시에 비교 가능한 portfolio가 최대 3개임을 적용하고 초과 요청을 조용히 잘라내지 않아야 한다.
 
@@ -119,12 +145,12 @@ Research Frontend는 v1에서 동시에 비교 가능한 portfolio가 최대 3�
 - THEN 일부 portfolio를 임의 제거하지 않고 v1 한도를 명시한다
 
 ### Requirement: V1 excluded advanced settings
-Backtest v1 Research Frontend는 Cashflows, Rebalance Bands, Leverage, Style Analysis, Factor Regression, Regime Performance를 supported input으로 요구하지 않아야 한다. Dividend reinvestment는 별도 toggle이 아니라 shared canonical total-return semantics로 처리한다.
+Backtest v1 Research Frontend는 Cashflows, Rebalance Bands, Leverage, Display Income, Style Analysis, Factor Regression, Regime Performance를 supported input으로 요구하지 않아야 한다. Dividend reinvestment는 별도 toggle이 아니라 shared canonical total-return semantics로 처리한다.
 
 #### Scenario: 기본 settings surface
 - GIVEN 사용자가 Backtest v1 settings를 구성한다
 - WHEN Research Frontend가 supported controls를 제시한다
-- THEN 위 advanced option을 필수 또는 지원되는 v1 입력으로 노출하지 않는다
+- THEN 제외된 advanced option을 필수 또는 지원되는 v1 입력으로 노출하지 않는다
 
 ### Requirement: No redundant approval after explicit execution intent
 사용자가 이미 실행 의도를 명시했고 필요한 Backtest 입력과 사용자 결정이 모두 해소되면 다시 불필요한 승인 질문을 만들어서는 안 된다.
@@ -138,14 +164,6 @@ Backtest v1 Research Frontend는 Cashflows, Rebalance Bands, Leverage, Style Ana
 Research Frontend가 default를 자동 적용한 경우에도 실제 effective 값은 canonical YAML과 persisted `input.yaml`에 명시적으로 남겨야 한다.
 
 #### Scenario: default 적용
-- GIVEN benchmark, initial balance, Time Period mode 또는 portfolio name에 canonical default가 적용된다
+- GIVEN benchmark, initial balance, Time Period mode, Calendar Aligned, rebalancing 또는 portfolio name에 canonical default가 적용된다
 - WHEN run input을 persist한다
 - THEN 실행에 실제 사용된 effective 값을 생략하지 않고 기록한다
-
-## Decision Pending
-
-아래 settings는 PV reference에 존재하고 Backtest v1 input으로 채택할지 또는 semantics를 어떻게 둘지 추가 사용자 결정이 필요하다.
-
-- `Calendar Aligned: Yes/No`
-- Rebalancing policy의 run-level/global 적용 여부와 default policy
-- `Display Income: No/Yes`
