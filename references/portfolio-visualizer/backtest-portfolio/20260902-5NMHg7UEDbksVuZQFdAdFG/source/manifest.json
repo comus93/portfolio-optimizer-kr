@@ -1,0 +1,130 @@
+{
+  "source_mhtml": "page.mhtml",
+  "source_sha256": "91b926501c5a8a1584c4426681ac2ecbca255d9fe5dabe40a07171975d510853",
+  "generated_at": "2026-09-02T09:52:12.247Z",
+  "extraction": "Mechanical MIME-part extraction only. No summarization or semantic rewriting.",
+  "chunk_chars": 240000,
+  "parts": [
+    {
+      "index": 1,
+      "content_type": "text/html",
+      "content_location": "https://www.portfoliovisualizer.com/backtest-portfolio?s=y&sl=5NMHg7UEDbksVuZQFdAdFG",
+      "transfer_encoding": "quoted-printable",
+      "decoded_bytes": 1119737,
+      "decoded_sha256": "ac0790079527eefb69abf9e603d37fd71817fb38daeb9dfa4a44338f606fec23",
+      "outputs": [
+        "page.part-001.html",
+        "page.part-002.html",
+        "page.part-003.html",
+        "page.part-004.html",
+        "page.part-005.html"
+      ],
+      "status": "extracted",
+      "charset": "utf-8"
+    },
+    {
+      "index": 2,
+      "content_type": "image/jpeg",
+      "content_location": "https://www.portfoliovisualizer.com/images/video-placeholder.jpg",
+      "transfer_encoding": "base64",
+      "decoded_bytes": 99492,
+      "decoded_sha256": "0ca8109eb4fcea6e1a3532327e855776e34265b4904dea8ed76d1582541788ba",
+      "outputs": [],
+      "status": "omitted-non-text"
+    },
+    {
+      "index": 3,
+      "content_type": "image/png",
+      "content_location": "https://www.portfoliovisualizer.com/jquery/plugins/lightbox/images/close.png",
+      "transfer_encoding": "base64",
+      "decoded_bytes": 280,
+      "decoded_sha256": "5d62e6c90005bfb71f6abb440f9e4753681cb23bbd5e60477ab6f442d2f0e69c",
+      "outputs": [],
+      "status": "omitted-non-text"
+    },
+    {
+      "index": 4,
+      "content_type": "image/png",
+      "content_location": "https://www.portfoliovisualizer.com/jquery/plugins/lightbox/images/next.png",
+      "transfer_encoding": "base64",
+      "decoded_bytes": 1350,
+      "decoded_sha256": "15b869b02c6fbaa8c6c26445a2dd2d9bad80fd27b1409f8179e5dd89dc89d90a",
+      "outputs": [],
+      "status": "omitted-non-text"
+    },
+    {
+      "index": 5,
+      "content_type": "image/png",
+      "content_location": "https://www.portfoliovisualizer.com/jquery/plugins/lightbox/images/prev.png",
+      "transfer_encoding": "base64",
+      "decoded_bytes": 1360,
+      "decoded_sha256": "7fd9273f20fdb1229c224341271a119020a5eee74ccf6b4605730917c864caf2",
+      "outputs": [],
+      "status": "omitted-non-text"
+    },
+    {
+      "index": 6,
+      "content_type": "image/gif",
+      "content_location": "https://www.portfoliovisualizer.com/jquery/plugins/lightbox/images/loading.gif",
+      "transfer_encoding": "base64",
+      "decoded_bytes": 8476,
+      "decoded_sha256": "225aa88b6ab02c06222ec9468d62e15fa188e39cdb9431d1f55401ad380753ed",
+      "outputs": [],
+      "status": "omitted-non-text"
+    },
+    {
+      "index": 7,
+      "content_type": "text/css",
+      "content_location": "https://www.portfoliovisualizer.com/css/merged-8cc196f0464ffa9f42201b67c8bf02e5.min.css",
+      "transfer_encoding": "quoted-printable",
+      "decoded_bytes": 339966,
+      "decoded_sha256": "13db74dd3476eb3f48c4624427981ae428e1a4ae3658a6f0de3372bb203ed121",
+      "outputs": [
+        "style-001.part-001.css",
+        "style-001.part-002.css"
+      ],
+      "original_name": "merged-8cc196f0464ffa9f42201b67c8bf02e5.min.css",
+      "status": "extracted",
+      "charset": "utf-8"
+    },
+    {
+      "index": 8,
+      "content_type": "text/css",
+      "content_location": "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700",
+      "transfer_encoding": "quoted-printable",
+      "decoded_bytes": 3815,
+      "decoded_sha256": "02de5e485f1fb69663ba64a6eeb4138fc9a67ee1987ab7bc4ff3f46414aae38e",
+      "outputs": [
+        "style-002.css"
+      ],
+      "status": "extracted",
+      "charset": "utf-8"
+    },
+    {
+      "index": 9,
+      "content_type": "text/css",
+      "content_location": "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700",
+      "transfer_encoding": "quoted-printable",
+      "decoded_bytes": 25302,
+      "decoded_sha256": "d467a8b555531052a0d85f8d1498cc149cd51fc200341cc1b3ef8ab35972eecb",
+      "outputs": [
+        "style-003.css"
+      ],
+      "status": "extracted",
+      "charset": "utf-8"
+    },
+    {
+      "index": 10,
+      "content_type": "text/css",
+      "content_location": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700",
+      "transfer_encoding": "quoted-printable",
+      "decoded_bytes": 5382,
+      "decoded_sha256": "43648a56e92bba9a8e903ae28b01381ed0266ecad30f22d2690e483f90efe2bb",
+      "outputs": [
+        "style-004.css"
+      ],
+      "status": "extracted",
+      "charset": "utf-8"
+    }
+  ]
+}
