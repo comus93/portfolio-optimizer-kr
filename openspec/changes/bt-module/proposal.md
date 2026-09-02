@@ -15,12 +15,18 @@ PV는 feature/information-architecture reference이며 내부 calculation contra
 - 독립적인 `portfolio-backtest` product mode를 추가한다.
 - Backtest v1은 1~3개 named portfolio, portfolio별 target allocation, optional benchmark, initial balance, 동일 기간 비교, periodic rebalancing, realized historical analytics/report를 지원한다.
 - v1 사용자-facing 한도는 3개이지만 canonical portfolio representation은 extensible collection으로 둔다.
-- v1에서 cashflow, rebalance bands, leverage는 제외한다.
+- Time Period는 `Month-to-Month` / `Year-to-Year`를 지원하고 Research Frontend 기본 mode는 `Month-to-Month`로 둔다.
+- `Month-to-Month`는 Start Year / First Month / End Year / Last Month, `Year-to-Year`는 Start Year / End Year를 사용한다.
+- Research Frontend 기본 benchmark는 SPY이며 사용자가 다른 benchmark 또는 benchmark 없음으로 override할 수 있다.
+- Research Frontend 기본 initial balance는 10,000, 기간 미지정 시 전체 common effective period, portfolio name 미지정 시 `Portfolio 1..3`을 사용한다.
+- Backtest Experiment identity는 비교 portfolio 전체의 union ticker set으로 정의한다.
+- v1에서 cashflow, rebalance bands, leverage, style analysis, factor regression, regime performance는 제외한다.
 - dividend reinvestment toggle은 두지 않고 Optimization/Backtest 모두 shared `market-data`의 canonical total-return semantics를 사용한다.
 - 기존 market-data, simulation, analytics, YAML runner, artifact, report/viewer architecture를 의미가 같은 범위에서 재사용한다.
-- 기존 Research Frontend / Study-Experiment-Run 흐름에 Backtest를 통합하는 초안을 정의한다.
-- Backtest 결과에 맞는 LLM research input/analysis 초안을 정의한다.
+- 기존 Research Frontend / Study-Experiment-Run 흐름에 Backtest를 통합한다.
+- Backtest 결과 분석은 optimizer 전용 framework와 분리된 historical-comparison capability/guide로 유지한다.
 - Agent verification은 Test → Real Run → Result Verification → Browser Verification(if applicable) → Fix → Re-verify 흐름을 사용한다.
+- Human visual review는 layout/interaction이 materially 변경된 경우에만 completion gate로 사용한다.
 
 ## Capabilities
 
@@ -31,22 +37,20 @@ PV는 feature/information-architecture reference이며 내부 calculation contra
 ### Modified Shared Capabilities
 
 - `market-data`: Optimization과 Backtest가 동일 canonical total-return series를 사용하도록 return semantics를 추가한다.
-- `portfolio-simulation`: 기존 monthly/yearly 외에 no-rebalance, quarterly, semiannual path와 initial-balance wealth path를 추가한다.
-- `run-artifacts`: explicit product mode, Backtest portfolio collection input/result identity와 canonical Backtest result domain을 추가한다.
+- `portfolio-simulation`: 기존 monthly/yearly 외에 no-rebalance, quarterly, semiannual path와 initial-balance wealth path를 추가한다. Calendar-alignment의 최종 v1 범위는 design decision gate를 따른다.
+- `run-artifacts`: explicit product mode, Backtest portfolio collection, Time Period input/result identity와 canonical Backtest result domain을 추가한다.
 - `research-report`: Backtest overview/allocation/growth, actual initial-balance semantics, realized-only Performance Summary applicability와 shared historical section 적용을 추가한다.
 
 ### Reused Without Behavior Delta
 
 - `portfolio-analytics`: 기존 realized/historical analytics behavior를 그대로 재사용한다.
 
-### Draft Research / Tooling Capabilities
+### Research / Tooling Capabilities
 
-아래는 기존 `docs/research-operation-pipeline.md`, `docs/llm-research-input-contract.md`, `docs/llm-analysis-framework.md` 및 verification framework를 Backtest에 적용하기 위한 초안이다. 사용자 결정 후 capability 경계와 requirement를 확정한다.
-
-- `research-execution`: Backtest를 기존 Study / Experiment / Run / execution-control 흐름에 통합한다.
-- `research-input`: LLM/User Research Frontend가 product intent에 따라 Backtest 입력만 수집하고 canonical defaults를 적용한다.
+- `research-execution`: Backtest를 기존 Study / Experiment / Run / execution-control 흐름에 통합하고 union ticker set을 Experiment identity로 사용한다.
+- `research-input`: LLM/User Research Frontend가 product intent에 따라 Backtest 입력만 수집하고 확정된 canonical defaults를 적용한다.
 - `research-analysis`: Backtest 결과를 Optimization/optimality와 혼동하지 않고 historical comparison으로 분석한다.
-- `agent-verification`: Agent가 requirement를 변경하지 않고 test/real-run/result/browser evidence를 남기는 verification contract.
+- `agent-verification`: Agent가 requirement를 변경하지 않고 test/real-run/result/browser evidence를 남기며 material visual change에만 human review gate를 적용한다.
 
 ## Existing Internal Baseline
 
@@ -75,7 +79,8 @@ PV snapshot에 존재하더라도 다음은 v1 normative requirement에서 제�
 - style analysis, factor regression, regime performance
 - provider 기반 equity size/sector/style exposure
 - imported benchmark / imported portfolio / lazy portfolio preset
-- non-calendar periodic schedule
+
+Dividend reinvestment는 별도 setting이 아니라 canonical total-return semantics로 처리한다.
 
 ## Dependency
 
@@ -83,13 +88,17 @@ PV snapshot에 존재하더라도 다음은 v1 normative requirement에서 제�
 
 ## Impact
 
-- YAML/input model과 runner에 explicit Backtest product boundary가 추가된다.
+- YAML/input model과 runner에 explicit Backtest product boundary와 Time Period mode가 추가된다.
 - portfolio simulation에 추가 periodic rebalancing mode와 initial-balance path가 추가된다.
 - canonical total-return semantics는 Optimization historical analysis에도 영향을 준다.
-- report/viewer는 multi-portfolio Backtest identity와 product-specific section applicability를 처리한다.
-- research execution/input/analysis는 사용자 결정 후 기존 운영 흐름에 Backtest 분기를 추가한다.
+- report/viewer는 multi-portfolio Backtest identity와 product-specific section applicability를 처리해야 한다.
+- Research workflow는 Optimization과 같은 execution boundary를 사용하면서 Backtest-specific input/analysis branch를 가진다.
 - Agent verification용 최소 실행/결과/browser evidence 구조가 추가된다.
 
-## Decision Gate
+## Remaining Decision Gate
 
-기본 Backtest product/finance scope는 확정되었다. Research workflow, Research Frontend defaults, Backtest LLM analysis 문서 경계, human visual review gate는 `design.md`의 Open Decisions를 사용자와 확정한 뒤 최종 spec/task로 갱신한다.
+확정된 D1-D8 외에 PV settings를 반영하면서 아래 항목은 추가 사용자 결정이 필요하다.
+
+- `Calendar Aligned: Yes/No`를 v1에서 모두 지원할지와 `No`의 schedule semantics
+- Rebalancing setting을 run 전체 공통으로 적용할지 portfolio별로 독립 적용할지, 그리고 미지정 default
+- `Display Income: No/Yes`를 v1에서 지원할지
