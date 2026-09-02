@@ -8,18 +8,18 @@
 - [x] D6 portfolio name default = Portfolio 1..3
 - [x] D7 Backtest LLM analysis = 별도 research-analysis capability/guide
 - [x] D8 human visual review = material layout/interaction change에만 completion gate
-- [ ] D9 Calendar Aligned v1 지원 범위/No semantics 확정
-- [ ] D10 Rebalancing scope/default 확정
-- [ ] D11 Display Income v1 지원 여부 확정
-- [ ] D9-D11 결과를 관련 spec/design에 최종 반영
+- [x] D9 Calendar Aligned = Yes/No 모두 지원, No는 first-active-month anchor
+- [x] D10 Rebalancing = run-level 공통, default Monthly
+- [x] D11 Display Income = v1 제외
+- [x] D1-D11 결과를 관련 spec/design에 반영
 
 ## 2. OpenSpec Completion
 
 - [ ] `portfolio-backtest` requirement 최종 parity review
 - [ ] `market-data` total-return delta review
-- [ ] `portfolio-simulation` rebalancing/wealth delta review
-- [ ] `run-artifacts` product-mode/multi-portfolio/Time-Period delta review
-- [ ] `research-report` Backtest section/applicability/balance semantics review
+- [ ] `portfolio-simulation` calendar/non-calendar rebalancing/wealth delta review
+- [ ] `run-artifacts` product-mode/multi-portfolio/Time-Period/schedule-setting delta review
+- [ ] `research-report` Backtest section/applicability/balance/schedule semantics review
 - [ ] `research-execution` union-ticker Experiment identity review
 - [ ] `research-input` confirmed defaults/decision boundary review
 - [ ] `research-analysis` separate Backtest analysis boundary review
@@ -44,11 +44,10 @@
 - [ ] Month-to-Month의 Start Year / First Month / End Year / Last Month 입력 구현
 - [ ] Year-to-Year의 Start Year / End Year 입력 및 month non-applicable 처리
 - [ ] period selector year range를 data-supported range에서 동적으로 구성
-- [ ] D9 결정에 따른 Calendar Aligned input 구현
-- [ ] D10 결정에 따른 rebalancing input scope/default 구현
-- [ ] cashflow / band rebalance / leverage / style / factor / regime field는 v1에서 노출하지 않음
+- [ ] Calendar Aligned Yes/No 입력 구현, default Yes
+- [ ] run-level rebalancing input 구현, default Monthly
+- [ ] cashflow / band rebalance / leverage / Display Income / style / factor / regime field는 v1에서 노출하지 않음
 - [ ] dividend reinvest toggle은 만들지 않고 canonical total return 사용
-- [ ] D11 결정에 따른 Display Income 처리
 - [ ] YAML round-trip과 exact `input.yaml` persistence 테스트
 
 ## 5. Shared Simulation
@@ -57,9 +56,12 @@
 - [ ] calendar-aligned quarterly rebalancing 구현
 - [ ] calendar-aligned semiannual rebalancing 구현
 - [ ] calendar-aligned yearly behavior regression
-- [ ] monthly existing behavior regression
+- [ ] non-calendar quarterly first-active-month + 3개월 schedule 구현/검증
+- [ ] non-calendar semiannual first-active-month + 6개월 schedule 구현/검증
+- [ ] non-calendar yearly first-active-month + 12개월 schedule 구현/검증
+- [ ] monthly가 Calendar Aligned와 무관하게 매월 rebalance되는지 검증
+- [ ] none이 Calendar Aligned와 무관하게 drift하는지 검증
 - [ ] mid-schedule analysis start behavior 검증
-- [ ] D9에서 non-calendar 지원 시 start-anchored schedule 구현/검증
 - [ ] actual initial-balance wealth path 구현
 - [ ] multi-portfolio independent path identity 검증
 
@@ -68,6 +70,7 @@
 - [ ] Optimization과 Backtest runner dispatch 분리
 - [ ] Backtest에서 optimization objective/frontier 없이 market-data → simulation → analytics 경로 실행
 - [ ] shared `portfolio-analytics` 재사용, duplicate formula 생성 금지
+- [ ] run-level rebalancing / Calendar Aligned setting을 모든 portfolio에 동일 적용
 - [ ] benchmark 없음/있음 양쪽 실행 검증
 - [ ] common effective period / coverage evidence 보존
 - [ ] Month-to-Month / Year-to-Year requested period가 canonical market-data period로 올바르게 전달되는지 검증
@@ -76,7 +79,8 @@
 
 - [ ] Backtest `result.json` canonical domain 구현
 - [ ] product mode와 Time Period mode/boundaries persistence 구현
-- [ ] frontend default(SPY/10,000/Portfolio n/Month-to-Month)가 effective `input.yaml`에 명시되는지 검증
+- [ ] Calendar Aligned와 run-level rebalancing persistence 구현
+- [ ] frontend defaults(SPY/10,000/Portfolio n/Month-to-Month/Calendar Aligned Yes/Monthly)가 effective `input.yaml`에 명시되는지 검증
 - [ ] portfolio collection identity가 raw/review에서 유지되도록 구현
 - [ ] `(portfolio, asset)` series identity 보존
 - [ ] existing run directory silent overwrite 방지 regression
@@ -88,26 +92,28 @@
 - [ ] Backtest Settings / Portfolio Assets 정보구조 구현
 - [ ] Time Period selector: Month-to-Month / Year-to-Year, default Month-to-Month
 - [ ] period mode에 따라 month selector show/hide 또는 applicable state 처리
+- [ ] Calendar Aligned Yes/No, default Yes
 - [ ] Initial Amount default 10,000
+- [ ] Rebalancing: No / Annual / Semi-annual / Quarterly / Monthly, run-level, default Monthly
 - [ ] asset search/add/remove/edit existing behavior 재사용
 - [ ] shared asset rows + portfolio별 allocation 입력 구현
 - [ ] v1 최대 3 portfolio UI/validation 적용, model은 collection 유지
 - [ ] 이름 미지정 시 Portfolio 1..3 자동 생성
 - [ ] Optimization objective/min-max control을 Backtest mode에서 요구하지 않음
-- [ ] D9-D11 확정 settings 반영
+- [ ] excluded v1 advanced setting을 노출하지 않음
 
 ## 9. Research Report
 
 - [ ] Backtest overview 구현
-- [ ] Time Period mode / requested-effective boundaries / effective rebalancing 표시
+- [ ] Time Period mode / requested-effective boundaries / Calendar Aligned / run-level rebalancing 표시
 - [ ] target allocation comparison 구현
 - [ ] actual initial-balance growth comparison 구현
 - [ ] Backtest realized-only Performance Summary 적용
 - [ ] shared annual/monthly/trailing/rolling/drawdown/asset/correlation/decomposition section 재사용
 - [ ] benchmark-relative section conditional applicability 구현
 - [ ] Optimization-only Frontier section을 Backtest에서 제외
+- [ ] Display Income section을 v1에서 생성하지 않음
 - [ ] identity/unit/N/A/axis/tooltip/responsive existing contract regression
-- [ ] D11이 지원이면 income presentation contract 구현/검증
 
 ## 10. Research Workflow
 
@@ -127,6 +133,8 @@
 - [ ] initial balance 10,000 default 반영
 - [ ] period 미지정 시 full common period 적용
 - [ ] Time Period default Month-to-Month 적용
+- [ ] Calendar Aligned default Yes 적용
+- [ ] run-level rebalancing default Monthly 적용
 - [ ] portfolio name default 반영
 - [ ] mechanical validation 후 필요한 사용자 decision만 질문
 - [ ] explicit execution intent 후 redundant approval 방지
@@ -151,7 +159,7 @@
 - [ ] benchmark 없음/있음 real run 검증
 - [ ] Month-to-Month / Year-to-Year real run 검증
 - [ ] monthly/quarterly/semiannual/yearly/none policy 검증
-- [ ] D9 non-calendar 지원 시 해당 schedule 검증
+- [ ] Calendar Aligned Yes/No schedule 검증
 - [ ] generated report browser semantic verification
 - [ ] material visual change가 있으면 human visual review 완료
 - [ ] P0/P1 blocker 없음
