@@ -63,7 +63,7 @@ def _date(value: Any, field: str) -> str | None:
         return None
     try:
         return pd.Timestamp(value).date().isoformat()
-    except Exception as exc:  # pandas gives several parser exception types
+    except Exception as exc:
         raise ConfigValidationError(f"{field} is not a valid date") from exc
 
 
@@ -163,10 +163,7 @@ def _normalise_product_mode(value: Any) -> ProductMode:
 
 def _normalise_time_period_mode(value: Any) -> TimePeriodMode:
     text = str(value or "month_to_month").strip().lower().replace("-", "_").replace(" ", "_")
-    aliases = {
-        "monthly": "month_to_month",
-        "yearly": "year_to_year",
-    }
+    aliases = {"monthly": "month_to_month", "yearly": "year_to_year"}
     try:
         return TimePeriodMode(aliases.get(text, text))
     except ValueError as exc:
@@ -313,6 +310,19 @@ def _optimization_request_from_config(
 def _backtest_request_from_config(
     config: Mapping[str, Any], run_id: str, assets: tuple[AssetSpec, ...]
 ) -> BacktestRequest:
+    excluded_fields = {
+        "cashflows",
+        "leverage",
+        "display_income",
+        "style_analysis",
+        "factor_regression",
+        "regime_performance",
+        "rebalance_bands",
+    }
+    for field in sorted(excluded_fields):
+        if field in config and config.get(field) not in (None, False, "", "none", "None"):
+            raise ConfigValidationError(f"{field} is not supported in backtest v1")
+
     mode, start, end = _backtest_period(config)
     portfolio_rows = config.get("portfolios")
     if not isinstance(portfolio_rows, list) or not portfolio_rows:
@@ -326,6 +336,10 @@ def _backtest_request_from_config(
     names: set[str] = set()
     for index, raw in enumerate(portfolio_rows):
         row = _mapping(raw, f"portfolios[{index}]")
+        if row.get("rebalancing") is not None or row.get("rebalancing_period") is not None:
+            raise ConfigValidationError(
+                "backtest v1 rebalancing is run-level; portfolio-specific rebalancing is not supported"
+            )
         name = str(row.get("name") or f"Portfolio {index + 1}").strip()
         if not name:
             name = f"Portfolio {index + 1}"
@@ -347,6 +361,11 @@ def _backtest_request_from_config(
         portfolios.append(BacktestPortfolio(name=name, target_weights=weights))
 
     rebalancing_raw = _mapping(config.get("rebalancing", {}), "rebalancing")
+    if "bands" in rebalancing_raw or str(rebalancing_raw.get("period", "")).strip().lower() in {
+        "bands",
+        "rebalance_bands",
+    }:
+        raise ConfigValidationError("rebalance bands is not supported in backtest v1")
     rebalancing = _normalise_rebalancing(rebalancing_raw.get("period", "monthly"))
     calendar_aligned_raw = rebalancing_raw.get("calendar_aligned", True)
     if not isinstance(calendar_aligned_raw, bool):
