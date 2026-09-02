@@ -60,6 +60,19 @@ Browser verification은 PV pixel parity를 요구하지 않고 OpenSpec `researc
 - WHEN Agent가 browser verification을 수행한다
 - THEN PV layout 차이만으로 failure를 만들지 않는다
 
+### Requirement: Human visual review is conditional
+Human visual review는 layout 또는 interaction이 materially 변경되어 정성적 usability/polish 판단이 필요한 경우 completion gate로 사용해야 한다. 계산-only, artifact-only, 비시각적 변경에는 human visual review를 일률적으로 요구하지 않는다.
+
+#### Scenario: report layout 재구성
+- GIVEN Backtest report의 section layout, chart placement 또는 interaction이 materially 변경되었다
+- WHEN completion을 판정한다
+- THEN automated browser semantic verification과 별도로 human visual review 결과를 확인한다
+
+#### Scenario: calculation-only 변경
+- GIVEN report layout/interaction이 변경되지 않은 calculation-only change다
+- WHEN completion verification을 수행한다
+- THEN human visual review가 없다는 이유만으로 completion을 막지 않는다
+
 ### Requirement: Verification evidence
 사용자 또는 LLM이 검토해야 하는 verification은 command/test/run/browser 결과와 blocker/deviation을 재현 가능한 형태로 남겨야 한다.
 
@@ -75,7 +88,3 @@ Browser verification은 PV pixel parity를 요구하지 않고 OpenSpec `researc
 - GIVEN UI/report가 영향을 받지 않는 계산-only 변경이다
 - WHEN verification profile을 구성한다
 - THEN 불필요한 browser test scaffolding을 completion 조건으로 강제하지 않는다
-
-## Decision Pending
-
-정성적 visual polish에 대한 human review를 어느 범위에서 completion gate로 둘지는 `design.md`의 Open Decisions에서 사용자 확정 후 verification task에 반영한다.
