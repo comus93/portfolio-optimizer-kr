@@ -4,6 +4,7 @@ from .transform import (
     convert_usd_price_to_krw,
     month_end_prices,
     select_canonical_price,
+    select_total_return_price,
     to_monthly_returns,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "convert_usd_price_to_krw",
     "month_end_prices",
     "select_canonical_price",
+    "select_total_return_price",
     "to_monthly_returns",
 ]
