@@ -73,10 +73,7 @@ def _write_backtest_review_summaries(
     for name, values in trailing.items():
         row: dict[str, Any] = {"portfolio": name}
         for key, value in values.items():
-            if value is None:
-                row[key] = None
-            else:
-                row[f"{key}_pct"] = float(value) * 100.0
+            row[f"{key}_pct"] = None if value is None else float(value) * 100.0
         trailing_rows.append(row)
     pd.DataFrame(trailing_rows).to_csv(
         directory / "trailing_returns.csv", index=False, encoding="utf-8"
@@ -98,6 +95,26 @@ def _write_backtest_review_summaries(
             calendar[f"{column}_pct"] = calendar.pop(column) * 100.0
         calendar.to_csv(
             directory / "monthly_returns_calendar.csv", index=False, encoding="utf-8"
+        )
+
+    risk = tables.get("risk_decomposition", pd.DataFrame()).copy()
+    if not risk.empty and "asset" in risk:
+        for column in list(risk.columns):
+            if column == "asset":
+                continue
+            risk[f"{column}_risk_contribution_pct"] = risk.pop(column) * 100.0
+        risk.to_csv(
+            directory / "risk_decomposition.csv", index=False, encoding="utf-8"
+        )
+
+    returns = tables.get("return_decomposition", pd.DataFrame()).copy()
+    if not returns.empty and "asset" in returns:
+        for column in list(returns.columns):
+            if column == "asset":
+                continue
+            returns.rename(columns={column: f"{column}_contribution_balance"}, inplace=True)
+        returns.to_csv(
+            directory / "return_decomposition.csv", index=False, encoding="utf-8"
         )
 
     benchmark = result.get("benchmark_analytics", {})
