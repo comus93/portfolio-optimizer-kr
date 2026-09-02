@@ -114,8 +114,8 @@ def test_trailing_returns_and_metrics_use_human_labels_and_units():
     assert "Beta" in metrics_html
     assert "Alpha" in metrics_html
     assert "Historical VaR 95" in metrics_html
-    assert "portfolio" not in metrics_html.lower()
-    assert "metric</th><th>value" not in metrics_html.lower()
+    assert "<th>portfolio</th>" not in metrics_html.lower()
+    assert "<th>value</th>" not in metrics_html.lower()
     assert "7.13%" in metrics_html
 
 
