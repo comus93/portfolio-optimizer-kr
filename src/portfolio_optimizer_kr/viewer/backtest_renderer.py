@@ -373,7 +373,7 @@ def generate_backtest_report(
     active_section = ""
     if not benchmark.empty:
         active_section = f"""
-        <section id="activeReturns" class="result-section">
+        <section id="activeReturns" class="result-section benchmark-relative">
           <h2>Active Returns</h2>
           <h3>Benchmark Summary</h3>{_table(benchmark)}
           <h3>Active Return Series</h3>{_table(active_returns)}

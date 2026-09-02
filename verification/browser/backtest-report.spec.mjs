@@ -94,8 +94,12 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
   expect(await page.getByText(/Style Analysis/i).count()).toBe(0);
   expect(await page.getByText(/Factor Regression/i).count()).toBe(0);
 
-  const benchmarkBlock = overview.locator('.meta div').filter({ hasText: 'Benchmark' }).first();
-  const benchmarkText = (await benchmarkBlock.innerText()).replace('Benchmark', '').trim();
+  const benchmarkText = await overview.locator('.meta > div').evaluateAll(blocks => {
+    const benchmarkBlock = blocks.find(
+      block => block.querySelector('b')?.textContent?.trim() === 'Benchmark',
+    );
+    return benchmarkBlock?.textContent?.replace('Benchmark', '').trim() ?? '';
+  });
   if (benchmarkText === 'None') {
     expect(await page.locator('#activeReturns').count()).toBe(0);
     expect(await page.locator('.sidebar').getByText('Active Returns', { exact: true }).count()).toBe(0);

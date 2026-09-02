@@ -1,0 +1,35 @@
+product_mode: backtest
+run_id: 20260902-backtest-qqq-gld-spy-renderer-v2
+time_period:
+  mode: month_to_month
+  start_year: 2020
+  first_month: Jan
+  end_year: 2025
+  last_month: Dec
+assets:
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+portfolios:
+- name: Growth 70/30
+  weights_pct:
+    QQQ: 70
+    GLD: 30
+- name: Balanced 50/50
+  weights_pct:
+    QQQ: 50
+    GLD: 50
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 0
