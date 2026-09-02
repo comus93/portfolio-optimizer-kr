@@ -24,18 +24,34 @@ real_run:
 
 browser:
   required_for_report_changes: true
+  engine: playwright-chromium
+  one_time_setup:
+    - npm install
+    - npx playwright install chromium
+  fixture_command: npm run verify:browser
+  real_report_command: npx playwright test
+  real_report_env: BACKTEST_REPORT_PATH
+  evidence:
+    - Playwright HTML report under playwright-report/
+    - traces and failure screenshots under test-results/playwright/
+    - passing desktop/mobile screenshots emitted into each Playwright test output directory
   checks:
-    - Backtest overview is present
-    - target allocation identities are readable
-    - growth chart contains portfolio identity, date, and balance semantics
-    - optimization-only Efficient Frontier is absent
-    - benchmark-relative section is conditional on benchmark presence
-    - required tables remain accessible without information loss on narrow viewport
+    - Backtest overview exposes time period, requested/effective period, initial amount, benchmark, rebalancing, calendar alignment, and return semantics
+    - target allocation exposes readable portfolio, ticker, and target-weight identities
+    - growth chart contains portfolio identity, date, and actual balance semantics
+    - optimization-only Efficient Frontier and Optimized Portfolio identity are absent
+    - benchmark-relative section is present only when benchmark is configured
+    - required report sections are present when applicable
+    - 390px viewport has no document-level horizontal clipping
+    - overflowing tables and growth chart remain horizontally scrollable rather than clipping information
 
 human_visual_review:
   when: material_layout_or_interaction_change
+  evidence_source: Playwright desktop/mobile screenshots
+  rule: Agent may prepare evidence and severity observations, but the human reviewer owns the visual acceptance decision
 
 rules:
   - do not weaken, skip, or rewrite requirements/tests to make verification pass
   - implementation fixes are allowed; requirement changes require a blocker report
   - shared market-data or simulation changes require affected Optimization regression
+  - Playwright pixel-diff parity with Portfolio Visualizer is not an acceptance criterion
