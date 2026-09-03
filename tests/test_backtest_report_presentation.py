@@ -112,7 +112,8 @@ def test_growth_chart_uses_calendar_ticks_and_shared_month_hover_for_all_series(
     )
     chart = _growth_svg(growth, PORTFOLIOS, {"benchmark": BENCHMARK})
     assert "Jan 2020" in chart and "Jul 2020" in chart and "Jan 2021" in chart
-    assert "Jun 2020" not in chart
+    # Jun is valid hover content, but should not be emitted as a semantic axis tick.
+    assert ">Jun 2020</text>" not in chart
     assert BENCHMARK_HTML in chart
     assert "growth-hover-zone" in chart
     assert "data-tooltip-json=" in chart
