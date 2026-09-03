@@ -4,11 +4,11 @@ import html
 
 import pandas as pd
 
+from portfolio_optimizer_kr.analytics import historical
 from portfolio_optimizer_kr.viewer.backtest_renderer import (
     _active_returns_presentation,
     _annual_asset_returns_chart,
     _annual_returns_chart,
-    _asset_performance_from_monthly_returns,
     _asset_performance_table,
     _calendar_ticks,
     _correlations_table,
@@ -24,7 +24,13 @@ BENCHMARK = "SPDR S&P 500 ETF Trust"
 def test_calendar_ticks_deduplicate_initial_anchor_and_same_month_end():
     dates = pd.Series(
         pd.to_datetime(
-            ["2020-01-01", "2020-01-31", "2020-02-29", "2020-07-31", "2021-01-31"]
+            [
+                "2020-01-01",
+                "2020-01-31",
+                "2020-02-29",
+                "2020-07-31",
+                "2021-01-31",
+            ]
         )
     )
     ticks = _calendar_ticks(dates)
@@ -140,6 +146,8 @@ def test_active_return_section_contains_all_canonical_historical_views():
     dates = pd.date_range("2021-01-31", periods=40, freq="ME")
     active_rows = []
     contrib_rows = []
+    observations = []
+    up_down_rows = []
     for portfolio, scale in [(PORTFOLIOS[0], 1.0), (PORTFOLIOS[1], 0.7)]:
         for index, date in enumerate(dates):
             benchmark_return = -0.03 + (index % 8) * 0.01
@@ -150,15 +158,28 @@ def test_active_return_section_contains_all_canonical_historical_views():
                 {
                     "portfolio": portfolio,
                     "date": date,
-                    "portfolio_return": portfolio_return,
-                    "benchmark_return": benchmark_return,
-                    "active_return": portfolio_return - benchmark_return,
+                    "portfolio_return_pct": portfolio_return * 100,
+                    "benchmark_return_pct": benchmark_return * 100,
+                    "active_return_pct": (portfolio_return - benchmark_return) * 100,
                     "annual_active_return": 0.06 * scale,
-                    "rolling_active_return": 0.04 * scale if index >= 35 else None,
+                    "rolling_active_return_pct": 4.0 * scale if index >= 35 else None,
                     "rolling_tracking_error_pct": 5.0 * scale if index >= 35 else None,
                 }
             )
-            for ticker, contribution in [("QQQ", 0.06 * scale), ("GLD", 0.02 * scale)]:
+            observations.append(
+                {
+                    "date": date,
+                    "portfolio": portfolio,
+                    "market_type": "up" if benchmark_return > 0 else "down",
+                    "benchmark_return_pct": benchmark_return * 100,
+                    "portfolio_return_pct": portfolio_return * 100,
+                    "active_return_pct": (portfolio_return - benchmark_return) * 100,
+                }
+            )
+            for ticker, contribution in [
+                ("QQQ", 0.06 * scale),
+                ("GLD", 0.02 * scale),
+            ]:
                 contrib_rows.append(
                     {
                         "date": date,
@@ -167,6 +188,20 @@ def test_active_return_section_contains_all_canonical_historical_views():
                         "cumulative_active_contribution_pct": contribution * (index + 1),
                     }
                 )
+        for market_type in ["up", "down"]:
+            up_down_rows.append(
+                {
+                    "portfolio": portfolio,
+                    "market_type": market_type,
+                    "above_benchmark_count": 10,
+                    "below_benchmark_count": 5,
+                    "total_count": 15,
+                    "pct_above_benchmark": 66.67,
+                    "above_active_return_pct": 1.2 * scale,
+                    "below_active_return_pct": -0.8 * scale,
+                    "overall_active_return_pct": 0.4 * scale,
+                }
+            )
     benchmark = pd.DataFrame(
         [
             {
@@ -187,10 +222,11 @@ def test_active_return_section_contains_all_canonical_historical_views():
         pd.DataFrame(active_rows),
         pd.DataFrame(contrib_rows),
         benchmark,
-        pd.DataFrame(),
+        pd.DataFrame(up_down_rows),
         PORTFOLIOS,
         BENCHMARK,
         {"QQQ": "Invesco QQQ Trust", "GLD": "SPDR Gold Shares"},
+        pd.DataFrame(observations),
     )
     assert 'data-chart="annual-active-return-chart"' in rendered
     assert rendered.count("active-contribution-panel") == 2
@@ -210,43 +246,61 @@ def test_active_return_section_contains_all_canonical_historical_views():
         assert header in rendered
 
 
-def test_asset_performance_is_persistable_server_side_finance_output_with_required_columns():
-    dates = pd.date_range("2020-01-31", periods=72, freq="ME")
+def test_asset_performance_is_shared_finance_output_and_renderer_only_formats_artifact():
     monthly = pd.DataFrame(
         {
-            "date": dates,
-            "asset_QQQ": [0.01] * 72,
-            "asset_069500": [0.005] * 72,
-        }
+            "QQQ": [0.01] * 72,
+            "069500": [0.005] * 72,
+        },
+        index=pd.date_range("2020-01-31", periods=72, freq="ME"),
     )
-    configuration = {
-        "assets": [
-            {"symbol": "QQQ", "name": "Invesco QQQ Trust"},
-            {"symbol": "069500", "name": "KODEX 200"},
-        ],
-        "risk_free": {"effective_annual_rate": 0.0},
-    }
-    frame = _asset_performance_from_monthly_returns(monthly, configuration)
-    assert list(frame["ticker"]) == ["QQQ", "069500"]
-    assert frame.loc[0, "name"] == "Invesco QQQ Trust"
+    canonical = historical.asset_performance_table(
+        monthly,
+        annual_rf=0.0,
+        asset_names={"QQQ": "Invesco QQQ Trust", "069500": "KODEX 200"},
+    )
+    assert list(canonical["ticker"]) == ["QQQ", "069500"]
+    assert canonical.loc[0, "name"] == "Invesco QQQ Trust"
     for column in [
-        "cagr_pct",
-        "annualized_return_pct",
-        "annualized_volatility_pct",
-        "best_year_pct",
-        "worst_year_pct",
-        "max_drawdown_pct",
+        "cagr",
+        "annualized_return",
+        "annualized_volatility",
+        "best_year",
+        "worst_year",
+        "max_drawdown",
         "sharpe_ratio",
         "sortino_ratio",
-        "3m_pct",
-        "ytd_pct",
-        "1y_pct",
-        "3y_pct",
-        "5y_pct",
-        "10y_pct",
+        "3m",
+        "ytd",
+        "1y",
+        "3y",
+        "5y",
+        "10y",
     ]:
-        assert column in frame.columns
-    rendered = _asset_performance_table(frame)
+        assert column in canonical.columns
+
+    review = canonical.rename(
+        columns={
+            column: f"{column}_pct"
+            for column in [
+                "cagr",
+                "annualized_return",
+                "annualized_volatility",
+                "best_year",
+                "worst_year",
+                "max_drawdown",
+                "3m",
+                "ytd",
+                "1y",
+                "3y",
+                "5y",
+                "10y",
+            ]
+        }
+    )
+    for column in [column for column in review if column.endswith("_pct")]:
+        review[column] = pd.to_numeric(review[column], errors="coerce") * 100
+    rendered = _asset_performance_table(review)
     for label in [
         "Ticker",
         "Name",
