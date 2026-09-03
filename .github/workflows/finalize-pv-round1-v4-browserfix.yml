@@ -1,0 +1,173 @@
+name: Finalize PV round-one v4 browser fix
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - ".github/workflows/finalize-pv-round1-v4-browserfix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply robust 12-row pagination
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''    return (
+              '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+              '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
+              f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
+              f'<tbody>{"".join(rows)}</tbody></table></div>'
+          )
+          '''
+          new = r'''    total_rows = len(rows)
+              first_page_end = min(12, total_rows)
+              pagination_script = (
+                  '<script>'
+                  "(() => {"
+                  "const table=document.getElementById('monthly-returns-detail');"
+                  "const status=document.getElementById('monthly-page-status');"
+                  "if(!table||!status||table.dataset.paginationReady==='true')return;"
+                  "table.dataset.paginationReady='true';"
+                  "const rows=Array.from(table.tBodies[0]?.rows||[]);"
+                  "const pageSize=12;let page=0;"
+                  "const first=document.getElementById('monthly-page-first');"
+                  "const previous=document.getElementById('monthly-page-previous');"
+                  "const next=document.getElementById('monthly-page-next');"
+                  "const last=document.getElementById('monthly-page-last');"
+                  "const lastPage=()=>Math.max(0,Math.ceil(rows.length/pageSize)-1);"
+                  "const render=()=>{"
+                  "page=Math.max(0,Math.min(page,lastPage()));"
+                  "const start=page*pageSize;const end=Math.min(start+pageSize,rows.length);"
+                  "rows.forEach((row,index)=>{const hide=index<start||index>=end;row.hidden=hide;row.style.display=hide?'none':'';});"
+                  "status.textContent=rows.length?`Showing ${start+1} to ${end} of ${rows.length} entries`:'Showing 0 to 0 of 0 entries';"
+                  "if(first)first.disabled=page===0;if(previous)previous.disabled=page===0;"
+                  "if(next)next.disabled=page>=lastPage();if(last)last.disabled=page>=lastPage();"
+                  "};"
+                  "first?.addEventListener('click',()=>{page=0;render();});"
+                  "previous?.addEventListener('click',()=>{page-=1;render();});"
+                  "next?.addEventListener('click',()=>{page+=1;render();});"
+                  "last?.addEventListener('click',()=>{page=lastPage();render();});"
+                  "render();"
+                  "})();"
+                  '</script>'
+              )
+              return (
+                  '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+                  '<div class="pv-table-page-size" style="display:flex;align-items:center;gap:6px;margin:8px 0">'
+                  '<label for="monthly-page-size">Show</label>'
+                  '<select id="monthly-page-size" aria-label="Monthly returns entries per page">'
+                  '<option value="12" selected>12</option></select><span>entries</span></div>'
+                  '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
+                  f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
+                  f'<tbody>{"".join(rows)}</tbody></table></div>'
+                  '<div id="monthly-pagination" class="pv-table-pagination" '
+                  'style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px">'
+                  f'<span id="monthly-page-status">Showing 1 to {first_page_end} of {total_rows} entries</span>'
+                  '<span style="display:flex;gap:6px">'
+                  '<button type="button" id="monthly-page-first">First</button>'
+                  '<button type="button" id="monthly-page-previous">Previous</button>'
+                  '<button type="button" id="monthly-page-next">Next</button>'
+                  '<button type="button" id="monthly-page-last">Last</button>'
+                  '</span></div>'
+                  + pagination_script
+              )
+          '''
+          if old not in text:
+              raise SystemExit("monthly return renderer contract changed; refusing patch")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          Path("tests/test_monthly_returns_pagination_contract.py").write_text('''from __future__ import annotations\n\nimport pandas as pd\nfrom portfolio_optimizer_kr.viewer import pv_round1_overlay as overlay\n\n\ndef test_monthly_returns_have_pv_12_row_pagination_contract():\n    frame=pd.DataFrame([{\n        "year":2026 if i<8 else 2025,\n        "month":8-i if i<8 else 20-i,\n        "series::Sample Portfolio::return":0.01,\n        "series::Sample Portfolio::balance":10000+i,\n        "asset::SPY::return":0.02,\n    } for i in range(13)])\n    html=overlay._monthly_detail_table(frame,["Sample Portfolio"],None,{"SPY":"S&P 500"},"USD")\n    assert 'id="monthly-page-status">Showing 1 to 12 of 13 entries' in html\n    assert "row.style.display=hide?'none':''" in html\n    for control in ("first","previous","next","last"):\n        assert f'id="monthly-page-{control}"' in html\n''',encoding="utf-8")
+
+          cfg_path=Path("configs/backtest-pv-reference-parity.yaml")
+          cfg=cfg_path.read_text(encoding="utf-8")
+          cfg_path.write_text(cfg.replace(
+              "20260903-backtest-pv-reference-parity-yty-v3",
+              "20260903-backtest-pv-reference-parity-yty-v4",1),encoding="utf-8")
+          PY
+
+      - name: Regression and real-data generation
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m compileall -q src/portfolio_optimizer_kr
+          python -m pytest -q \
+            tests/test_monthly_returns_pagination_contract.py \
+            tests/test_backtest_pv_round1.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_shared_end_to_end.py \
+            tests/test_active_visual_reference_contract.py
+          portfolio-optimizer validate configs/backtest-pv-reference-parity.yaml
+          portfolio-optimizer run configs/backtest-pv-reference-parity.yaml --output-root runs
+
+      - name: Static contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html=Path("runs/20260903-backtest-pv-reference-parity-yty-v4/report.html").read_text(encoding="utf-8")
+          for marker in (
+              'id="monthly-page-status">Showing 1 to 12 of 80 entries',
+              'id="monthly-page-first"','id="monthly-page-previous"',
+              'id="monthly-page-next"','id="monthly-page-last"',
+              'Risk and Return Metrics','Annualized Return (CAGR)',
+              'Active Return Contribution','data-chart="drawdown-combined"',
+          ):
+              assert marker in html,marker
+          assert "Benchmark Summary" not in html
+          PY
+
+      - name: Install Playwright
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Browser contract
+        run: |
+          python -m http.server 8000 >/tmp/pv-v4-http.log 2>&1 &
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          url="http://127.0.0.1:8000/runs/20260903-backtest-pv-reference-parity-yty-v4/report.html"
+          with sync_playwright() as p:
+              browser=p.chromium.launch()
+              page=browser.new_page(viewport={"width":1440,"height":1200})
+              page.goto(url,wait_until="networkidle")
+              assert page.locator("#monthly-returns-detail tbody tr").count()==80
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count()==12
+              assert page.locator("#monthly-page-status").inner_text()=="Showing 1 to 12 of 80 entries"
+              page.locator("#monthly-page-next").click()
+              assert page.locator("#monthly-page-status").inner_text()=="Showing 13 to 24 of 80 entries"
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count()==12
+              page.locator("#monthly-page-last").click()
+              assert page.locator("#monthly-page-status").inner_text()=="Showing 73 to 80 of 80 entries"
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count()==8
+              assert page.locator("#monthly-page-next").is_disabled()
+              page.locator("#monthly-page-first").click()
+              assert page.locator("#monthly-page-status").inner_text()=="Showing 1 to 12 of 80 entries"
+              browser.close()
+          PY
+
+      - name: Commit v4
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py \
+            tests/test_monthly_returns_pagination_contract.py \
+            configs/backtest-pv-reference-parity.yaml \
+            runs/20260903-backtest-pv-reference-parity-yty-v4
+          git commit -m "viewer: finalize PV round-one v4 pagination"
+          git pull --rebase origin bt-module
+          git push origin HEAD:bt-module
