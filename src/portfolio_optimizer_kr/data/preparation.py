@@ -6,7 +6,7 @@ from typing import Protocol
 import pandas as pd
 
 from portfolio_optimizer_kr.errors import DataValidationError
-from portfolio_optimizer_kr.models import AssetSpec, RiskFreeMode
+from portfolio_optimizer_kr.models import AssetSpec, RiskFreeConfig, RiskFreeMode
 
 from .transform import (
     align_common_prices,
@@ -23,19 +23,22 @@ class HistoricalDataRequest(Protocol):
     benchmark: AssetSpec | None
     start: str | pd.Timestamp | None
     end: str | pd.Timestamp | None
-    risk_free: object
+    risk_free: RiskFreeConfig
 
 
-def annual_rf(
+def resolve_annual_rf(
     request: HistoricalDataRequest,
     supplied_annual_rf: float | None,
 ) -> float:
-    risk_free = request.risk_free
-    if getattr(risk_free, "mode", None) is RiskFreeMode.FIXED:
-        annual_rate = getattr(risk_free, "annual_rate", None)
-        if annual_rate is None:
+    """Resolve the annual risk-free rate used by historical analysis.
+
+    RF stays intentionally colocated with historical data preparation. It is a
+    small shared input-resolution concern, not a separate capability/module.
+    """
+    if request.risk_free.mode is RiskFreeMode.FIXED:
+        if request.risk_free.annual_rate is None:
             raise ValueError("fixed risk-free mode requires annual_rate")
-        return float(annual_rate)
+        return float(request.risk_free.annual_rate)
     if supplied_annual_rf is None:
         raise NotImplementedError(
             "U.S. 3-Month T-Bill provider is an external-data boundary; "
@@ -44,9 +47,8 @@ def annual_rf(
     return float(supplied_annual_rf)
 
 
-def asset_price(
+def _asset_price(
     request: HistoricalDataRequest,
-    symbol: str,
     price: pd.Series,
     currency: str,
     usdkrw: pd.Series | None,
@@ -84,7 +86,7 @@ def asset_price_coverage(
     return coverage
 
 
-def completed_monthly_returns(
+def _completed_monthly_returns(
     returns: pd.DataFrame,
     end: str | pd.Timestamp | None,
 ) -> pd.DataFrame:
@@ -116,9 +118,8 @@ def prepare_monthly_returns(
     for asset in request.assets:
         if asset.symbol not in prices:
             raise DataValidationError(f"missing price series: {asset.symbol}")
-        converted[asset.symbol] = asset_price(
+        converted[asset.symbol] = _asset_price(
             request,
-            asset.symbol,
             prices[asset.symbol],
             asset.currency,
             usdkrw,
@@ -126,7 +127,7 @@ def prepare_monthly_returns(
     # The prior month-end is retained as a warm-up price. Requested period
     # boundaries denote return rows, not raw price rows.
     aligned = align_common_prices(converted, end=request.end)
-    returns = completed_monthly_returns(
+    returns = _completed_monthly_returns(
         to_monthly_returns(month_end_prices(aligned)), request.end
     )
     if request.start is not None:
@@ -134,7 +135,7 @@ def prepare_monthly_returns(
     return returns
 
 
-def benchmark_returns(
+def prepare_benchmark_returns(
     request: HistoricalDataRequest,
     prices: Mapping[str, pd.Series],
     usdkrw: pd.Series | None,
@@ -146,15 +147,14 @@ def benchmark_returns(
         raise DataValidationError(
             f"missing benchmark price series: {benchmark.symbol}"
         )
-    price = asset_price(
+    price = _asset_price(
         request,
-        benchmark.symbol,
         prices[benchmark.symbol],
         benchmark.currency,
         usdkrw,
     )
     frame = align_common_prices({benchmark.symbol: price}, end=request.end)
-    returns = completed_monthly_returns(
+    returns = _completed_monthly_returns(
         to_monthly_returns(month_end_prices(frame)), request.end
     )
     if request.start is not None:
