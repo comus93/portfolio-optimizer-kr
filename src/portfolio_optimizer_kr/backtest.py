@@ -115,10 +115,7 @@ def analyze_backtest_prices(
     monthly_series = pd.concat(
         [
             monthly_returns.add_prefix("asset_"),
-            *[
-                path.returns.rename(name)
-                for name, path in paths.items()
-            ],
+            *[path.returns.rename(name) for name, path in paths.items()],
         ],
         axis=1,
     ).reset_index(names="date")
@@ -217,6 +214,20 @@ def analyze_backtest_prices(
         }
         for portfolio in request.portfolios
     }
+    target_allocations = pd.DataFrame(
+        [
+            {
+                "portfolio": portfolio.name,
+                "ticker": asset.symbol,
+                "name": asset.name,
+                "target_weight": float(
+                    portfolio.target_weights.get(asset.symbol, 0.0)
+                ),
+            }
+            for portfolio in request.portfolios
+            for asset in request.assets
+        ]
+    )
 
     result: dict[str, object] = {
         "configuration": {
@@ -320,6 +331,7 @@ def analyze_backtest_prices(
     )
 
     result["_tables"] = {
+        "target_allocations": target_allocations,
         "correlations": correlation.reset_index(names="series"),
         "portfolio_performance": performance_table,
         "portfolio_asset_performance": asset_performance_table,
