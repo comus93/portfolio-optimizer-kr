@@ -94,7 +94,10 @@ def _resolve_annual_rf(
 
 
 def _load_inflation_series(spec: RunConfig, loader: FDRLoader) -> pd.Series | None:
-    if spec.product_mode is not ProductMode.BACKTEST:
+    # CPI is a best-effort report enrichment at the real market-data boundary.
+    # Custom/fake loaders used by callers and tests must not acquire a new
+    # economic-series obligation merely because Backtest supports inflation.
+    if spec.product_mode is not ProductMode.BACKTEST or type(loader) is not FDRLoader:
         return None
     try:
         return loader.load_economic_series(
@@ -103,8 +106,6 @@ def _load_inflation_series(spec: RunConfig, loader: FDRLoader) -> pd.Series | No
             end=spec.request.end,
         )
     except (DataValidationError, NotImplementedError, AttributeError):
-        # Inflation enriches PV-compatible reporting, but must not block the
-        # canonical backtest if an external CPI provider is unavailable.
         return None
 
 
