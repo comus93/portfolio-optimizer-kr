@@ -1,0 +1,39 @@
+name: Probe FDR US ETF names
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - .github/workflows/probe-fdr-us-etf-names.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install FinanceDataReader
+        run: python -m pip install -q finance-datareader
+      - name: Print ETF/US source names
+        run: |
+          python - <<'PY'
+          import FinanceDataReader as fdr
+          targets = ['SPY','QQQ','GLD','TLT','SLV','GDX','AIA','XLF','XLE','EWY','EWJ','INDY']
+          df = fdr.StockListing('ETF/US')
+          print('COLUMNS=', list(df.columns))
+          symbol_col = next(c for c in ['Symbol','Ticker','Code','symbol','ticker','code'] if c in df.columns)
+          name_col = next(c for c in ['Name','name','Description','description'] if c in df.columns)
+          keyed = df.copy()
+          keyed[symbol_col] = keyed[symbol_col].astype(str).str.upper().str.strip()
+          for ticker in targets:
+              rows = keyed[keyed[symbol_col] == ticker]
+              if rows.empty:
+                  print(f'{ticker}\tNOT_FOUND')
+              else:
+                  print(f'{ticker}\t{rows.iloc[0][name_col]}')
+          PY
