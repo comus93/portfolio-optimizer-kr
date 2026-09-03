@@ -14,11 +14,75 @@ class FDRLoader:
 
     def __init__(self) -> None:
         self._kr_etf_symbols: set[str] | None = None
+        self._etf_name_maps: dict[str, dict[str, str]] = {}
 
     @staticmethod
     def _split_source(symbol: str) -> tuple[str | None, str]:
         source, code = symbol.split(":", 1) if ":" in symbol else (None, symbol)
         return (source.upper() if source else None, code.upper())
+
+    @staticmethod
+    def _listing_identity_columns(listing: pd.DataFrame) -> tuple[str, str]:
+        symbol_column = next(
+            (
+                column
+                for column in ("Symbol", "Code", "Ticker", "symbol", "code", "ticker")
+                if column in listing.columns
+            ),
+            None,
+        )
+        name_column = next(
+            (column for column in ("Name", "name") if column in listing.columns),
+            None,
+        )
+        if symbol_column is None or name_column is None:
+            raise DataValidationError(
+                "FinanceDataReader ETF listing does not expose symbol/name metadata"
+            )
+        return symbol_column, name_column
+
+    def _load_etf_name_map(self, fdr, country: str) -> dict[str, str]:
+        country = country.upper()
+        cached = self._etf_name_maps.get(country)
+        if cached is not None:
+            return cached
+        try:
+            listing = fdr.StockListing(f"ETF/{country}")
+        except Exception as exc:
+            raise DataValidationError(
+                f"unable to load FinanceDataReader ETF/{country} name metadata"
+            ) from exc
+        if listing is None or listing.empty:
+            raise DataValidationError(
+                f"FinanceDataReader ETF/{country} name metadata is empty"
+            )
+        symbol_column, name_column = self._listing_identity_columns(listing)
+        names: dict[str, str] = {}
+        for symbol, name in zip(listing[symbol_column], listing[name_column]):
+            if pd.isna(symbol) or pd.isna(name):
+                continue
+            key = str(symbol).strip().upper()
+            value = str(name).strip()
+            if key and value:
+                names[key] = value
+        self._etf_name_maps[country] = names
+        return names
+
+    def load_asset_names(self, assets: Iterable[AssetSpec]) -> dict[str, str]:
+        """Resolve ETF names from FDR listing metadata for config-time snapshots."""
+        import FinanceDataReader as fdr
+
+        country_by_currency = {"USD": "US", "KRW": "KR"}
+        resolved: dict[str, str] = {}
+        for asset in assets:
+            country = country_by_currency.get(asset.currency.upper())
+            if country is None:
+                continue
+            _, code = self._split_source(asset.symbol)
+            name = self._load_etf_name_map(fdr, country).get(code)
+            if name:
+                resolved[asset.symbol] = name
+        return resolved
 
     def _load_kr_etf_symbols(self, fdr) -> set[str]:
         if self._kr_etf_symbols is not None:

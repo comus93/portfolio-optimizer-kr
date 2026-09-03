@@ -307,3 +307,11 @@ Shared capability change는 해당 capability를 소비하는 Optimization/Backt
 
 1. OpenSpec strict validation
 2. total-return data-source feasibility 및 필요한 최소 market-data 보강 결정
+
+## Asset name snapshot impact
+
+- changed shared capability: market-data / research-input metadata handoff
+- reason: replace manually authored instrument names with FDR provider names while retaining the shared `AssetSpec.name` contract
+- affected products: portfolio-optimization, portfolio-backtest
+- affected regression: FDR metadata resolution, shared config hydration, report-level asset ordering/name rendering
+

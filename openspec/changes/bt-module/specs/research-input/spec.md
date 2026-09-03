@@ -167,3 +167,12 @@ Research Frontend가 default를 자동 적용한 경우에도 실제 effective �
 - GIVEN benchmark, initial balance, Time Period mode, Calendar Aligned, rebalancing 또는 portfolio name에 canonical default가 적용된다
 - WHEN run input을 persist한다
 - THEN 실행에 실제 사용된 effective 값을 생략하지 않고 기록한다
+
+### Requirement: Source-backed asset names in canonical input
+Research Frontend가 asset 또는 benchmark의 `name`을 canonical YAML에 기록할 때는 v1 market-data provider가 제공한 종목명을 초기 설정 시점의 snapshot으로 사용해야 한다(MUST). 이 `name` field는 Optimization과 Backtest가 공유하며 run 실행마다 provider에서 다시 해석하지 않는다(MUST NOT).
+
+#### Scenario: ETF ticker로 canonical input 생성
+- GIVEN 사용자가 ETF ticker와 portfolio 조건을 확정했다
+- WHEN canonical YAML을 최초 생성한다
+- THEN FDR ETF listing metadata의 해당 종목명을 `name`에 기록하고 이후 Optimization/Backtest와 report가 동일한 persisted name을 사용한다
+
