@@ -5,6 +5,7 @@ on:
     branches: [bt-module]
     paths:
       - ".github/workflows/run-pv-reference-parity.yml"
+      - "configs/backtest-pv-reference-parity.yaml"
   workflow_dispatch:
 
 permissions:
@@ -83,7 +84,9 @@ jobs:
           lines = [
               "# Portfolio Visualizer parity comparison",
               "",
-              "Captured PV reference: Jan 2020 - Jul 2026, Year-to-Year, annual rebalancing, $10,000 initial balance, no cashflows, SPY benchmark.",
+              "Captured PV reference: Jan 2020 - Jul 2026, UI setting Year-to-Year 2020-2026, annual rebalancing, $10,000 initial balance, no cashflows, SPY benchmark.",
+              "",
+              "Parity note: this run locks the effective endpoint to Jul 2026 with month-to-month period input because the current engine's Year-to-Year mode expands 2026 through year-end/current available data, while the captured PV result stops at Jul 2026.",
               "",
           ]
           coverage = result.get("data_coverage", {}).get("backtest_monthly_returns", {}) or {}
