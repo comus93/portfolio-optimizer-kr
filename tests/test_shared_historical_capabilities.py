@@ -7,7 +7,11 @@ import pandas as pd
 from portfolio_optimizer_kr import backtest, pipeline
 from portfolio_optimizer_kr.analytics import historical
 from portfolio_optimizer_kr.viewer import backtest_renderer
+from portfolio_optimizer_kr.viewer import historical_active_components
 from portfolio_optimizer_kr.viewer import historical_components
+from portfolio_optimizer_kr.viewer.shared_historical_overlay import (
+    build_optimizer_shared_sections,
+)
 
 
 def _path(returns: list[float], weights: list[list[float]] | None = None):
@@ -29,6 +33,21 @@ def test_optimizer_and_backtest_use_same_historical_table_builders():
     assert backtest._up_down_market_table is historical.up_down_market_table
     assert pipeline._portfolio_metrics_table is historical.portfolio_metrics_table
     assert backtest._portfolio_metrics_table is historical.portfolio_metrics_table
+
+
+def test_shared_portfolio_metrics_preserve_optimizer_matrix_contract():
+    benchmark = pd.Series(
+        [0.01, -0.005, 0.012, 0.004] * 6,
+        index=pd.date_range("2020-01-31", periods=24, freq="ME"),
+    )
+    paths = {
+        "provided": SimpleNamespace(returns=benchmark + 0.001),
+        "optimized": SimpleNamespace(returns=benchmark + 0.002),
+    }
+    table = historical.portfolio_metrics_table(paths, benchmark, 0.02)
+    assert {"metric", "provided", "optimized", "benchmark"}.issubset(
+        table.columns
+    )
 
 
 def test_shared_up_down_preserves_optimizer_richer_contract_for_any_portfolio_names():
@@ -92,17 +111,53 @@ def test_asset_performance_is_shared_analytics_output_not_renderer_finance_calcu
         "3y",
         "5y",
         "10y",
+        "full_period",
+        "3y_annualized_volatility",
+        "5y_annualized_volatility",
     }.issubset(table.columns)
+    mapping = historical.asset_performance_mapping(table)
+    assert "full_period" in mapping["AAA"]["trailing_returns"]
+    assert "3y_annualized_volatility" in mapping["AAA"]["trailing_returns"]
     assert not hasattr(backtest_renderer, "_asset_performance_from_monthly_returns")
 
 
 def test_backtest_renderer_reuses_shared_historical_report_components():
-    assert backtest_renderer._annual_returns_chart is historical_components.annual_returns_chart
-    assert backtest_renderer._drawdown_presentation is historical_components.drawdown_presentation
-    assert backtest_renderer._annual_asset_returns_chart is historical_components.annual_asset_returns_chart
-    assert backtest_renderer._correlations_table is historical_components.correlations_table
-    assert backtest_renderer._rolling_returns_chart is historical_components.rolling_returns_chart
-    assert backtest_renderer._asset_performance_table is historical_components.asset_performance_table
+    assert (
+        backtest_renderer._annual_returns_chart
+        is historical_components.annual_returns_chart
+    )
+    assert (
+        backtest_renderer._drawdown_presentation
+        is historical_components.drawdown_presentation
+    )
+    assert (
+        backtest_renderer._annual_asset_returns_chart
+        is historical_components.annual_asset_returns_chart
+    )
+    assert (
+        backtest_renderer._correlations_table
+        is historical_components.correlations_table
+    )
+    assert (
+        backtest_renderer._rolling_returns_chart
+        is historical_components.rolling_returns_chart
+    )
+    assert (
+        backtest_renderer._asset_performance_table
+        is historical_components.asset_performance_table
+    )
+    assert (
+        backtest_renderer._active_returns_presentation
+        is historical_active_components.active_returns_presentation
+    )
+
+
+def test_optimizer_overlay_does_not_replace_sections_without_shared_artifacts(tmp_path):
+    assert build_optimizer_shared_sections(
+        tmp_path,
+        objective_name="Maximum Sharpe Ratio",
+        benchmark_label="SPDR S&P 500 ETF Trust",
+    ) == {}
 
 
 def test_shared_up_down_observations_are_product_neutral():
