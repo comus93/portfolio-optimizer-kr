@@ -28,13 +28,7 @@ def test_backtest_full_path_uses_shared_outputs_and_renders_complete_report(tmp_
         {
             "product_mode": "backtest",
             "run_id": "shared-e2e",
-            "time_period": {
-                "mode": "month_to_month",
-                "start_year": 2020,
-                "first_month": 1,
-                "end_year": 2025,
-                "last_month": 12,
-            },
+            "time_period": {"mode": "month_to_month", "start_year": 2020, "first_month": 1, "end_year": 2025, "last_month": 12},
             "assets": [
                 {"symbol": "A", "name": "Asset A", "currency": "USD"},
                 {"symbol": "B", "name": "Asset B", "currency": "USD"},
@@ -43,11 +37,7 @@ def test_backtest_full_path_uses_shared_outputs_and_renders_complete_report(tmp_
                 {"name": "Growth 70/30", "weights_pct": {"A": 70, "B": 30}},
                 {"name": "Balanced 50/50", "weights_pct": {"A": 50, "B": 50}},
             ],
-            "benchmark": {
-                "symbol": "BM",
-                "name": "Benchmark Market",
-                "currency": "USD",
-            },
+            "benchmark": {"symbol": "BM", "name": "Benchmark Market", "currency": "USD"},
             "initial_balance": 10000,
             "rebalancing": {"period": "monthly", "calendar_aligned": True},
             "risk_free": {"mode": "fixed", "annual_rate_pct": 0},
@@ -71,39 +61,49 @@ def test_backtest_full_path_uses_shared_outputs_and_renders_complete_report(tmp_
         "review/up_down_market_scatter.csv",
         "review/active_returns.csv",
         "review/active_return_contribution.csv",
+        "review/rolling_returns_summary.csv",
     ]:
         assert (tmp_path / relative).is_file(), relative
 
     allocation_review = pd.read_csv(tmp_path / "review/target_allocations.csv")
     assert allocation_review.loc[
-        (allocation_review["portfolio"] == "Growth 70/30")
-        & (allocation_review["ticker"] == "A"),
+        (allocation_review["portfolio"] == "Growth 70/30") & (allocation_review["ticker"] == "A"),
         "target_weight_pct",
     ].iloc[0] == 70.0
 
     up_down = pd.read_csv(tmp_path / "review/up_down_market_performance.csv")
     assert {
-        "above_benchmark_count",
-        "below_benchmark_count",
-        "total_count",
-        "pct_above_benchmark",
-        "above_active_return_pct",
-        "below_active_return_pct",
-        "overall_active_return_pct",
+        "above_benchmark_count", "below_benchmark_count", "total_count", "pct_above_benchmark",
+        "above_active_return_pct", "below_active_return_pct", "overall_active_return_pct",
     }.issubset(up_down.columns)
 
     html = report_path.read_text(encoding="utf-8")
-    assert 'id="allocation-matrix"' in html
-    assert 'id="portfolio-asset-performance"' in html
-    assert 'data-chart="annual-returns-chart"' in html
+    for marker in [
+        'id="allocation-matrix"',
+        'id="portfolio-assets"',
+        'id="portfolio-asset-performance"',
+        'id="rolling-returns-summary"',
+        'data-chart="annual-returns-chart"',
+        'data-chart="annual-asset-returns-chart"',
+        'id="correlations-heatmap"',
+        'id="portfolio-return-decomposition"',
+        'id="portfolio-risk-decomposition"',
+        'data-chart="rolling-3y-annualized-return"',
+        'data-chart="rolling-5y-annualized-return"',
+    ]:
+        assert marker in html
     assert html.count("drawdown-panel") >= 3
     assert html.count("active-contribution-panel") == 2
     assert html.count("rolling-active-risk-panel") == 2
     assert html.count("up-down-panel") == 2
-    assert 'data-chart="rolling-3y-annualized-return"' in html
-    assert 'data-chart="rolling-5y-annualized-return"' in html
-    assert "Above Benchmark Count" in html
+    assert "Cumulative Active Return" in html
+    assert "Occurrences" in html
+    assert "Above Benchmark" in html
+    assert "Below Benchmark" in html
     assert "Return vs. Benchmark" in html
+    assert "Recovery By" in html
+    assert "Underwater Period" in html
     assert "Growth 70/30" in html
     assert "Balanced 50/50" in html
     assert "Benchmark Market" in html
+    assert "data-tooltip-json" in html
