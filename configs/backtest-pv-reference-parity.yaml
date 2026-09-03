@@ -1,5 +1,5 @@
 product_mode: backtest
-run_id: 20260903-backtest-pv-reference-parity-yty-v2
+run_id: 20260903-backtest-pv-reference-parity-yty-v3
 time_period:
   mode: year_to_year
   start_year: 2020
