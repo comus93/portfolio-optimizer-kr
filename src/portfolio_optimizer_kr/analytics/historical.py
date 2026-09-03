@@ -27,8 +27,12 @@ def _has_weights(path: Any) -> bool:
 
 
 def portfolio_paths(paths: Mapping[str, Any]) -> list[tuple[str, Any]]:
-    """Return product-neutral investable portfolio paths, excluding benchmark references."""
-    return [(name, path) for name, path in paths.items() if name != "benchmark" and _has_weights(path)]
+    """Return product-neutral investable portfolio paths, excluding benchmarks."""
+    return [
+        (name, path)
+        for name, path in paths.items()
+        if name != "benchmark" and _has_weights(path)
+    ]
 
 
 def performance_table(
@@ -106,7 +110,9 @@ def annual_asset_returns_table(asset_returns: pd.DataFrame) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for ticker in asset_returns:
         for year, value in annual_returns(asset_returns[ticker]).items():
-            rows.append({"year": int(year), "ticker": str(ticker), "return": value})
+            rows.append(
+                {"year": int(year), "ticker": str(ticker), "return": value}
+            )
     return pd.DataFrame(rows, columns=["year", "ticker", "return"])
 
 
@@ -131,7 +137,9 @@ def asset_performance_table(
     """Canonical realized asset-level historical performance table.
 
     Values stay in decimal units. Review/presentation layers own percentage-point
-    conversion and human labels.
+    conversion and human labels. The extended trailing fields preserve the
+    established Optimization result contract while Backtest may display only the
+    subset applicable to its report.
     """
     asset_names = asset_names or {}
     rows: list[dict[str, object]] = []
@@ -143,6 +151,8 @@ def asset_performance_table(
             {
                 "ticker": str(ticker),
                 "name": asset_names.get(str(ticker), ""),
+                "start_balance": summary.get("start_balance"),
+                "end_balance": summary.get("end_balance"),
                 "cagr": summary.get("cagr"),
                 "annualized_return": summary.get("annualized_return"),
                 "annualized_volatility": summary.get("annualized_volatility"),
@@ -157,39 +167,31 @@ def asset_performance_table(
                 "3y": trailing.get("3y"),
                 "5y": trailing.get("5y"),
                 "10y": trailing.get("10y"),
+                "full_period": trailing.get("full_period"),
+                "3y_annualized_volatility": trailing.get(
+                    "3y_annualized_volatility"
+                ),
+                "5y_annualized_volatility": trailing.get(
+                    "5y_annualized_volatility"
+                ),
             }
         )
-    return pd.DataFrame(
-        rows,
-        columns=[
-            "ticker",
-            "name",
-            "cagr",
-            "annualized_return",
-            "annualized_volatility",
-            "best_year",
-            "worst_year",
-            "max_drawdown",
-            "sharpe_ratio",
-            "sortino_ratio",
-            "3m",
-            "ytd",
-            "1y",
-            "3y",
-            "5y",
-            "10y",
-        ],
-    )
+    return pd.DataFrame(rows)
 
 
-def asset_performance_mapping(table: pd.DataFrame) -> dict[str, dict[str, object]]:
+def asset_performance_mapping(
+    table: pd.DataFrame,
+) -> dict[str, dict[str, object]]:
     if table.empty:
         return {}
     out: dict[str, dict[str, object]] = {}
-    for row in table.to_dict(orient="records"):
+    for source in table.to_dict(orient="records"):
+        row = dict(source)
         ticker = str(row.pop("ticker"))
         row.pop("name", None)
         out[ticker] = {
+            "start_balance": row.get("start_balance"),
+            "end_balance": row.get("end_balance"),
             "cagr": row.get("cagr"),
             "annualized_return": row.get("annualized_return"),
             "annualized_volatility": row.get("annualized_volatility"),
@@ -205,6 +207,13 @@ def asset_performance_mapping(table: pd.DataFrame) -> dict[str, dict[str, object
                 "3y": row.get("3y"),
                 "5y": row.get("5y"),
                 "10y": row.get("10y"),
+                "full_period": row.get("full_period"),
+                "3y_annualized_volatility": row.get(
+                    "3y_annualized_volatility"
+                ),
+                "5y_annualized_volatility": row.get(
+                    "5y_annualized_volatility"
+                ),
             },
         }
     return out
@@ -228,11 +237,18 @@ def active_contribution_table(
     paths: Mapping[str, Any],
     benchmark: pd.Series | None,
 ) -> pd.DataFrame:
-    columns = ["date", "portfolio", "ticker", "cumulative_active_contribution"]
+    columns = [
+        "date",
+        "portfolio",
+        "ticker",
+        "cumulative_active_contribution",
+    ]
     if benchmark is None:
         return pd.DataFrame(columns=columns)
     joined = pd.concat(
-        [asset_returns, benchmark.rename("benchmark")], axis=1, join="inner"
+        [asset_returns, benchmark.rename("benchmark")],
+        axis=1,
+        join="inner",
     ).dropna()
     rows: list[dict[str, object]] = []
     for name, path in portfolio_paths(paths):
@@ -375,19 +391,47 @@ def portfolio_metrics_table(
     benchmark: pd.Series | None,
     annual_rf: float,
 ) -> pd.DataFrame:
-    columns = ["portfolio", "metric", "value"]
+    """Shared comparison matrix using the established Optimizer table contract."""
     if benchmark is None:
-        return pd.DataFrame(columns=columns)
-    rows: list[dict[str, object]] = []
+        return pd.DataFrame(columns=["metric", *[name for name in paths if name != "benchmark"]])
+
+    by_portfolio: dict[str, dict[str, float]] = {}
     for name, path in paths.items():
-        metrics = portfolio_metrics(_returns(path), benchmark, annual_rf)
-        for metric, value in metrics.items():
-            rows.append({"portfolio": name, "metric": metric, "value": value})
-    return pd.DataFrame(rows, columns=columns)
+        if name == "benchmark":
+            continue
+        by_portfolio[name] = portfolio_metrics(
+            _returns(path), benchmark, annual_rf
+        )
+
+    # The benchmark itself is a useful comparison reference even when it is not
+    # represented as a path object in a caller.
+    by_portfolio["benchmark"] = portfolio_metrics(
+        benchmark, benchmark, annual_rf
+    )
+    metric_names = sorted(
+        {
+            metric
+            for values in by_portfolio.values()
+            for metric in values
+        }
+    )
+    return pd.DataFrame(
+        [
+            {
+                "metric": metric,
+                **{
+                    name: values.get(metric)
+                    for name, values in by_portfolio.items()
+                },
+            }
+            for metric in metric_names
+        ]
+    )
 
 
 def rolling_summary_table(
-    paths: Mapping[str, Any], years: tuple[int, ...] = (1, 3, 5, 7)
+    paths: Mapping[str, Any],
+    years: tuple[int, ...] = (1, 3, 5, 7),
 ) -> pd.DataFrame:
     return pd.DataFrame(
         [
@@ -406,7 +450,9 @@ def rolling_summary_table(
     )
 
 
-def rolling_review_table(paths: Mapping[str, Any], years: int) -> pd.DataFrame:
+def rolling_review_table(
+    paths: Mapping[str, Any], years: int
+) -> pd.DataFrame:
     series = [
         rolling_returns(_returns(path), years * 12).rename(
             f"{name}_annualized_return_pct"
@@ -414,4 +460,8 @@ def rolling_review_table(paths: Mapping[str, Any], years: int) -> pd.DataFrame:
         * 100.0
         for name, path in paths.items()
     ]
-    return pd.concat(series, axis=1).dropna(how="all").reset_index(names="date")
+    return (
+        pd.concat(series, axis=1)
+        .dropna(how="all")
+        .reset_index(names="date")
+    )
