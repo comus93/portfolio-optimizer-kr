@@ -159,6 +159,7 @@ def test_backtest_pipeline_produces_realized_multi_portfolio_result():
     assert result["configuration"]["calendar_aligned"] is False
     assert "optimization_result" not in result
     assert set(result["portfolio_definitions"]) == {"Balanced", "Portfolio 2"}
+    assert result["portfolio_order"] == ["Balanced", "Portfolio 2"]
     assert set(result["portfolio_performance"]["summary"]) >= {
         "Balanced",
         "Portfolio 2",

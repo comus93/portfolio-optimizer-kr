@@ -26,6 +26,17 @@ BENCHMARK = "SPDR S&P 500 ETF Trust"
 BENCHMARK_HTML = html.escape(BENCHMARK)
 
 
+def test_renderer_prefers_explicit_portfolio_order_over_sorted_definition_keys():
+    from portfolio_optimizer_kr.viewer.backtest_renderer import _result_portfolio_order
+
+    assert _result_portfolio_order(
+        {
+            "portfolio_order": PORTFOLIOS,
+            "portfolio_definitions": {"Balanced 50/50": {}, "Growth 70/30": {}},
+        }
+    ) == PORTFOLIOS
+
+
 def test_allocation_uses_union_assets_preserves_order_and_mutes_non_holdings():
     allocations = pd.DataFrame(
         [

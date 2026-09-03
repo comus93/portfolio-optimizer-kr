@@ -93,6 +93,9 @@
       }
     }
   },
+  "portfolio_order": [
+    "KODEX 200 100%"
+  ],
   "portfolio_paths": {
     "KODEX 200 100%": {
       "returns": {

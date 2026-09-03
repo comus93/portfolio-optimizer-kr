@@ -62,33 +62,45 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
 
   await expect(page.locator('#trailing h3')).toHaveText('Trailing Returns');
   const trailingHeaders = (await page.locator('#trailing th').allTextContents()).map(value => value.trim());
-  for (const header of ['Portfolio', '3 Month', 'YTD', '1 Year', '3 Year Annualized Return', 'Full Period CAGR']) {
+  for (const header of [
+    'Name',
+    'Total Return',
+    'Annualized Return',
+    'Annualized Standard Deviation',
+    '3 Month',
+    'Year To Date',
+    '1 Year',
+    '3 Year',
+    '5 Year',
+    'Full',
+  ]) {
     expect(trailingHeaders).toContain(header);
   }
   expect(trailingHeaders.some(value => value.includes('_pct') || value.includes('_'))).toBe(false);
 
   const growth = page.locator('#growth');
-  await expect(growth.locator('svg[role="img"]')).toHaveAttribute(
+  const growthChart = growth.locator('[data-chart="portfolio-growth"]');
+  await expect(growthChart.locator('svg')).toHaveAttribute(
     'aria-label',
     'Portfolio balance growth over time',
   );
   expect(await growth.locator('.legend-item').count()).toBeGreaterThan(0);
-  expect(await growth.locator('.x-tick-label').count()).toBeGreaterThanOrEqual(4);
-  expect(await growth.locator('.y-tick-label').count()).toBeGreaterThanOrEqual(4);
-  expect(await growth.locator('.grid-line').count()).toBeGreaterThanOrEqual(4);
-  await expect(growth.getByText('Year', { exact: true })).toBeVisible();
-  await expect(growth.getByText(/^Portfolio Balance \((\$|₩|[A-Z]{3})\)$/)).toBeVisible();
-  const xTickLabels = (await growth.locator('.x-tick-label').allTextContents()).map(value => value.trim());
+  expect(await growthChart.locator('.x-tick-label').count()).toBeGreaterThanOrEqual(4);
+  expect(await growthChart.locator('.y-tick-label').count()).toBeGreaterThanOrEqual(4);
+  expect(await growthChart.locator('.grid-line').count()).toBeGreaterThanOrEqual(4);
+  await expect(growthChart.getByText('Year', { exact: true })).toBeVisible();
+  await expect(growthChart.getByText(/^Portfolio Balance \((\$|₩|[A-Z]{3})\)$/)).toBeVisible();
+  const xTickLabels = (await growthChart.locator('.x-tick-label').allTextContents()).map(value => value.trim());
   for (const label of xTickLabels) {
     expect(label).toMatch(/^(Jan|Jul) \d{4}$/);
   }
 
-  const firstPoint = growth.locator('circle[aria-label]').first();
+  const firstPoint = growthChart.locator('.growth-hover-zone').first();
   const firstPointLabel = await firstPoint.getAttribute('aria-label');
   expect(firstPointLabel).toMatch(/^\d{4}-\d{2}-\d{2} \| .+: (\$|₩|[A-Z]{3} )[\d,]+$/);
   await firstPoint.hover({ force: true });
   await expect(growth.locator('#growth-tooltip')).toBeVisible();
-  await expect(growth.locator('#growth-tooltip')).toContainText(firstPointLabel.split(' | ')[0]);
+  await expect(growth.locator('#growth-tooltip')).toContainText(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}/);
   await firstPoint.focus();
   await expect(growth.locator('#growth-tooltip')).toBeVisible();
 
@@ -108,15 +120,15 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     await expect(page.locator(`#${id}`)).toBeVisible();
   }
 
-  const annualAssetTable = page.locator(
-    '#assets h3:has-text("Annual Asset Returns") + .table-wrap table',
-  );
-  const annualAssetReturns = await annualAssetTable.locator('tbody td:nth-child(3)').allTextContents();
-  expect(annualAssetReturns.length).toBeGreaterThan(0);
-  for (const value of annualAssetReturns) expect(value.trim()).toMatch(/^-?[\d,]+\.\d{2}%$|^N\/A$/);
+  const annualAssetChart = page.locator('#assets [data-chart="annual-asset-returns-chart"]');
+  await expect(annualAssetChart).toBeVisible();
+  expect(await annualAssetChart.locator('.grouped-bar').count()).toBeGreaterThan(0);
+  expect(await annualAssetChart.locator('.y-tick-label').count()).toBeGreaterThanOrEqual(3);
+  expect(await annualAssetChart.locator('.grid-line').count()).toBeGreaterThanOrEqual(3);
+  expect(await page.locator('#assets h3:has-text("Annual Asset Returns") + .table-wrap').count()).toBe(0);
 
-  const correlationsTable = page.locator('#assets h3:has-text("Correlations") + .table-wrap table');
-  const correlationValues = await correlationsTable.locator('tbody td:not(:first-child)').allTextContents();
+  const correlationsTable = page.locator('#correlations-heatmap');
+  const correlationValues = await correlationsTable.locator('.heatmap-cell').allTextContents();
   expect(correlationValues.length).toBeGreaterThan(0);
   for (const value of correlationValues) expect(value.trim()).toMatch(/^-?\d+\.\d{2}$|^N\/A$/);
   const assetText = await page.locator('#assets').innerText();
@@ -150,8 +162,8 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     await expect(page.locator('#activeReturns')).toBeVisible();
     await expect(page.locator('#activeReturns h2')).toHaveText('Active Returns');
     await expect(page.locator('.sidebar').getByText('Active Returns', { exact: true })).toBeVisible();
-    for (const heading of ['Benchmark Summary', 'Annual Active Return', 'Active Return Contribution', 'Up / Down Market Performance']) {
-      await expect(page.locator('#activeReturns').getByText(heading, { exact: true })).toBeVisible();
+    for (const heading of ['Benchmark Summary', 'Annualized Active Return', 'Cumulative Active Return', 'Up / Down Market Performance']) {
+      await expect(page.locator('#activeReturns').getByText(heading, { exact: true }).first()).toBeVisible();
     }
     const activeText = await page.locator('#activeReturns').innerText();
     for (const storageName of [
@@ -163,7 +175,7 @@ async function assertCoreReport(page, reportUrl, testInfo, screenshotPrefix) {
     ]) {
       expect(activeText).not.toContain(storageName);
     }
-    await expect(growth.locator('.legend')).toContainText(benchmarkText);
+    await expect(growth.locator('.legend').first()).toContainText(benchmarkText);
     await expect(correlationsTable).toContainText(benchmarkText);
   }
 

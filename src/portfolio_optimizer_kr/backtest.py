@@ -276,6 +276,9 @@ def analyze_backtest_prices(
             "asset_performance": asset_performance,
         },
         "portfolio_definitions": portfolio_definitions,
+        # result.json is deterministically key-sorted on write, so preserve the
+        # user-specified portfolio sequence independently of mapping order.
+        "portfolio_order": [portfolio.name for portfolio in request.portfolios],
         "portfolio_paths": portfolio_paths,
         "portfolio_performance": {
             **performance,

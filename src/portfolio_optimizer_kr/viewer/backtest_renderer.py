@@ -100,6 +100,17 @@ def _portfolio_order(frame: pd.DataFrame, requested: list[str]) -> list[str]:
     return ordered
 
 
+def _result_portfolio_order(result: dict[str, Any]) -> list[str]:
+    explicit = [
+        str(name)
+        for name in (result.get("portfolio_order") or [])
+        if str(name).strip()
+    ]
+    if explicit:
+        return explicit
+    return list((result.get("portfolio_definitions") or {}).keys())
+
+
 def _allocation_matrix(frame: pd.DataFrame, portfolio_order: list[str] | None = None) -> str:
     if frame.empty:
         return '<p class="muted">N/A</p>'
@@ -361,7 +372,7 @@ def generate_backtest_report(run_dir: str | Path, *, output_path: str | Path | N
         else None
     )
     currency = _base_currency(configuration)
-    portfolio_order = list((result.get("portfolio_definitions") or {}).keys())
+    portfolio_order = _result_portfolio_order(result)
     if not portfolio_order:
         portfolio_order = _portfolio_order(allocations, [])
     coverage = result.get("data_coverage", {}).get("backtest_monthly_returns", {}) or {}
