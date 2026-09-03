@@ -294,8 +294,10 @@ def generate_report(
             and configuration.get("product_mode") == "backtest"
         ):
             from .backtest_renderer import generate_backtest_report
+            from .pv_round1_overlay import apply_backtest_round1_overlay
 
-            return generate_backtest_report(root, output_path=output_path)
+            rendered = generate_backtest_report(root, output_path=output_path)
+            return apply_backtest_round1_overlay(root, rendered)
 
     model = build_report_model(root)
     target = Path(output_path) if output_path is not None else root / "report.html"
