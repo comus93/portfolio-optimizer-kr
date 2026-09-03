@@ -52,4 +52,5 @@ jobs:
             tests/test_backtest_input_persistence.py \
             tests/test_backtest_report_presentation.py \
             tests/test_backtest_report_content_contract.py \
-            tests/test_shared_historical_capabilities.py
+            tests/test_shared_historical_capabilities.py \
+            tests/test_shared_artifact_persistence.py
