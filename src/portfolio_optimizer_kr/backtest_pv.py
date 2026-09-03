@@ -5,6 +5,7 @@ from typing import Any
 
 import pandas as pd
 
+from portfolio_optimizer_kr.analytics.pv_metric_parity import apply_pv_metric_parity
 from portfolio_optimizer_kr.analytics.pv_metrics import (
     annual_inflation_yoy,
     risk_and_return_metrics_table,
@@ -168,11 +169,18 @@ def analyze_backtest_prices(
     series_returns = _series_returns(monthly_series, portfolio_order)
     benchmark = series_returns.get("benchmark")
     if benchmark is not None and annual_rf is not None:
-        tables["risk_and_return_metrics"] = risk_and_return_metrics_table(
+        metrics = risk_and_return_metrics_table(
             series_returns,
             benchmark,
             float(annual_rf),
             inflation_index=inflation_series,
+        )
+        tables["risk_and_return_metrics"] = apply_pv_metric_parity(
+            metrics,
+            series_returns,
+            benchmark,
+            float(annual_rf),
+            inflation_series,
         )
 
     tables["annual_returns_detail"] = _annual_detail_table(
