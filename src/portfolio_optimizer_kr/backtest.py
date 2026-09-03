@@ -223,6 +223,9 @@ def analyze_backtest_prices(
                 "target_weight": float(
                     portfolio.target_weights.get(asset.symbol, 0.0)
                 ),
+                "target_weight_pct": float(
+                    portfolio.target_weights.get(asset.symbol, 0.0)
+                ) * 100.0,
             }
             for portfolio in request.portfolios
             for asset in request.assets
