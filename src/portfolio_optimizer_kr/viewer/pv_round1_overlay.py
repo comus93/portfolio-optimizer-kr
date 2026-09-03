@@ -280,9 +280,7 @@ def _monthly_detail_table(
     if frame.empty or not {"year", "month"}.issubset(frame.columns):
         return '<p class="muted">N/A</p>'
     series, tickers = _detail_structure(frame, portfolio_order, asset_names)
-    top, second = _detail_header(
-        series, tickers, benchmark_label, asset_names, monthly=True
-    )
+    top, second = _detail_header(series, tickers, benchmark_label, asset_names, monthly=True)
     rows: list[str] = []
     rendered = frame.sort_values(["year", "month"], ascending=[False, False])
     for _, row in rendered.iterrows():
@@ -291,22 +289,69 @@ def _monthly_detail_table(
             f'<td>{int(row["month"])}</td>',
         ]
         for name in series:
-            cells.extend(
-                [
-                    f'<td>{hc.esc(hc.fraction_pct(row.get(f"series::{name}::return")))}</td>',
-                    f'<td>{hc.esc(hc.money(row.get(f"series::{name}::balance"), currency))}</td>',
-                ]
-            )
+            cells.extend([
+                f'<td>{hc.esc(hc.fraction_pct(row.get(f"series::{name}::return")))}</td>',
+                f'<td>{hc.esc(hc.money(row.get(f"series::{name}::balance"), currency))}</td>',
+            ])
         for ticker in tickers:
-            cells.append(
-                f'<td>{hc.esc(hc.fraction_pct(row.get(f"asset::{ticker}::return")))}</td>'
-            )
+            cells.append(f'<td>{hc.esc(hc.fraction_pct(row.get(f"asset::{ticker}::return")))}</td>')
         rows.append(f'<tr>{"".join(cells)}</tr>')
+    total_rows=len(rows)
+    first_page_end=min(12,total_rows)
+    pagination_script="""<script>
+(()=>{
+  const table=document.getElementById('monthly-returns-detail');
+  const status=document.getElementById('monthly-page-status');
+  if(!table||!status||table.dataset.paginationReady==='true')return;
+  table.dataset.paginationReady='true';
+  const rows=Array.from(table.tBodies[0]?.rows||[]);
+  const pageSize=12;
+  let page=0;
+  const first=document.getElementById('monthly-page-first');
+  const previous=document.getElementById('monthly-page-previous');
+  const next=document.getElementById('monthly-page-next');
+  const last=document.getElementById('monthly-page-last');
+  const lastPage=()=>Math.max(0,Math.ceil(rows.length/pageSize)-1);
+  const render=()=>{
+    page=Math.max(0,Math.min(page,lastPage()));
+    const start=page*pageSize;
+    const end=Math.min(start+pageSize,rows.length);
+    rows.forEach((row,index)=>{
+      const hide=index<start||index>=end;
+      row.hidden=hide;
+      row.style.display=hide?'none':'table-row';
+    });
+    status.textContent=rows.length?`Showing ${start+1} to ${end} of ${rows.length} entries`:'Showing 0 to 0 of 0 entries';
+    if(first)first.disabled=page===0;
+    if(previous)previous.disabled=page===0;
+    if(next)next.disabled=page>=lastPage();
+    if(last)last.disabled=page>=lastPage();
+  };
+  first?.addEventListener('click',()=>{page=0;render();});
+  previous?.addEventListener('click',()=>{page-=1;render();});
+  next?.addEventListener('click',()=>{page+=1;render();});
+  last?.addEventListener('click',()=>{page=lastPage();render();});
+  render();
+})();
+</script>"""
     return (
         '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+        '<div class="pv-table-page-size" style="display:flex;align-items:center;gap:6px;margin:8px 0">'
+        '<label for="monthly-page-size">Show</label>'
+        '<select id="monthly-page-size" aria-label="Monthly returns entries per page"><option value="12" selected>12</option></select>'
+        '<span>entries</span></div>'
         '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
         f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
         f'<tbody>{"".join(rows)}</tbody></table></div>'
+        '<div id="monthly-pagination" class="pv-table-pagination" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px">'
+        f'<span id="monthly-page-status">Showing 1 to {first_page_end} of {total_rows} entries</span>'
+        '<span style="display:flex;gap:6px">'
+        '<button type="button" id="monthly-page-first">First</button>'
+        '<button type="button" id="monthly-page-previous">Previous</button>'
+        '<button type="button" id="monthly-page-next">Next</button>'
+        '<button type="button" id="monthly-page-last">Last</button>'
+        '</span></div>'
+        + pagination_script
     )
 
 
