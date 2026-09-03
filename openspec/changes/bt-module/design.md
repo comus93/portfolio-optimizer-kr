@@ -30,42 +30,55 @@ Backtest-specific 신규/변경 사항만 `openspec/changes/bt-module/`에 작�
 
 ## Product and Shared Boundary
 
-핵심 원칙은 **portfolio 생성과 portfolio 평가를 분리**하는 것이다.
+핵심 원칙은 **portfolio 생성은 제품별로 분리하고, portfolio simulation과 평가는 공유**하는 것이다.
 
 ```text
 Optimization
-market-data
-  → ex-ante estimation / constraints / objective / efficient frontier
+market-data / shared statistics
+  → objective / constraints / solver / efficient frontier
   → optimized or provided target weights
-  → portfolio-simulation
-  → portfolio-analytics
-  → run-artifacts / research-report
+  → shared portfolio-simulation
+  → shared portfolio-analytics
+  → shared run-artifacts
+  → product composition + shared historical report components
 
 Backtest
-market-data
+market-data / shared statistics as applicable
   → user-defined target weights
-  → portfolio-simulation
-  → portfolio-analytics
-  → run-artifacts / research-report
+  → shared portfolio-simulation
+  → shared portfolio-analytics
+  → shared run-artifacts
+  → product composition + shared historical report components
 ```
+
+제품별 차이는 capability 자체가 아니라 **어떤 capability를 호출하고 어떤 입력/UI policy와 report composition을 제공하는가**에 둔다.
 
 ### Product-specific: `portfolio-optimization`
 
-Optimization만 expected return/covariance/ex-ante risk/Sharpe, constraints, objective, solver/residual, Efficient Frontier를 소유한다.
+Optimization만 objective, min/max constraint, target volatility 같은 optimization search policy, solver/residual, optimized-weight generation, Efficient Frontier를 소유한다.
+
+Expected return, covariance, volatility, correlation 같은 statistics 계산 capability 자체는 shared다. Optimization은 이 shared statistics를 ex-ante weight 탐색에 사용한다. Backtest가 현재 특정 statistics를 사용하지 않더라도 shared capability 접근을 금지하거나 Optimization 전용 구현으로 복제하지 않는다.
 
 ### Product-specific: `portfolio-backtest`
 
-Backtest만 product mode, named portfolio collection, user-defined target allocations, v1 3개 비교 한도, Time Period, optional benchmark, initial balance, Calendar Aligned, run-level rebalancing과 historical-comparison contract를 소유한다.
+Backtest만 product mode, named portfolio collection, user-defined target allocations, v1 3개 비교 한도, Time Period, optional benchmark, initial balance, Calendar Aligned와 historical-comparison input/composition contract를 소유한다.
+
+Backtest Research Frontend는 v1에서 하나의 run-level rebalancing setting을 받아 모든 비교 portfolio에 동일하게 적용한다. 이것은 UI/input policy이며, backend rebalancing engine과 portfolio path generation은 shared `portfolio-simulation` capability를 재사용한다.
 
 ### Shared capabilities
 
 - `market-data`: source/normalization, FX/common currency, coverage, total return, RF
-- `portfolio-simulation`: target weights → return/weight/wealth path, drift, rebalancing semantics, benchmark path
-- `portfolio-analytics`: realized CAGR/risk/drawdown/trailing/rolling/active/correlation/decomposition
+- `statistics`: expected return, covariance, volatility, correlation 등 재사용 가능한 statistics 계산
+- `portfolio-simulation`: target weights → return/weight/wealth path, drift, rebalancing engine/semantics, benchmark path
+- `portfolio-analytics`: realized CAGR/risk/drawdown/trailing/rolling/active/correlation/decomposition, asset performance와 conditional benchmark analytics
 - `run-artifacts`: YAML runner, input/result/raw/review/validation/report persistence, existing-run viewer independence
-- `research-report`: identity/unit/N/A/semantic-axis/tooltip/responsive contract와 shared historical sections
+- `research-report`: identity/unit/N/A/semantic-axis/tooltip/responsive contract와 shared historical report components
 
-동일 target weights와 동일 simulation setting이면 weights의 출처가 Optimization인지 Backtest인지와 무관하게 동일 historical path와 analytics를 만들어야 한다.
+동일 target weights와 동일 market-data/simulation setting이면 weights의 출처가 Optimization인지 Backtest인지와 무관하게 동일 historical path와 analytics를 만들어야 한다.
+
+또한 Optimization과 Backtest에 동일한 의미로 존재하는 historical section은 동일 canonical analytics/artifact와 동일 shared report component를 사용해야 한다. Annual Returns, Drawdowns, Trailing/Rolling Returns, Asset Performance, Correlations, Return/Risk Decomposition, Annual Asset Returns, applicable benchmark-relative analytics처럼 의미가 같은 section을 product별 renderer에서 별도 계산하거나 별도 구현하여 divergence를 만들지 않는다.
+
+Product-specific renderer/report layer는 전체 section 선택, 순서, overview, product-only section 같은 **composition**을 담당한다. Shared report component는 persisted canonical result/raw/review artifact를 소비하며 금융 metric/series를 product-specific하게 재계산하지 않는다.
 
 ## Input / Runner / Viewer Design
 
@@ -84,10 +97,12 @@ shared runner / pipeline
         ↓
 canonical result + raw/review
         ↓
-Viewer / report
+product report composition
+        ↓
+shared historical report components + product-specific sections
 ```
 
-Backtest request는 `OptimizationRequest`에 억지로 끼워 넣지 않는다. Product request boundary는 분리하되 이후 shared data/simulation/analytics/persistence를 재사용한다. 완료된 run은 재계산 없이 persisted artifact만으로 Viewer에서 열 수 있어야 한다.
+Backtest request는 `OptimizationRequest`에 억지로 끼워 넣지 않는다. Product request boundary는 분리하되 이후 shared data/statistics/simulation/analytics/persistence/report component를 재사용한다. 완료된 run은 재계산 없이 persisted artifact만으로 Viewer에서 열 수 있어야 한다.
 
 ## Confirmed Decisions
 
@@ -163,7 +178,7 @@ Machine-judgeable browser semantic verification은 applicable report change에�
 
 ### D10 Rebalancing scope/default
 
-한 Backtest run 전체에 하나의 rebalancing setting을 적용한다. Portfolio별 독립 rebalancing은 v1에서 지원하지 않는다.
+Backtest Research Frontend는 한 run 전체에 하나의 rebalancing setting을 입력받아 모든 비교 portfolio에 동일하게 적용한다. Portfolio별 독립 rebalancing 입력은 v1 UI에서 지원하지 않는다.
 
 ```text
 No rebalancing
@@ -173,7 +188,7 @@ Quarterly
 Monthly  ← Research Frontend default
 ```
 
-Rebalance Bands는 v1 제외다.
+이 제한은 Backtest input/UI policy다. 실제 portfolio path 생성과 rebalancing 계산은 Optimization과 Backtest가 동일한 shared `portfolio-simulation` capability를 사용한다. Rebalance Bands는 v1 제외다.
 
 ### D11 Display Income
 
@@ -191,7 +206,7 @@ v1에서 제외한다. Canonical total return은 유지하되 dividend/distribut
 | Calendar Aligned | 채택: Yes / No, default Yes |
 | Initial Amount | 채택: frontend default 10,000 |
 | Cashflows | 제외 |
-| Rebalancing | 채택: bands 제외, run-level, default Monthly |
+| Rebalancing | 채택: bands 제외, run-level input, default Monthly; backend engine은 shared |
 | Leverage Type | 제외 |
 | Reinvest Dividends | toggle 제외, canonical total return 사용 |
 | Display Income | 제외 |
@@ -207,7 +222,7 @@ Optimization과 Backtest 모두 distribution reinvestment를 반영한 canonical
 
 ## Rebalancing Design
 
-Run-level rebalancing policy와 Calendar Aligned setting은 모든 비교 portfolio에 동일하게 적용된다.
+Backtest의 run-level rebalancing input과 Calendar Aligned setting은 모든 비교 portfolio에 동일하게 전달되며, 실제 계산은 shared portfolio-simulation/rebalancing engine이 담당한다.
 
 `Calendar Aligned = Yes`:
 
@@ -242,7 +257,7 @@ none        → initial target 이후 drift
 Backtest canonical result는 최소 다음을 구분한다.
 
 - configuration / product mode / Time Period
-- Calendar Aligned / run-level rebalancing
+- Calendar Aligned / run-level rebalancing input
 - portfolio definitions / target allocations
 - effective data coverage
 - portfolio return / weight / wealth paths
@@ -251,7 +266,7 @@ Backtest canonical result는 최소 다음을 구분한다.
 - correlations / decomposition
 - report-ready comparison data
 
-Backtest는 optimization-specific ex-ante statistics나 Efficient Frontier를 생성하지 않는다.
+Backtest는 optimization-specific objective/constraints/solver/optimized-weight/Efficient Frontier 결과를 생성하지 않는다. Shared statistics capability가 존재하더라도 Backtest가 필요하지 않은 ex-ante statistics output을 억지로 report에 노출하지 않는다.
 
 Report hierarchy:
 
@@ -262,6 +277,8 @@ Report hierarchy:
 5. drawdown
 6. asset performance / correlations / decomposition
 7. benchmark가 있을 때 active analytics
+
+이 중 Optimization과 동일 의미를 가진 historical section은 shared report component를 사용하고, Backtest-specific overview/target-allocation comparison 및 Optimization-only section의 포함/제외는 product report composition이 결정한다.
 
 Display Income section은 v1에서 제공하지 않는다.
 
@@ -282,7 +299,7 @@ Test
 → Re-verify
 ```
 
-Shared capability change는 affected Optimization regression을 포함한다. Browser verification은 PV pixel parity가 아니라 internal OpenSpec semantic contract를 검사한다. Material layout/interaction change일 때만 human visual review를 추가한다.
+Shared capability change는 해당 capability를 소비하는 Optimization/Backtest affected-scope regression을 포함한다. Shared report component change는 두 product 중 applicable한 historical section의 semantic regression을 포함한다. Browser verification은 PV pixel parity가 아니라 internal OpenSpec semantic contract를 검사한다. Material layout/interaction change일 때만 human visual review를 추가한다.
 
 ## Remaining Technical Gate
 
