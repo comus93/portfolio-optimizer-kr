@@ -12,6 +12,13 @@ import pandas as pd
 
 @dataclass
 class CanonicalResult:
+    """Optimization canonical result kept for API compatibility.
+
+    Product-neutral persisted runs are written by ``write_analysis_run`` from a
+    plain canonical mapping so Backtest does not have to impersonate an
+    Optimization result.
+    """
+
     configuration: dict[str, Any]
     data_coverage: dict[str, Any]
     asset_statistics: dict[str, Any]
@@ -27,13 +34,11 @@ class CanonicalResult:
         return asdict(self)
 
     def write_json(self, path: str | Path) -> None:
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(_normalise(self.to_dict()), ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+        _write_json(self.to_dict(), path)
 
 
 def _json_default(value: Any) -> Any:
-    if isinstance(value, (pd.Timestamp,)):
+    if isinstance(value, pd.Timestamp):
         return value.isoformat()
     if isinstance(value, np.generic):
         return value.item()
@@ -53,7 +58,7 @@ def _normalise(value: Any) -> Any:
         return None
     if isinstance(value, float):
         return value if math.isfinite(value) else None
-    if isinstance(value, (pd.Timestamp,)):
+    if isinstance(value, pd.Timestamp):
         return value.isoformat()
     if isinstance(value, np.generic):
         return _normalise(value.item())
@@ -70,40 +75,71 @@ def _normalise(value: Any) -> Any:
     return _json_default(value)
 
 
+def _write_json(value: Any, path: str | Path) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(
+            _normalise(value),
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def write_validation_run(
-    result: CanonicalResult, output_dir: str | Path, tables: dict[str, pd.DataFrame]
+    result: CanonicalResult,
+    output_dir: str | Path,
+    tables: dict[str, pd.DataFrame],
 ) -> None:
     """Persist a reviewable canonical result and one UTF-8 CSV per table."""
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
     result.write_json(directory / "result.json")
     for name, table in sorted(tables.items()):
-        table.to_csv(directory / f"{name}.csv", index=False, encoding="utf-8")
+        table.to_csv(
+            directory / f"{name}.csv", index=False, encoding="utf-8"
+        )
 
 
 def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
-    """Write canonical JSON plus lossless raw and human review CSV layers."""
+    """Write product-neutral canonical JSON plus raw/review artifact layers."""
     tables = result.get("_tables", {})
     clean = {key: value for key, value in result.items() if key != "_tables"}
-    canonical = CanonicalResult(**clean)
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
-    canonical.write_json(directory / "result.json")
+    _write_json(clean, directory / "result.json")
+
     raw_dir, review_dir = directory / "raw", directory / "review"
-    raw_dir.mkdir(exist_ok=True); review_dir.mkdir(exist_ok=True)
+    raw_dir.mkdir(exist_ok=True)
+    review_dir.mkdir(exist_ok=True)
     for name, table in sorted(tables.items()):
         if table.empty:
             continue
-        table.to_csv(raw_dir / f"{name}.csv", index=False, encoding="utf-8")
-        # Temporary compatibility path for earlier callers; raw/ is authoritative.
-        table.to_csv(directory / f"{name}.csv", index=False, encoding="utf-8")
-        _review_table(table).to_csv(review_dir / f"{name}.csv", index=False, encoding="utf-8")
+        table.to_csv(
+            raw_dir / f"{name}.csv", index=False, encoding="utf-8"
+        )
+        # Compatibility path for earlier callers; raw/ remains authoritative.
+        table.to_csv(
+            directory / f"{name}.csv", index=False, encoding="utf-8"
+        )
+        _review_table(table).to_csv(
+            review_dir / f"{name}.csv", index=False, encoding="utf-8"
+        )
+
     _write_review_summaries(result, tables, review_dir)
     configuration = result.get("configuration", {})
+    product_mode = str(configuration.get("product_mode") or "optimization")
+    title = "Backtest run" if product_mode == "backtest" else "Optimization run"
     (directory / "README.md").write_text(
-        f"# Optimization run\n\nRun ID: `{configuration.get('run_id', directory.name)}`. "
-        "`result.json` is canonical full precision; `raw/` preserves decimal tables; "
-        "`review/` presents percentage-point columns suffixed `_pct` while ratios remain unitless.\n",
+        f"# {title}\n\n"
+        f"Run ID: `{configuration.get('run_id', directory.name)}`. "
+        "`result.json` is canonical full precision; `raw/` preserves decimal "
+        "tables; `review/` contains human/LLM-readable presentation units.\n",
         encoding="utf-8",
     )
 
@@ -112,105 +148,448 @@ def _review_table(table: pd.DataFrame) -> pd.DataFrame:
     out = table.copy()
     for column in list(out.columns):
         lower = str(column).lower()
-        if any(token in lower for token in ("expected_return", "volatility", "weight_", "drawdown", "cagr", "tracking_error", "contribution")):
-            out[f"{column}_pct"] = out.pop(column) * 100.0
+        if lower.endswith("_pct"):
+            continue
+        if any(
+            token in lower
+            for token in (
+                "expected_return",
+                "volatility",
+                "weight_",
+                "drawdown",
+                "cagr",
+                "tracking_error",
+                "contribution",
+            )
+        ):
+            numeric = pd.to_numeric(out[column], errors="coerce")
+            if numeric.notna().any():
+                out[f"{column}_pct"] = numeric * 100.0
+                out = out.drop(columns=[column])
     return out
 
 
-def _write_review_summaries(result: dict[str, Any], tables: dict[str, pd.DataFrame], directory: Path) -> None:
-    cfg, weights = result["configuration"], result["optimization_result"].get("weights", {})
-    assets = pd.DataFrame(cfg.get("assets", []))
-    if not assets.empty:
-        out = pd.DataFrame({"ticker": assets["symbol"], "name": assets.get("name"), "min_weight_pct": assets.get("min_weight", 0) * 100, "max_weight_pct": assets.get("max_weight", 1) * 100})
-        out["provided_weight_pct"] = out["ticker"].map(cfg.get("provided_weights") or {}) * 100
-        out["optimized_weight_pct"] = out["ticker"].map(weights) * 100
-        out.to_csv(directory / "optimization_results.csv", index=False)
-    perf = tables.get("portfolio_performance", pd.DataFrame())
-    labels = [("Start Balance", "start_balance", "balance"), ("End Balance", "end_balance", "balance"), ("CAGR", "cagr", "pct"), ("Annualized Return", "annualized_return", "pct"), ("Expected Return", "expected_return", "pct"), ("Standard Deviation", "annualized_volatility", "pct"), ("Best Year", "best_year", "pct"), ("Worst Year", "worst_year", "pct"), ("Maximum Drawdown", "max_drawdown", "pct"), ("Sharpe Ratio (ex-post)", "sharpe_ex_post", "ratio"), ("Sortino Ratio", "sortino", "ratio")]
-    indexed = perf.set_index("portfolio") if not perf.empty and "portfolio" in perf else pd.DataFrame()
-    rows=[]
-    for label,key,unit in labels:
-        row={"metric":label,"unit":unit}
-        for name in ("provided","optimized","benchmark"):
-            value=indexed.loc[name,key] if name in indexed.index and key in indexed else None
-            row[name]=value*100 if unit=="pct" and value is not None else value
-        rows.append(row)
-    pd.DataFrame(rows).to_csv(directory / "performance_summary.csv", index=False)
-    trailing = pd.DataFrame(result.get("portfolio_performance", {}).get("trailing_returns", {})).T.rename_axis("portfolio").reset_index()
-    mapping={"3m":"return_3m_pct","ytd":"ytd_pct","1y":"return_1y_pct","3y":"annualized_3y_pct","5y":"annualized_5y_pct","10y":"annualized_10y_pct","full_period":"full_period_cagr_pct","3y_annualized_volatility":"volatility_3y_pct","5y_annualized_volatility":"volatility_5y_pct"}
-    trailing=trailing.rename(columns=mapping)
-    for col in mapping.values():
-        if col in trailing: trailing[col]=trailing[col]*100
-    trailing.to_csv(directory / "trailing_returns.csv", index=False)
-    annual=tables.get("annual_returns",pd.DataFrame()).rename(columns={c:f"{c}_return_pct" for c in ("optimized","provided","benchmark") if c in tables.get("annual_returns",pd.DataFrame())})
-    for col in annual.columns:
-        if col.endswith("_return_pct"): annual[col]*=100
-    annual.to_csv(directory / "annual_returns.csv",index=False)
-    cal=tables.get("monthly_returns",pd.DataFrame()).rename(columns={c:("YTD_pct" if c.lower()=="ytd" else f"{c.title()}_pct") for c in tables.get("monthly_returns",pd.DataFrame()).columns if c.lower() in {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec","ytd"}})
-    for col in cal.columns:
-        if col.endswith("_pct"): cal[col]*=100
-    cal.to_csv(directory / "monthly_returns_calendar.csv",index=False)
-    for source,target,prefix,unit in (("risk_decomposition","risk_decomposition","risk_contribution","pct"),("return_decomposition","return_decomposition","contribution","monetary_initial_value_1")):
-        frame=tables.get(source,pd.DataFrame()).rename(columns={"asset":"ticker"})
-        if not frame.empty:
-            frame["ticker"] = frame["ticker"].astype(str).str.removeprefix("contribution_")
-            cols={"ticker":frame["ticker"]}
-            for name in ("provided","optimized"):
-                if name in frame: cols[f"{name}_{prefix}_pct" if unit=="pct" else f"{name}_{prefix}"]=frame[name]*(100 if unit=="pct" else 1)
-            out=pd.DataFrame(cols)
-            if unit!="pct": out["unit"]=unit
-            out.to_csv(directory/f"{target}.csv",index=False)
-    bench=tables.get("benchmark_analytics",pd.DataFrame())
-    if not bench.empty:
-        bench = bench[bench.get("portfolio", pd.Series(dtype=str)).ne("coverage")].copy()
-        cols=[c for c in ["portfolio","active_return","tracking_error","information_ratio"] if c in bench]
-        out=bench[cols].rename(columns={"active_return":"active_return_pct","tracking_error":"tracking_error_pct"})
-        for c in ("active_return_pct","tracking_error_pct"):
-            if c in out: out[c]*=100
-        overlap=result.get("data_coverage",{}).get("benchmark_overlap",{})
-        if overlap:
-            out["overlap_start"]=overlap.get("start"); out["overlap_end"]=overlap.get("end"); out["observations"]=overlap.get("observations")
-        out.to_csv(directory/"benchmark_summary.csv",index=False)
-    for source, mapping in (("active_returns", {"portfolio_return":"portfolio_return_pct","benchmark_return":"benchmark_return_pct","active_return":"active_return_pct","cumulative_active_return":"cumulative_active_return_pct","annual_active_return":"annual_active_return_pct","rolling_active_return":"rolling_active_return_pct","rolling_tracking_error":"rolling_tracking_error_pct"}), ("monthly_return_series", {})):
-        frame=tables.get(source,pd.DataFrame()).copy()
-        if frame.empty: continue
-        if source == "monthly_return_series":
-            mapping={c:(f"{c}_return_pct" if not c.startswith("asset_") else f"{c}_return_pct") for c in frame.columns if c != "date"}
-        frame=frame.rename(columns=mapping)
-        for col in mapping.values(): frame[col]*=100
-        frame.to_csv(directory/f"{source}.csv",index=False)
-    annual_assets = tables.get("annual_asset_returns", pd.DataFrame()).rename(
-        columns={"return": "return_pct"}
+def _portfolio_order(
+    result: dict[str, Any], performance: pd.DataFrame
+) -> list[str]:
+    configuration = result.get("configuration", {})
+    product_mode = str(configuration.get("product_mode") or "optimization")
+    if product_mode == "backtest":
+        definitions = result.get("portfolio_definitions", {})
+        names = list(definitions) if isinstance(definitions, dict) else []
+    else:
+        names = ["provided", "optimized"]
+    if not performance.empty and "portfolio" in performance:
+        existing = [str(value) for value in performance["portfolio"]]
+        names = [name for name in names if name in existing]
+        names.extend(name for name in existing if name not in names and name != "benchmark")
+        if "benchmark" in existing:
+            names.append("benchmark")
+    return names
+
+
+def _performance_summary_review(
+    result: dict[str, Any], performance: pd.DataFrame
+) -> pd.DataFrame:
+    labels = [
+        ("Start Balance", "start_balance", "balance"),
+        ("End Balance", "end_balance", "balance"),
+        ("CAGR", "cagr", "pct"),
+        ("Annualized Return", "annualized_return", "pct"),
+        ("Expected Return", "expected_return", "pct"),
+        ("Standard Deviation", "annualized_volatility", "pct"),
+        ("Best Year", "best_year", "pct"),
+        ("Worst Year", "worst_year", "pct"),
+        ("Maximum Drawdown", "max_drawdown", "pct"),
+        ("Sharpe Ratio (ex-post)", "sharpe_ex_post", "ratio"),
+        ("Sortino Ratio", "sortino", "ratio"),
+    ]
+    indexed = (
+        performance.set_index("portfolio")
+        if not performance.empty and "portfolio" in performance
+        else pd.DataFrame()
     )
-    if not annual_assets.empty:
-        annual_assets["return_pct"] *= 100
-        annual_assets.to_csv(directory / "annual_asset_returns.csv", index=False)
-    for source, target, percentage_columns in (
-        ("active_return_contribution", "active_return_contribution", ["cumulative_active_contribution"]),
-        ("up_down_market_performance", "up_down_market_performance", ["portfolio_return", "benchmark_return", "active_return"]),
-        ("stress_periods", "stress_periods", ["provided_return", "optimized_return", "benchmark_return"]),
-    ):
-        frame = tables.get(source, pd.DataFrame()).copy()
-        if frame.empty:
-            continue
-        rename = {column: f"{column}_pct" for column in percentage_columns if column in frame}
-        frame = frame.rename(columns=rename)
-        for column in rename.values():
-            frame[column] *= 100
-        frame.to_csv(directory / f"{target}.csv", index=False)
-    metrics = tables.get("portfolio_metrics", pd.DataFrame()).copy()
-    if not metrics.empty:
-        percentage_metrics = {"alpha", "modigliani_modigliani", "historical_var_95"}
-        metrics.insert(
+    rows: list[dict[str, Any]] = []
+    order = _portfolio_order(result, performance)
+    for label, key, unit in labels:
+        if indexed.empty or key not in indexed.columns:
+            if key == "expected_return":
+                continue
+        row: dict[str, Any] = {"metric": label, "unit": unit}
+        for name in order:
+            value = (
+                indexed.loc[name, key]
+                if name in indexed.index and key in indexed.columns
+                else None
+            )
+            row[name] = value * 100.0 if unit == "pct" and value is not None else value
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def _asset_performance_review(table: pd.DataFrame) -> pd.DataFrame:
+    if table.empty:
+        return table.copy()
+    out = table.copy()
+    percentage_columns = [
+        "cagr",
+        "annualized_return",
+        "annualized_volatility",
+        "best_year",
+        "worst_year",
+        "max_drawdown",
+        "3m",
+        "ytd",
+        "1y",
+        "3y",
+        "5y",
+        "10y",
+    ]
+    rename = {
+        column: f"{column}_pct"
+        for column in percentage_columns
+        if column in out.columns
+    }
+    out = out.rename(columns=rename)
+    for column in rename.values():
+        out[column] = pd.to_numeric(out[column], errors="coerce") * 100.0
+    return out
+
+
+def _metrics_review(table: pd.DataFrame) -> pd.DataFrame:
+    if table.empty:
+        return table.copy()
+    percentage_metrics = {
+        "alpha",
+        "modigliani_modigliani",
+        "historical_var_95",
+    }
+    if {"portfolio", "metric", "value"}.issubset(table.columns):
+        pivot = table.pivot_table(
+            index="metric",
+            columns="portfolio",
+            values="value",
+            aggfunc="first",
+        ).reset_index()
+        pivot.insert(
             1,
             "unit",
-            metrics["metric"].map(
-                lambda metric: "percent" if metric in percentage_metrics else "ratio"
+            pivot["metric"].map(
+                lambda metric: "percent"
+                if metric in percentage_metrics
+                else "ratio"
             ),
         )
-        is_percentage = metrics["metric"].isin(percentage_metrics)
+        percentage_rows = pivot["metric"].isin(percentage_metrics)
         value_columns = [
-            column for column in ("provided", "optimized", "benchmark") if column in metrics
+            column
+            for column in pivot.columns
+            if column not in {"metric", "unit"}
         ]
-        metrics.loc[is_percentage, value_columns] *= 100
-        metrics.to_csv(directory / "portfolio_metrics.csv", index=False)
+        pivot.loc[percentage_rows, value_columns] *= 100.0
+        return pivot
+
+    out = table.copy()
+    if "metric" not in out:
+        return out
+    out.insert(
+        1,
+        "unit",
+        out["metric"].map(
+            lambda metric: "percent" if metric in percentage_metrics else "ratio"
+        ),
+    )
+    percentage_rows = out["metric"].isin(percentage_metrics)
+    value_columns = [
+        column for column in out.columns if column not in {"metric", "unit"}
+    ]
+    out.loc[percentage_rows, value_columns] *= 100.0
+    return out
+
+
+def _write_review_summaries(
+    result: dict[str, Any],
+    tables: dict[str, pd.DataFrame],
+    directory: Path,
+) -> None:
+    cfg = result.get("configuration", {})
+    product_mode = str(cfg.get("product_mode") or "optimization")
+    assets = pd.DataFrame(cfg.get("assets", []))
+
+    if product_mode != "backtest" and not assets.empty:
+        weights = result.get("optimization_result", {}).get("weights", {})
+        out = pd.DataFrame(
+            {
+                "ticker": assets["symbol"],
+                "name": assets.get("name"),
+                "min_weight_pct": assets.get("min_weight", 0) * 100.0,
+                "max_weight_pct": assets.get("max_weight", 1) * 100.0,
+            }
+        )
+        out["provided_weight_pct"] = (
+            out["ticker"].map(cfg.get("provided_weights") or {}) * 100.0
+        )
+        out["optimized_weight_pct"] = out["ticker"].map(weights) * 100.0
+        out.to_csv(directory / "optimization_results.csv", index=False)
+
+    performance = tables.get("portfolio_performance", pd.DataFrame())
+    _performance_summary_review(result, performance).to_csv(
+        directory / "performance_summary.csv", index=False
+    )
+
+    trailing = (
+        pd.DataFrame(
+            result.get("portfolio_performance", {}).get("trailing_returns", {})
+        )
+        .T.rename_axis("portfolio")
+        .reset_index()
+    )
+    trailing_mapping = {
+        "3m": "return_3m_pct",
+        "ytd": "ytd_pct",
+        "1y": "return_1y_pct",
+        "3y": "annualized_3y_pct",
+        "5y": "annualized_5y_pct",
+        "10y": "annualized_10y_pct",
+        "full_period": "full_period_cagr_pct",
+        "3y_annualized_volatility": "volatility_3y_pct",
+        "5y_annualized_volatility": "volatility_5y_pct",
+    }
+    trailing = trailing.rename(columns=trailing_mapping)
+    for column in trailing_mapping.values():
+        if column in trailing:
+            trailing[column] = pd.to_numeric(
+                trailing[column], errors="coerce"
+            ) * 100.0
+    trailing.to_csv(directory / "trailing_returns.csv", index=False)
+
+    annual = tables.get("annual_returns", pd.DataFrame()).copy()
+    if not annual.empty:
+        rename = {
+            column: f"{column}_return_pct"
+            for column in annual.columns
+            if column != "year"
+        }
+        annual = annual.rename(columns=rename)
+        for column in rename.values():
+            annual[column] = pd.to_numeric(
+                annual[column], errors="coerce"
+            ) * 100.0
+        annual.to_csv(directory / "annual_returns.csv", index=False)
+
+    calendar = tables.get("monthly_returns", pd.DataFrame()).copy()
+    if not calendar.empty:
+        month_keys = {
+            "jan",
+            "feb",
+            "mar",
+            "apr",
+            "may",
+            "jun",
+            "jul",
+            "aug",
+            "sep",
+            "oct",
+            "nov",
+            "dec",
+            "ytd",
+        }
+        rename = {
+            column: (
+                "YTD_pct"
+                if str(column).lower() == "ytd"
+                else f"{str(column).title()}_pct"
+            )
+            for column in calendar.columns
+            if str(column).lower() in month_keys
+        }
+        calendar = calendar.rename(columns=rename)
+        for column in rename.values():
+            calendar[column] = pd.to_numeric(
+                calendar[column], errors="coerce"
+            ) * 100.0
+        calendar.to_csv(
+            directory / "monthly_returns_calendar.csv", index=False
+        )
+
+    portfolio_names = [
+        name for name in _portfolio_order(result, performance) if name != "benchmark"
+    ]
+    for source, target, prefix, unit in (
+        ("risk_decomposition", "risk_decomposition", "risk_contribution", "pct"),
+        (
+            "return_decomposition",
+            "return_decomposition",
+            "contribution",
+            "monetary_initial_value_1",
+        ),
+    ):
+        frame = tables.get(source, pd.DataFrame()).rename(
+            columns={"asset": "ticker"}
+        )
+        if frame.empty:
+            continue
+        frame["ticker"] = (
+            frame["ticker"].astype(str).str.removeprefix("contribution_")
+        )
+        columns: dict[str, Any] = {"ticker": frame["ticker"]}
+        for name in portfolio_names:
+            if name not in frame:
+                continue
+            output_name = (
+                f"{name}_{prefix}_pct" if unit == "pct" else f"{name}_{prefix}"
+            )
+            columns[output_name] = frame[name] * (100.0 if unit == "pct" else 1.0)
+        out = pd.DataFrame(columns)
+        if unit != "pct":
+            out["unit"] = unit
+        out.to_csv(directory / f"{target}.csv", index=False)
+
+    benchmark = tables.get("benchmark_analytics", pd.DataFrame()).copy()
+    if not benchmark.empty and "portfolio" in benchmark:
+        benchmark = benchmark[benchmark["portfolio"].ne("coverage")].copy()
+        columns = [
+            column
+            for column in (
+                "portfolio",
+                "active_return",
+                "tracking_error",
+                "information_ratio",
+            )
+            if column in benchmark
+        ]
+        out = benchmark[columns].rename(
+            columns={
+                "active_return": "active_return_pct",
+                "tracking_error": "tracking_error_pct",
+            }
+        )
+        for column in ("active_return_pct", "tracking_error_pct"):
+            if column in out:
+                out[column] = pd.to_numeric(
+                    out[column], errors="coerce"
+                ) * 100.0
+        overlap = result.get("data_coverage", {}).get("benchmark_overlap") or {}
+        if overlap:
+            out["overlap_start"] = overlap.get("start")
+            out["overlap_end"] = overlap.get("end")
+            out["observations"] = overlap.get("observations")
+        out.to_csv(directory / "benchmark_summary.csv", index=False)
+
+    active_mapping = {
+        "portfolio_return": "portfolio_return_pct",
+        "benchmark_return": "benchmark_return_pct",
+        "active_return": "active_return_pct",
+        "cumulative_active_return": "cumulative_active_return_pct",
+        "annual_active_return": "annual_active_return_pct",
+        "rolling_active_return": "rolling_active_return_pct",
+        "rolling_tracking_error": "rolling_tracking_error_pct",
+    }
+    active = tables.get("active_returns", pd.DataFrame()).copy()
+    if not active.empty:
+        rename = {
+            key: value for key, value in active_mapping.items() if key in active
+        }
+        active = active.rename(columns=rename)
+        for column in rename.values():
+            active[column] = pd.to_numeric(
+                active[column], errors="coerce"
+            ) * 100.0
+        active.to_csv(directory / "active_returns.csv", index=False)
+
+    monthly_series = tables.get("monthly_return_series", pd.DataFrame()).copy()
+    if not monthly_series.empty:
+        rename = {
+            column: f"{column}_return_pct"
+            for column in monthly_series.columns
+            if column != "date"
+        }
+        monthly_series = monthly_series.rename(columns=rename)
+        for column in rename.values():
+            monthly_series[column] = pd.to_numeric(
+                monthly_series[column], errors="coerce"
+            ) * 100.0
+        monthly_series.to_csv(
+            directory / "monthly_return_series.csv", index=False
+        )
+
+    annual_assets = tables.get("annual_asset_returns", pd.DataFrame()).copy()
+    if not annual_assets.empty:
+        annual_assets = annual_assets.rename(columns={"return": "return_pct"})
+        annual_assets["return_pct"] = pd.to_numeric(
+            annual_assets["return_pct"], errors="coerce"
+        ) * 100.0
+        annual_assets.to_csv(
+            directory / "annual_asset_returns.csv", index=False
+        )
+
+    contribution = tables.get("active_return_contribution", pd.DataFrame()).copy()
+    if not contribution.empty:
+        contribution = contribution.rename(
+            columns={
+                "cumulative_active_contribution": "cumulative_active_contribution_pct"
+            }
+        )
+        if "cumulative_active_contribution_pct" in contribution:
+            contribution["cumulative_active_contribution_pct"] = pd.to_numeric(
+                contribution["cumulative_active_contribution_pct"],
+                errors="coerce",
+            ) * 100.0
+        contribution.to_csv(
+            directory / "active_return_contribution.csv", index=False
+        )
+
+    up_down = tables.get("up_down_market_performance", pd.DataFrame()).copy()
+    if not up_down.empty:
+        decimal_columns = {
+            "portfolio_return": "portfolio_return_pct",
+            "benchmark_return": "benchmark_return_pct",
+            "active_return": "active_return_pct",
+            "above_active_return": "above_active_return_pct",
+            "below_active_return": "below_active_return_pct",
+        }
+        for source, target in decimal_columns.items():
+            if source not in up_down:
+                continue
+            if target in up_down:
+                up_down = up_down.drop(columns=[source])
+            else:
+                up_down = up_down.rename(columns={source: target})
+                up_down[target] = pd.to_numeric(
+                    up_down[target], errors="coerce"
+                ) * 100.0
+        up_down.to_csv(
+            directory / "up_down_market_performance.csv", index=False
+        )
+
+    observations = tables.get("up_down_market_scatter", pd.DataFrame()).copy()
+    if not observations.empty:
+        observations.to_csv(
+            directory / "up_down_market_scatter.csv", index=False
+        )
+
+    stress = tables.get("stress_periods", pd.DataFrame()).copy()
+    if not stress.empty:
+        for column in list(stress.columns):
+            if not str(column).endswith("_return"):
+                continue
+            target = f"{column}_pct"
+            stress = stress.rename(columns={column: target})
+            stress[target] = pd.to_numeric(
+                stress[target], errors="coerce"
+            ) * 100.0
+        stress.to_csv(directory / "stress_periods.csv", index=False)
+
+    metrics = tables.get("portfolio_metrics", pd.DataFrame()).copy()
+    if not metrics.empty:
+        _metrics_review(metrics).to_csv(
+            directory / "portfolio_metrics.csv", index=False
+        )
+
+    asset_performance = tables.get(
+        "portfolio_asset_performance", pd.DataFrame()
+    ).copy()
+    if not asset_performance.empty:
+        _asset_performance_review(asset_performance).to_csv(
+            directory / "portfolio_asset_performance.csv", index=False
+        )
