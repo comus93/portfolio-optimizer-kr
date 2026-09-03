@@ -1,0 +1,134 @@
+name: Browser validate PV v3 once
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - ".github/workflows/validate-pv-v3-browser-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install browser runtime
+        run: |
+          python -m pip install playwright
+          python -m playwright install chromium
+
+      - name: Start local report server
+        run: |
+          python -m http.server 8000 --directory runs/20260903-backtest-pv-reference-parity-yty-v3 >/tmp/pv-http.log 2>&1 &
+          echo $! >/tmp/pv-http.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/report.html >/dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          cat /tmp/pv-http.log
+          exit 1
+
+      - name: Validate real browser behavior
+        run: |
+          mkdir -p browser-artifacts
+          python - <<'PY'
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+
+          out = Path('browser-artifacts')
+          checks = []
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page(viewport={"width": 1440, "height": 900}, device_scale_factor=1)
+              page.goto('http://127.0.0.1:8000/report.html', wait_until='networkidle')
+
+              # Monthly Returns pagination must behave like the PV reference.
+              table = page.locator('#monthly-returns-detail')
+              assert table.count() == 1
+              assert page.locator('#monthly-returns-detail tbody tr:visible').count() == 12
+              info = page.locator('.monthly-pagination .page-info')
+              assert info.inner_text().strip() == 'Showing 1 to 12 of 80 entries'
+              page.locator('.monthly-pagination button[data-action="next"]').click()
+              assert page.locator('#monthly-returns-detail tbody tr:visible').count() == 12
+              assert info.inner_text().strip() == 'Showing 13 to 24 of 80 entries'
+              page.locator('.monthly-pagination button[data-action="first"]').click()
+              assert info.inner_text().strip() == 'Showing 1 to 12 of 80 entries'
+              checks.append('Monthly Returns pagination: PASS')
+              table.screenshot(path=str(out / 'monthly-returns.png'))
+
+              # Drawdown presentation is one combined chart plus episode tables.
+              drawdown = page.locator('[data-chart="drawdown-combined"]')
+              assert drawdown.count() == 1
+              assert page.locator('.drawdown-panel').count() == 0
+              assert page.locator('.drawdown-episodes-panel').count() == 4
+              checks.append('Combined Drawdowns: PASS')
+              drawdown.screenshot(path=str(out / 'drawdowns-combined.png'))
+
+              # Active contribution panels must be one per portfolio and Sample uses holdings only.
+              active_panels = page.locator('.active-contribution-panel')
+              assert active_panels.count() == 3
+              sample_text = active_panels.nth(0).inner_text()
+              for expected in ('State Street SPDR S&P 500 ETF', 'SPDR Gold Shares', 'iShares 20+ Year Treasury Bond ETF'):
+                  assert expected in sample_text
+              for excluded in ('Invesco QQQ Trust', 'iShares Silver Trust', 'VanEck Gold Miners ETF'):
+                  assert excluded not in sample_text
+              checks.append('Active Return Contribution holdings: PASS')
+              active_panels.nth(0).screenshot(path=str(out / 'active-contribution-sample.png'))
+
+              # Right-edge tooltip must stay inside the chart by flipping left.
+              mark = page.locator('.chart-wrap .chart-mark[data-tooltip]').last
+              assert mark.count() == 1
+              host = mark.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " chart-wrap ")][1]')
+              host_box = host.bounding_box()
+              mark_box = mark.bounding_box()
+              assert host_box and mark_box
+              client_x = host_box['x'] + host_box['width'] - 2
+              client_y = mark_box['y'] + max(1, mark_box['height'] / 2)
+              mark.dispatch_event('mousemove', {'clientX': client_x, 'clientY': client_y})
+              tip = host.locator('.chart-tooltip')
+              tip.wait_for(state='visible')
+              tip_box = tip.bounding_box()
+              assert tip_box
+              assert tip_box['x'] >= host_box['x'] - 2
+              assert tip_box['x'] + tip_box['width'] <= host_box['x'] + host_box['width'] + 2
+              assert tip_box['x'] < client_x
+              checks.append('Right-edge tooltip containment/left flip: PASS')
+
+              # Annual Asset Returns width must respond to viewport width.
+              annual_asset = page.locator('[data-chart="annual-asset-returns-chart"]').first
+              assert annual_asset.count() == 1
+              wide = annual_asset.bounding_box()
+              assert wide
+              page.set_viewport_size({"width": 900, "height": 900})
+              page.wait_for_timeout(150)
+              narrow = annual_asset.bounding_box()
+              assert narrow
+              assert narrow['width'] < wide['width'] - 100, (wide, narrow)
+              checks.append('Annual Asset Returns responsive width: PASS')
+
+              # Risk metrics and removed duplicate benchmark summary.
+              assert page.get_by_role('heading', name='Risk and Return Metrics', exact=True).count() == 1
+              assert page.get_by_text('Benchmark Summary', exact=True).count() == 0
+              page.locator('#risk-and-return-metrics').screenshot(path=str(out / 'risk-and-return-metrics.png'))
+              checks.append('Risk and Return Metrics / duplicate removal: PASS')
+
+              browser.close()
+
+          (out / 'browser-validation.txt').write_text('\n'.join(checks) + '\n', encoding='utf-8')
+          print('\n'.join(checks))
+          PY
+
+      - name: Upload browser validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pv-v3-browser-validation
+          path: browser-artifacts
+          if-no-files-found: error
