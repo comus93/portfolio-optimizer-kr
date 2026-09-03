@@ -148,12 +148,35 @@ Backtest Performance Summary는 historical/realized metric을 중심으로 구�
 - THEN absolute historical metrics를 표시하고 benchmark-relative metrics는 non-applicable 의미를 유지한다
 
 ### Requirement: Shared historical sections for Backtest
-Backtest report는 available canonical result에 대해 shared Performance Summary, trailing returns, annual returns, monthly returns, drawdowns, asset performance, correlations, return/risk decomposition, annual asset returns, rolling returns를 적용할 수 있어야 한다(MUST).
+Backtest report는 available canonical result에 대해 shared Performance Summary, portfolio growth, trailing returns, annual returns, monthly returns, drawdowns, asset performance, correlations, return/risk decomposition, annual asset returns, rolling returns와 applicable benchmark-relative analytics를 적용할 수 있어야 한다(MUST).
 
 #### Scenario: shared section reuse
 - GIVEN Backtest run에 canonical shared analytics가 존재한다
 - WHEN report를 생성한다
 - THEN product-specific 재계산 없이 shared report semantics로 해당 section을 표시한다
+
+### Requirement: Shared historical report component implementation
+Optimization과 Backtest에 동일한 canonical 의미로 존재하는 historical section은 product별로 별도 renderer/component를 복제 구현하지 않고 동일 shared report component를 재사용해야 한다(MUST). Product-specific report layer는 section의 포함/제외, 순서, overview와 product-only section을 조합하는 composition을 담당해야 하며(MUST), shared historical finance metric/series를 product-specific renderer에서 다시 계산해서는 안 된다(MUST NOT).
+
+#### Scenario: Annual Returns shared component
+- GIVEN Optimization과 Backtest 모두 canonical annual-return series를 가진다
+- WHEN 각 product report에서 Annual Returns를 렌더링한다
+- THEN 동일 shared Annual Returns component와 동일 identity/unit/tooltip semantics를 사용하고 product별 별도 계산 또는 별도 chart convention을 만들지 않는다
+
+#### Scenario: Drawdowns shared component
+- GIVEN 두 product 모두 canonical drawdown series와 episodes를 가진다
+- WHEN Drawdowns section을 렌더링한다
+- THEN 동일 shared Drawdowns component가 canonical artifact를 소비하고 product report는 해당 component의 배치만 결정한다
+
+#### Scenario: product-only report composition
+- GIVEN Optimization에는 Efficient Frontier가 있고 Backtest에는 Time Period와 named portfolio comparison이 있다
+- WHEN report를 구성한다
+- THEN 해당 product-only section은 각 composition layer에서만 포함되고 shared historical component 자체를 fork하지 않는다
+
+#### Scenario: presentation-only transform
+- GIVEN canonical historical series를 SVG/chart로 표시해야 한다
+- WHEN renderer가 axis domain, chart coordinates, display ordering, tooltip nearest-point 또는 presentation-only binning을 계산한다
+- THEN canonical finance 의미를 변경하지 않는 view transform으로 허용되며 finance metric/series 자체를 재계산하지 않는다
 
 ### Requirement: Benchmark-relative sections are conditional
 Benchmark가 존재할 때만 active return, tracking error, information ratio, active contribution, rolling active/risk, Up/Down 등 benchmark-relative section을 적용해야 한다(MUST).
