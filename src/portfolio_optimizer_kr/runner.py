@@ -7,7 +7,7 @@ from typing import Any
 import pandas as pd
 import yaml
 
-from portfolio_optimizer_kr.backtest import analyze_backtest_prices
+from portfolio_optimizer_kr.backtest_pv import analyze_backtest_prices
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.data.preparation import prepare_monthly_returns
@@ -18,12 +18,20 @@ from portfolio_optimizer_kr.report import write_analysis_run
 
 
 US_3M_TBILL_SERIES = "FRED:TB3MS"
+US_CPI_SERIES = "FRED:CPIAUCSL"
 
 
 def _warmup_start(start: str | pd.Timestamp | None) -> str | None:
     if start is None:
         return None
     period = pd.Timestamp(start).to_period("M") - 1
+    return period.start_time.date().isoformat()
+
+
+def _inflation_start(start: str | pd.Timestamp | None) -> str | None:
+    if start is None:
+        return None
+    period = pd.Timestamp(start).to_period("M") - 13
     return period.start_time.date().isoformat()
 
 
@@ -85,6 +93,21 @@ def _resolve_annual_rf(
     return _tbill_effective_annual_rate(tbill, observation_index)
 
 
+def _load_inflation_series(spec: RunConfig, loader: FDRLoader) -> pd.Series | None:
+    if spec.product_mode is not ProductMode.BACKTEST:
+        return None
+    try:
+        return loader.load_economic_series(
+            US_CPI_SERIES,
+            start=_inflation_start(spec.request.start),
+            end=spec.request.end,
+        )
+    except (DataValidationError, NotImplementedError, AttributeError):
+        # Inflation enriches PV-compatible reporting, but must not block the
+        # canonical backtest if an external CPI provider is unavailable.
+        return None
+
+
 def _effective_backtest_input(source: Mapping[str, Any], spec: RunConfig) -> dict[str, Any]:
     """Materialize parser defaults so persisted Backtest input is reproducible."""
     effective = dict(source)
@@ -141,6 +164,7 @@ def execute_run(
         raise FileExistsError(f"run output already exists: {output_dir}")
 
     loader = loader or FDRLoader()
+    using_default_analyzer = analyze_fn is None
     if analyze_fn is None:
         analyze_fn = (
             analyze_backtest_prices
@@ -162,9 +186,18 @@ def execute_run(
     effective_annual_rf = _resolve_annual_rf(
         spec, loader, prices, usdkrw, annual_rf
     )
-    result = analyze_fn(
-        request, prices, usdkrw=usdkrw, annual_rf=effective_annual_rf
-    )
+    if using_default_analyzer and spec.product_mode is ProductMode.BACKTEST:
+        result = analyze_fn(
+            request,
+            prices,
+            usdkrw=usdkrw,
+            annual_rf=effective_annual_rf,
+            inflation_series=_load_inflation_series(spec, loader),
+        )
+    else:
+        result = analyze_fn(
+            request, prices, usdkrw=usdkrw, annual_rf=effective_annual_rf
+        )
     output_dir.mkdir(parents=True, exist_ok=False)
     writer(result, output_dir)
     return output_dir
