@@ -1,0 +1,181 @@
+name: Finalize PV v5 canonical pagination
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - ".github/workflows/finalize-pv-round1-v5-canonical-pagination.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Remove duplicate overlay pagination
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py")
+          text = path.read_text(encoding="utf-8")
+          start = text.index("def _monthly_detail_table(")
+          end = text.index("\n\ndef _combined_drawdowns(", start)
+          replacement = r'''def _monthly_detail_table(
+              frame: pd.DataFrame,
+              portfolio_order: list[str],
+              benchmark_label: str | None,
+              asset_names: dict[str, str],
+              currency: str,
+          ) -> str:
+              if frame.empty or not {"year", "month"}.issubset(frame.columns):
+                  return '<p class="muted">N/A</p>'
+              series, tickers = _detail_structure(frame, portfolio_order, asset_names)
+              top, second = _detail_header(
+                  series, tickers, benchmark_label, asset_names, monthly=True
+              )
+              rows: list[str] = []
+              rendered = frame.sort_values(["year", "month"], ascending=[False, False])
+              for _, row in rendered.iterrows():
+                  cells = [
+                      f'<td class="identity-cell">{int(row["year"])}</td>',
+                      f'<td>{int(row["month"])}</td>',
+                  ]
+                  for name in series:
+                      cells.extend(
+                          [
+                              f'<td>{hc.esc(hc.fraction_pct(row.get(f"series::{name}::return")))}</td>',
+                              f'<td>{hc.esc(hc.money(row.get(f"series::{name}::balance"), currency))}</td>',
+                          ]
+                      )
+                  for ticker in tickers:
+                      cells.append(
+                          f'<td>{hc.esc(hc.fraction_pct(row.get(f"asset::{ticker}::return")))}</td>'
+                      )
+                  rows.append(f'<tr>{"".join(cells)}</tr>')
+              return (
+                  '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+                  '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
+                  f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
+                  f'<tbody>{"".join(rows)}</tbody></table></div>'
+              )
+          '''
+          path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+
+          duplicate = Path("tests/test_monthly_returns_pagination_contract.py")
+          if duplicate.exists():
+              duplicate.unlink()
+
+          config = Path("configs/backtest-pv-reference-parity.yaml")
+          cfg = config.read_text(encoding="utf-8")
+          if "20260903-backtest-pv-reference-parity-yty-v4" not in cfg:
+              raise SystemExit("expected v4 run id not found")
+          config.write_text(
+              cfg.replace(
+                  "20260903-backtest-pv-reference-parity-yty-v4",
+                  "20260903-backtest-pv-reference-parity-yty-v5",
+                  1,
+              ),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Install project and run affected regression
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m compileall -q src/portfolio_optimizer_kr
+          python -m pytest -q \
+            tests/test_pv_pagination_contract.py \
+            tests/test_backtest_pv_round1.py \
+            tests/test_pv_metric_parity.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_shared_end_to_end.py \
+            tests/test_active_visual_reference_contract.py
+
+      - name: Generate immutable v5 real-data report
+        run: |
+          portfolio-optimizer validate configs/backtest-pv-reference-parity.yaml
+          portfolio-optimizer run configs/backtest-pv-reference-parity.yaml --output-root runs
+          test -f runs/20260903-backtest-pv-reference-parity-yty-v5/report.html
+
+      - name: Verify one canonical pagination surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html = Path("runs/20260903-backtest-pv-reference-parity-yty-v5/report.html").read_text(encoding="utf-8")
+          assert html.count('meta name="pv-monthly-pagination"') == 1
+          assert html.count('id="pv-monthly-pagination-script"') == 1
+          assert 'id="monthly-page-status"' not in html
+          assert 'id="monthly-page-first"' not in html
+          assert '<option value="12" selected>12</option>' in html
+          assert 'data-action="first"' in html
+          assert 'data-action="prev"' in html
+          assert 'data-action="next"' in html
+          assert 'data-action="last"' in html
+          for marker in (
+              'Risk and Return Metrics',
+              'Annualized Return (CAGR)',
+              'Active Return Contribution',
+              'data-chart="drawdown-combined"',
+          ):
+              assert marker in html, marker
+          assert 'Benchmark Summary' not in html
+          PY
+
+      - name: Install Playwright Chromium
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Browser validate canonical pagination
+        run: |
+          python -m http.server 8000 >/tmp/http.log 2>&1 &
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          url = "http://127.0.0.1:8000/runs/20260903-backtest-pv-reference-parity-yty-v5/report.html"
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page(viewport={"width": 1440, "height": 1200})
+              page.goto(url, wait_until="networkidle")
+              controls = page.locator(".monthly-pagination")
+              assert controls.count() == 1
+              assert page.locator("#monthly-returns-detail tbody tr").count() == 80
+              visible = lambda: page.locator("#monthly-returns-detail tbody tr:visible").count()
+              info = page.locator(".monthly-pagination .page-info")
+              assert visible() == 12
+              assert info.inner_text() == "Showing 1 to 12 of 80 entries"
+              assert page.locator(".monthly-pagination select").input_value() == "12"
+              page.locator('.monthly-pagination button[data-action="next"]').click()
+              assert visible() == 12
+              assert info.inner_text() == "Showing 13 to 24 of 80 entries"
+              page.locator('.monthly-pagination button[data-action="last"]').click()
+              assert visible() == 8
+              assert info.inner_text() == "Showing 73 to 80 of 80 entries"
+              assert page.locator('.monthly-pagination button[data-action="next"]').is_disabled()
+              page.locator('.monthly-pagination button[data-action="first"]').click()
+              assert visible() == 12
+              assert info.inner_text() == "Showing 1 to 12 of 80 entries"
+              browser.close()
+          PY
+
+      - name: Commit canonical v5
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py \
+            tests/test_monthly_returns_pagination_contract.py \
+            configs/backtest-pv-reference-parity.yaml \
+            runs/20260903-backtest-pv-reference-parity-yty-v5
+          git commit -m "viewer: canonicalize PV v5 monthly pagination"
+          git pull --rebase origin bt-module
+          git push origin HEAD:bt-module
