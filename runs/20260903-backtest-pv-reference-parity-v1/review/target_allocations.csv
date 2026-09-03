@@ -1,0 +1,37 @@
+portfolio,ticker,name,target_weight_pct
+Sample Portfolio,SPY,State Street SPDR S&P 500 ETF,60.0
+Sample Portfolio,GLD,SPDR Gold Shares,20.0
+Sample Portfolio,TLT,iShares 20+ Year Treasury Bond ETF,20.0
+Sample Portfolio,QQQ,Invesco QQQ Trust,0.0
+Sample Portfolio,SLV,iShares Silver Trust,0.0
+Sample Portfolio,GDX,VanEck Gold Miners ETF,0.0
+Sample Portfolio,AIA,iShares Asia 50 ETF,0.0
+Sample Portfolio,XLF,Financial Select Sector SPDR Fund,0.0
+Sample Portfolio,XLE,Energy Select Sector SPDR Fund,0.0
+Sample Portfolio,EWY,iShares MSCI South Korea ETF,0.0
+Sample Portfolio,EWJ,iShares MSCI Japan ETF,0.0
+Sample Portfolio,INDY,iShares India 50 ETF,0.0
+Portfolio 2,SPY,State Street SPDR S&P 500 ETF,0.0
+Portfolio 2,GLD,SPDR Gold Shares,10.0
+Portfolio 2,TLT,iShares 20+ Year Treasury Bond ETF,0.0
+Portfolio 2,QQQ,Invesco QQQ Trust,30.0
+Portfolio 2,SLV,iShares Silver Trust,10.0
+Portfolio 2,GDX,VanEck Gold Miners ETF,10.0
+Portfolio 2,AIA,iShares Asia 50 ETF,20.0
+Portfolio 2,XLF,Financial Select Sector SPDR Fund,10.0
+Portfolio 2,XLE,Energy Select Sector SPDR Fund,10.0
+Portfolio 2,EWY,iShares MSCI South Korea ETF,0.0
+Portfolio 2,EWJ,iShares MSCI Japan ETF,0.0
+Portfolio 2,INDY,iShares India 50 ETF,0.0
+Portfolio 3,SPY,State Street SPDR S&P 500 ETF,0.0
+Portfolio 3,GLD,SPDR Gold Shares,10.0
+Portfolio 3,TLT,iShares 20+ Year Treasury Bond ETF,0.0
+Portfolio 3,QQQ,Invesco QQQ Trust,40.0
+Portfolio 3,SLV,iShares Silver Trust,10.0
+Portfolio 3,GDX,VanEck Gold Miners ETF,0.0
+Portfolio 3,AIA,iShares Asia 50 ETF,0.0
+Portfolio 3,XLF,Financial Select Sector SPDR Fund,0.0
+Portfolio 3,XLE,Energy Select Sector SPDR Fund,10.0
+Portfolio 3,EWY,iShares MSCI South Korea ETF,10.0
+Portfolio 3,EWJ,iShares MSCI Japan ETF,10.0
+Portfolio 3,INDY,iShares India 50 ETF,10.0

@@ -1,0 +1,79 @@
+product_mode: backtest
+run_id: 20260903-backtest-pv-reference-parity-v1
+time_period:
+  mode: month_to_month
+  start_year: 2020
+  first_month: Jan
+  end_year: 2026
+  last_month: Jul
+assets:
+- symbol: SPY
+  name: State Street SPDR S&P 500 ETF
+  currency: USD
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+- symbol: SLV
+  name: iShares Silver Trust
+  currency: USD
+- symbol: GDX
+  name: VanEck Gold Miners ETF
+  currency: USD
+- symbol: AIA
+  name: iShares Asia 50 ETF
+  currency: USD
+- symbol: XLF
+  name: Financial Select Sector SPDR Fund
+  currency: USD
+- symbol: XLE
+  name: Energy Select Sector SPDR Fund
+  currency: USD
+- symbol: EWY
+  name: iShares MSCI South Korea ETF
+  currency: USD
+- symbol: EWJ
+  name: iShares MSCI Japan ETF
+  currency: USD
+- symbol: INDY
+  name: iShares India 50 ETF
+  currency: USD
+portfolios:
+- name: Sample Portfolio
+  weights_pct:
+    SPY: 60
+    GLD: 20
+    TLT: 20
+- name: Portfolio 2
+  weights_pct:
+    GLD: 10
+    QQQ: 30
+    SLV: 10
+    GDX: 10
+    AIA: 20
+    XLF: 10
+    XLE: 10
+- name: Portfolio 3
+  weights_pct:
+    GLD: 10
+    QQQ: 40
+    SLV: 10
+    EWY: 10
+    XLE: 10
+    EWJ: 10
+    INDY: 10
+benchmark:
+  symbol: SPY
+  name: State Street SPDR S&P 500 ETF
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: yearly
+  calendar_aligned: true
+risk_free:
+  mode: us_3m_tbill
