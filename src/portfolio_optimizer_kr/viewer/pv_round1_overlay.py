@@ -7,6 +7,7 @@ from typing import Any
 
 import pandas as pd
 
+from . import asset_display as ad
 from . import backtest_renderer as br
 from . import historical_components as hc
 from . import pv_visual as pv
@@ -356,12 +357,13 @@ def _assets_section(
     benchmark_label: str | None,
     asset_names: dict[str, str],
     currency: str,
+    asset_order: list[str],
 ) -> str:
-    asset_performance = _artifact(root, "portfolio_asset_performance.csv")
-    annual_assets = _artifact(root, "annual_asset_returns.csv", raw_first=True)
+    asset_performance = ad.sort_asset_frame(_artifact(root, "portfolio_asset_performance.csv"), asset_order, ticker_column="ticker")
+    annual_assets = ad.sort_asset_frame(_artifact(root, "annual_asset_returns.csv", raw_first=True), asset_order, ticker_column="ticker")
     correlations = _artifact(root, "correlations.csv", raw_first=True)
-    returns_decomp = _artifact(root, "return_decomposition.csv")
-    risk_decomp = _artifact(root, "risk_decomposition.csv")
+    returns_decomp = ad.sort_asset_frame(_artifact(root, "return_decomposition.csv"), asset_order, ticker_column="asset", strip_prefix="contribution_")
+    risk_decomp = ad.sort_asset_frame(_artifact(root, "risk_decomposition.csv"), asset_order, ticker_column="asset")
     coverage = (result.get("data_coverage", {}) or {}).get("backtest_monthly_returns", {}) or {}
     annual_chart = pv.annual_asset_returns_chart(annual_assets, asset_names).replace(
         'class="analysis-chart grouped-bar-chart"',
@@ -459,7 +461,9 @@ def apply_backtest_round1_overlay(
 
     portfolio_order = _portfolio_order(result)
     benchmark_label = _benchmark_label(configuration)
-    asset_names = _asset_names(configuration)
+    base_asset_names = _asset_names(configuration)
+    asset_order = ad.asset_display_order(result, base_asset_names)
+    asset_names = ad.ordered_asset_names(base_asset_names, asset_order)
     currency = _currency(configuration)
 
     performance = _artifact(root, "performance_summary.csv")
@@ -522,6 +526,7 @@ def apply_backtest_round1_overlay(
             benchmark_label,
             asset_names,
             currency,
+            asset_order,
         ),
     )
     html = _active_fixes(html, benchmark_label)
@@ -530,7 +535,17 @@ def apply_backtest_round1_overlay(
     html = _fix_tooltip_positioning(html)
     html = html.replace(
         "</head>",
-        _MARKER + "\n<style>.wide-detail-table{min-width:1850px}.asset-annual-responsive .chart-wrap{overflow-x:hidden}#risk-and-return-metrics td:first-child{white-space:nowrap}</style>\n</head>",
+        _MARKER + "\n<style>"
+        ".wide-detail-table{min-width:1850px}"
+        ".asset-annual-responsive .chart-wrap{overflow-x:hidden}"
+        "#risk-and-return-metrics td:first-child{white-space:nowrap}"
+        ".correlation-wrap{overflow-x:auto}"
+        ".correlation-wrap .monthly-correlations{width:100%}"
+        ".correlation-wrap .heatmap-cell{min-width:0;padding-left:6px;padding-right:6px}"
+        ".correlation-wrap th:nth-child(1),.correlation-wrap td:nth-child(1){width:54px;white-space:nowrap}"
+        ".correlation-wrap th:nth-child(2),.correlation-wrap td:nth-child(2){width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+        ".correlation-wrap thead th:nth-child(n+3){white-space:normal;word-break:break-word;text-align:center;padding-left:4px;padding-right:4px}"
+        "</style>\n</head>",
         1,
     )
     target.write_text(html, encoding="utf-8")

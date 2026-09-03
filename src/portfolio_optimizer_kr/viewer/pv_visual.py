@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 
+from . import asset_display as ad
 from . import historical_components as hc
 
 
@@ -41,6 +42,7 @@ def grouped_bar_chart(
     y_title: str,
     tooltip_rows: list[str] | None = None,
     x_title: str = "Year",
+    series_colors: list[str] | None = None,
 ) -> str:
     values = [
         float(value)
@@ -50,6 +52,7 @@ def grouped_bar_chart(
     ]
     if not categories or not series or not values:
         return '<p class="muted">N/A</p>'
+    colors = series_colors or hc.PALETTE
 
     y_min, y_max = min(min(values), 0.0), max(max(values), 0.0)
     if math.isclose(y_min, y_max):
@@ -104,7 +107,7 @@ def grouped_bar_chart(
             if category_index >= len(values_row) or not hc.finite(values_row[category_index]):
                 continue
             value = float(values_row[category_index])
-            color = hc.PALETTE[series_index % len(hc.PALETTE)]
+            color = colors[series_index % len(colors)]
             x = (
                 center
                 - inner_width / 2
@@ -154,7 +157,7 @@ def grouped_bar_chart(
         chart_id,
         svg,
         hc.legend(
-            (name, hc.PALETTE[index % len(hc.PALETTE)])
+            (name, colors[index % len(colors)])
             for index, (name, _) in enumerate(series)
         ),
     )
@@ -588,12 +591,14 @@ def annual_asset_returns_chart(
         values = values * 100.0
     shaped["_return_pct"] = values
     years = sorted(int(value) for value in shaped["year"].dropna().unique())
-    tickers: list[str] = []
-    for ticker in shaped["ticker"].astype(str):
-        if ticker not in tickers:
-            tickers.append(ticker)
-
     names = asset_names or {}
+    available: list[str] = []
+    for ticker in shaped["ticker"].astype(str):
+        if ticker not in available:
+            available.append(ticker)
+    tickers = [ticker for ticker in names if ticker in available]
+    tickers.extend(ticker for ticker in available if ticker not in tickers)
+    color_map = ad.asset_color_map(tickers)
     series: list[tuple[str, list[float | None]]] = []
     for ticker in tickers:
         part = shaped[
@@ -619,6 +624,7 @@ def annual_asset_returns_chart(
         chart_id="annual-asset-returns-chart",
         y_title="Return %",
         x_title="Year",
+        series_colors=[color_map[ticker] for ticker in tickers],
     )
 
 
@@ -708,10 +714,16 @@ def correlations_table(
             + "</tr>"
         )
 
+    min_width = max(640, 54 + 180 + 48 * len(columns))
+    colgroup = (
+        '<colgroup><col style="width:54px"><col style="width:180px">'
+        + ''.join('<col class="correlation-value-col" style="width:48px">' for _ in columns)
+        + '</colgroup>'
+    )
     return (
-        '<div class="table-wrap correlation-wrap">'
-        '<table id="correlations-heatmap" '
-        'class="heatmap monthly-correlations">'
+        f'<div class="table-wrap correlation-wrap" data-correlation-columns="{len(columns)}">'
+        f'<table id="correlations-heatmap" class="heatmap monthly-correlations" '
+        f'style="min-width:{min_width}px;table-layout:fixed">{colgroup}'
         f"<thead><tr><th>Ticker</th><th>Name</th>{header}</tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table></div>"
     )

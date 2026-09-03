@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 
+from . import asset_display as ad
 from . import historical_active_components as active_components
 from . import historical_components as hc
 from . import pv_visual as pv
@@ -136,7 +137,17 @@ def _allocation_matrix(frame: pd.DataFrame, portfolio_order: list[str] | None = 
     requested = portfolio_order or _portfolio_order(shaped, [])
     columns = [name for name in requested if name in pivot.columns]
     columns.extend(column for column in pivot.columns if column not in columns)
-    pivot = pivot.reindex(columns=columns).reset_index()
+    asset_order = ad.asset_display_order_from_allocations(shaped)
+    labels = (
+        shaped.assign(ticker=shaped["ticker"].astype(str))
+        .drop_duplicates("ticker")
+        .set_index("ticker")["asset"]
+        .astype(str)
+        .to_dict()
+    )
+    ordered_labels = [labels[ticker] for ticker in asset_order if ticker in labels]
+    ordered_labels.extend(label for label in pivot.index if label not in ordered_labels)
+    pivot = pivot.reindex(index=ordered_labels, columns=columns).reset_index()
     for column in pivot.columns:
         if column == "asset":
             continue
@@ -379,11 +390,9 @@ def generate_backtest_report(run_dir: str | Path, *, output_path: str | Path | N
     alignment = "Yes" if configuration.get("calendar_aligned") else "No"
     effective_label = f"{coverage.get('start')} - {coverage.get('end')}"
     series_labels = {"benchmark": benchmark_label or "Benchmark"}
-    asset_names = {
-        str(asset.get("symbol")): str(asset.get("name") or "")
-        for asset in configuration.get("assets", [])
-        if isinstance(asset, dict) and asset.get("symbol") is not None
-    }
+    base_asset_names = ad.asset_names_from_configuration(configuration)
+    asset_order = ad.asset_display_order(result, base_asset_names)
+    asset_names = ad.ordered_asset_names(base_asset_names, asset_order)
 
     nav_sections = [("overview", "Summary")]
     if benchmark_label and not benchmark.empty:

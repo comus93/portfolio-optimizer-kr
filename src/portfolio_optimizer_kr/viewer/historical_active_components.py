@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from . import asset_display as ad
 from . import historical_components as hc
 from . import pv_visual as pv
 
@@ -82,6 +83,7 @@ def _stacked_contribution_chart(
     series: list[tuple[str, str]],
     *,
     chart_id: str,
+    color_map: dict[str, str] | None = None,
 ) -> str:
     if pivot.empty or "date" not in pivot or not series:
         return '<p class="muted">N/A</p>'
@@ -138,7 +140,7 @@ def _stacked_contribution_chart(
             if not hc.finite(row.get(column)):
                 continue
             value = float(row[column])
-            color = hc.PALETTE[index % len(hc.PALETTE)]
+            color = (color_map or {}).get(column, hc.PALETTE[index % len(hc.PALETTE)])
             if value >= 0:
                 start, end = positive_base, positive_base + value
                 positive_base = end
@@ -182,11 +184,11 @@ def _stacked_contribution_chart(
     return hc.chart_shell(
         chart_id,
         svg,
-        hc.legend((label, hc.PALETTE[index % len(hc.PALETTE)]) for index, (_, label) in enumerate(series)),
+        hc.legend((label, (color_map or {}).get(column, hc.PALETTE[index % len(hc.PALETTE)])) for index, (column, label) in enumerate(series)),
     )
 
 
-def _contribution_summary(part: pd.DataFrame, asset_names: dict[str, str]) -> str:
+def _contribution_summary(part: pd.DataFrame, asset_names: dict[str, str], asset_order: list[str] | None = None) -> str:
     if part.empty:
         return ""
     part = part.copy()
@@ -199,8 +201,11 @@ def _contribution_summary(part: pd.DataFrame, asset_names: dict[str, str]) -> st
         return ""
     last_date = part["date"].max()
     rows = []
-    for ticker, ticker_part in part.groupby(part["ticker"].astype(str)):
-        ticker_part = ticker_part.sort_values("date")
+    available = list(dict.fromkeys(part["ticker"].astype(str)))
+    ordered = [ticker for ticker in (asset_order or []) if ticker in available]
+    ordered.extend(ticker for ticker in available if ticker not in ordered)
+    for ticker in ordered:
+        ticker_part = part[part["ticker"].astype(str) == ticker].sort_values("date")
         end_value = pd.to_numeric(ticker_part[value_col], errors="coerce").dropna()
         if end_value.empty:
             continue
@@ -246,10 +251,13 @@ def active_contribution(
         if part.empty:
             continue
         pivot = part.pivot(index="date", columns="ticker", values="cumulative_active_contribution_pct").reset_index()
+        global_order = list(asset_names)
+        colors = ad.asset_color_map(global_order)
+        available = [str(ticker) for ticker in pivot.columns if ticker != "date"]
+        ordered = [ticker for ticker in global_order if ticker in available]
+        ordered.extend(ticker for ticker in available if ticker not in ordered)
         series: list[tuple[str, str]] = []
-        for ticker in pivot.columns:
-            if ticker == "date":
-                continue
+        for ticker in ordered:
             name = asset_names.get(str(ticker), "").strip()
             label = f"{name} ({ticker})" if name else str(ticker)
             series.append((str(ticker), label))
@@ -257,8 +265,8 @@ def active_contribution(
             f'<div class="analysis-panel active-contribution-panel" data-portfolio="{hc.esc(portfolio)}">'
             '<h4>Cumulative Active Return</h4>'
             f'<p class="panel-subtitle">{hc.esc(portfolio)} vs Benchmark</p>'
-            f'{_stacked_contribution_chart(pivot, series, chart_id=f"active-contribution-{portfolio}")}'
-            f'{_contribution_summary(part, asset_names)}</div>'
+            f'{_stacked_contribution_chart(pivot, series, chart_id=f"active-contribution-{portfolio}", color_map=colors)}'
+            f'{_contribution_summary(part, asset_names, global_order)}</div>'
         )
     return "".join(blocks) if blocks else '<p class="muted">N/A</p>'
 
