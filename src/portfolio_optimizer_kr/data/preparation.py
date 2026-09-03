@@ -149,7 +149,7 @@ def prepare_benchmark_returns(
         return None
     if benchmark.symbol not in prices:
         raise DataValidationError(
-            "missing benchmark price series: {benchmark.symbol}"
+            f"missing benchmark price series: {benchmark.symbol}"
         )
     price = _asset_price(
         request,
