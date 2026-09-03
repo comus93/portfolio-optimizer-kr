@@ -113,8 +113,6 @@ jobs:
               "Maximum Drawdown": 0.12,
               "Alpha (annualized)": 0.12,
               "Modigliani–Modigliani Measure": 0.15,
-              "Upside Capture Ratio (%)": 0.25,
-              "Downside Capture Ratio (%)": 0.25,
               "Safe Withdrawal Rate": 0.18,
               "Perpetual Withdrawal Rate": 0.20,
           }
@@ -129,6 +127,8 @@ jobs:
               "Gain/Loss Ratio": 0.03,
               "Benchmark Correlation": 0.02,
               "Beta(*)": 0.02,
+              "Upside Capture Ratio (%)": 0.25,
+              "Downside Capture Ratio (%)": 0.25,
           }
           lines = [
               "# PV round-one complete metric comparison",
