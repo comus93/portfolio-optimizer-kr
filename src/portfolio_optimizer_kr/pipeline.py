@@ -13,18 +13,13 @@ from portfolio_optimizer_kr.analytics import (
     trailing_returns,
 )
 from portfolio_optimizer_kr.analytics import historical
-from portfolio_optimizer_kr.data import (
-    align_common_prices,
-    convert_usd_price_to_krw,
-    month_end_prices,
-    to_monthly_returns,
+from portfolio_optimizer_kr.data.preparation import (
+    asset_price_coverage as _asset_price_coverage,
+    prepare_benchmark_returns as _benchmark_returns,
+    prepare_monthly_returns,
+    resolve_annual_rf as _annual_rf,
 )
-from portfolio_optimizer_kr.errors import DataValidationError
-from portfolio_optimizer_kr.models import (
-    OptimizationObjective,
-    OptimizationRequest,
-    RiskFreeMode,
-)
+from portfolio_optimizer_kr.models import OptimizationObjective, OptimizationRequest
 from portfolio_optimizer_kr.optimize import (
     build_efficient_frontier,
     maximum_sharpe,
@@ -49,136 +44,6 @@ _portfolio_metrics_table = historical.portfolio_metrics_table
 _correlations = historical.correlations_table
 _growth_table = historical.growth_table
 _drawdown_series_table = historical.drawdown_series_table
-
-
-def _annual_rf(
-    request: OptimizationRequest, supplied_annual_rf: float | None
-) -> float:
-    if request.risk_free.mode is RiskFreeMode.FIXED:
-        if request.risk_free.annual_rate is None:
-            raise ValueError("fixed risk-free mode requires annual_rate")
-        return float(request.risk_free.annual_rate)
-    if supplied_annual_rf is None:
-        raise NotImplementedError(
-            "U.S. 3-Month T-Bill provider is an external-data boundary; "
-            "supply annual_rf until implemented"
-        )
-    return float(supplied_annual_rf)
-
-
-def _asset_price(
-    request: OptimizationRequest,
-    symbol: str,
-    price: pd.Series,
-    currency: str,
-    usdkrw: pd.Series | None,
-) -> pd.Series:
-    asset_currencies = {asset.currency.upper() for asset in request.assets}
-    if currency.upper() == "USD" and "KRW" in asset_currencies:
-        if usdkrw is None:
-            raise DataValidationError(
-                "mixed KRW/USD universe requires USD/KRW series"
-            )
-        return convert_usd_price_to_krw(price, usdkrw)
-    if currency.upper() not in {"KRW", "USD"}:
-        raise DataValidationError(f"unsupported currency: {currency}")
-    return price
-
-
-def _asset_price_coverage(
-    request: OptimizationRequest, prices: Mapping[str, pd.Series]
-) -> dict[str, dict[str, object]]:
-    coverage: dict[str, dict[str, object]] = {}
-    for asset in request.assets:
-        series = prices.get(asset.symbol)
-        if series is None:
-            continue
-        observed = series.dropna()
-        if observed.empty:
-            continue
-        coverage[asset.symbol] = {
-            "name": asset.name,
-            "start": str(pd.Timestamp(observed.index.min()).date()),
-            "end": str(pd.Timestamp(observed.index.max()).date()),
-            "observations": int(len(observed)),
-        }
-    return coverage
-
-
-def _completed_monthly_returns(
-    returns: pd.DataFrame, end: str | pd.Timestamp | None
-) -> pd.DataFrame:
-    """Exclude only the terminal calendar month when it is not yet complete."""
-    cutoff = (
-        pd.Timestamp(end).normalize()
-        if end is not None
-        else pd.Timestamp.today().normalize()
-    )
-    month_end = cutoff + pd.offsets.MonthEnd(0)
-    if cutoff != month_end:
-        returns = returns.loc[
-            returns.index.to_period("M") < cutoff.to_period("M")
-        ]
-    if returns.empty:
-        raise DataValidationError(
-            "at least one completed monthly return is required"
-        )
-    return returns
-
-
-def prepare_monthly_returns(
-    request: OptimizationRequest,
-    prices: Mapping[str, pd.Series],
-    usdkrw: pd.Series | None = None,
-) -> pd.DataFrame:
-    converted: dict[str, pd.Series] = {}
-    for asset in request.assets:
-        if asset.symbol not in prices:
-            raise DataValidationError(f"missing price series: {asset.symbol}")
-        converted[asset.symbol] = _asset_price(
-            request,
-            asset.symbol,
-            prices[asset.symbol],
-            asset.currency,
-            usdkrw,
-        )
-    # Keep the prior month-end as a warm-up price; requested period denotes
-    # return rows rather than price rows.
-    aligned = align_common_prices(converted, end=request.end)
-    returns = _completed_monthly_returns(
-        to_monthly_returns(month_end_prices(aligned)), request.end
-    )
-    if request.start is not None:
-        returns = returns.loc[pd.Timestamp(request.start) :]
-    return returns
-
-
-def _benchmark_returns(
-    request: OptimizationRequest,
-    prices: Mapping[str, pd.Series],
-    usdkrw: pd.Series | None,
-) -> pd.Series | None:
-    if request.benchmark is None:
-        return None
-    benchmark = request.benchmark
-    if benchmark.symbol not in prices:
-        raise DataValidationError(
-            f"missing benchmark price series: {benchmark.symbol}"
-        )
-    price = _asset_price(
-        request,
-        benchmark.symbol,
-        prices[benchmark.symbol],
-        benchmark.currency,
-        usdkrw,
-    )
-    frame = align_common_prices({benchmark.symbol: price}, end=request.end)
-    returns = _completed_monthly_returns(
-        to_monthly_returns(month_end_prices(frame)), request.end
-    )
-    if request.start is not None:
-        returns = returns.loc[pd.Timestamp(request.start) :]
-    return returns.iloc[:, 0].rename(benchmark.symbol)
 
 
 def _frontier_landmarks_table(
