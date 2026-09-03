@@ -1,0 +1,122 @@
+name: Run PV reference parity backtest
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - ".github/workflows/run-pv-reference-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Validate PV parity input
+        run: portfolio-optimizer validate configs/backtest-pv-reference-parity.yaml
+
+      - name: Execute PV parity backtest
+        id: execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          portfolio-optimizer run configs/backtest-pv-reference-parity.yaml --output-root runs | tee /tmp/pv-parity-run.log
+          RUN_PATH="$(tail -n 1 /tmp/pv-parity-run.log | tr -d '\r')"
+          test -d "$RUN_PATH"
+          test -f "$RUN_PATH/result.json"
+          test -f "$RUN_PATH/report.html"
+          test -f "$RUN_PATH/review/performance_summary.csv"
+          echo "run_path=$RUN_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Compare core metrics with captured Portfolio Visualizer result
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import pandas as pd
+
+          run = Path("runs/20260903-backtest-pv-reference-parity-v1")
+          perf = pd.read_csv(run / "review/performance_summary.csv").set_index("metric")
+          result = json.loads((run / "result.json").read_text(encoding="utf-8"))
+
+          pv = {
+              "Sample Portfolio": {
+                  "End Balance": 20830.0, "CAGR": 11.79, "Standard Deviation": 12.44,
+                  "Best Year": 24.21, "Worst Year": -17.31, "Maximum Drawdown": -22.25,
+                  "Sharpe Ratio (ex-post)": 0.74, "Sortino Ratio": 1.15,
+              },
+              "Portfolio 2": {
+                  "End Balance": 32393.0, "CAGR": 19.55, "Standard Deviation": 17.40,
+                  "Best Year": 54.37, "Worst Year": -9.91, "Maximum Drawdown": -22.30,
+                  "Sharpe Ratio (ex-post)": 0.96, "Sortino Ratio": 1.62,
+              },
+              "Portfolio 3": {
+                  "End Balance": 31454.0, "CAGR": 19.01, "Standard Deviation": 17.04,
+                  "Best Year": 42.56, "Worst Year": -11.62, "Maximum Drawdown": -20.06,
+                  "Sharpe Ratio (ex-post)": 0.95, "Sortino Ratio": 1.58,
+              },
+              "benchmark": {
+                  "End Balance": 25478.0, "CAGR": 15.26, "Standard Deviation": 17.04,
+                  "Best Year": 28.75, "Worst Year": -18.17, "Maximum Drawdown": -23.93,
+                  "Sharpe Ratio (ex-post)": 0.76, "Sortino Ratio": 1.22,
+              },
+          }
+
+          lines = [
+              "# Portfolio Visualizer parity comparison",
+              "",
+              "Captured PV reference: Jan 2020 - Jul 2026, Year-to-Year, annual rebalancing, $10,000 initial balance, no cashflows, SPY benchmark.",
+              "",
+          ]
+          coverage = result.get("data_coverage", {}).get("backtest_monthly_returns", {}) or {}
+          lines += [
+              f"Our effective coverage: {coverage.get('start')} -> {coverage.get('end')} ({coverage.get('observations')} observations)",
+              "",
+              "| Series | Metric | PV | Ours | Difference |",
+              "| --- | --- | ---: | ---: | ---: |",
+          ]
+          for series, targets in pv.items():
+              if series not in perf.columns:
+                  continue
+              for metric, target in targets.items():
+                  actual = float(perf.loc[metric, series])
+                  diff = actual - target
+                  if metric == "End Balance":
+                      lines.append(f"| {series} | {metric} | ${target:,.0f} | ${actual:,.2f} | ${diff:,.2f} |")
+                  elif "Ratio" in metric:
+                      lines.append(f"| {series} | {metric} | {target:.2f} | {actual:.3f} | {diff:+.3f} |")
+                  else:
+                      lines.append(f"| {series} | {metric} | {target:.2f}% | {actual:.2f}% | {diff:+.2f}pp |")
+          (run / "pv-comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("\n".join(lines))
+          PY
+
+      - name: Commit generated run
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RUN_PATH"
+          git commit -m "runs: add PV reference parity backtest"
+          git pull --rebase origin bt-module
+          git push origin HEAD:bt-module
