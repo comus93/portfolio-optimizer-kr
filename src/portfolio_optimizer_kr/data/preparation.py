@@ -90,12 +90,16 @@ def _completed_monthly_returns(
     returns: pd.DataFrame,
     end: str | pd.Timestamp | None,
 ) -> pd.DataFrame:
-    """Exclude only a terminal calendar month that is not yet complete."""
-    cutoff = (
-        pd.Timestamp(end).normalize()
-        if end is not None
-        else pd.Timestamp.today().normalize()
-    )
+    """Exclude only a terminal calendar month that is not yet complete.
+
+    A configured end date may be in the future, notably Year-to-Year requests
+    whose selected end year is the current year. Future period boundaries must
+    not make the current partial month look complete, so completion is always
+    judged against the earlier of the configured end and today.
+    """
+    today = pd.Timestamp.today().normalize()
+    configured_end = pd.Timestamp(end).normalize() if end is not None else today
+    cutoff = min(configured_end, today)
     month_end = cutoff + pd.offsets.MonthEnd(0)
     if cutoff != month_end:
         returns = returns.loc[
@@ -145,7 +149,7 @@ def prepare_benchmark_returns(
         return None
     if benchmark.symbol not in prices:
         raise DataValidationError(
-            f"missing benchmark price series: {benchmark.symbol}"
+            "missing benchmark price series: {benchmark.symbol}"
         )
     price = _asset_price(
         request,
