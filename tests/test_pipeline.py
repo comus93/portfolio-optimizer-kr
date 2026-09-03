@@ -48,6 +48,26 @@ def test_prepare_monthly_returns_excludes_incomplete_current_month_by_default():
     assert returns["A"].tolist() == pytest.approx([0.1])
 
 
+def test_prepare_monthly_returns_excludes_incomplete_current_month_with_future_end():
+    current_month_start = pd.Timestamp.today().normalize().to_period("M").start_time
+    previous_month_end = current_month_start - pd.Timedelta(days=1)
+    prior_month_end = previous_month_end.to_period("M").start_time - pd.Timedelta(days=1)
+    future_end = (current_month_start + pd.offsets.MonthEnd(4)).date().isoformat()
+    index = pd.DatetimeIndex([prior_month_end, previous_month_end, current_month_start])
+    request = OptimizationRequest(
+        assets=(AssetSpec("A"),),
+        end=future_end,
+    )
+
+    returns = prepare_monthly_returns(
+        request,
+        {"A": pd.Series([100.0, 110.0, 220.0], index=index)},
+    )
+
+    assert returns.index.tolist() == [previous_month_end]
+    assert returns["A"].tolist() == pytest.approx([0.1])
+
+
 def test_prepare_monthly_returns_excludes_partial_terminal_month_for_midmonth_end():
     index = pd.to_datetime(["2024-07-31", "2024-08-30", "2024-09-13"])
     request = OptimizationRequest(
