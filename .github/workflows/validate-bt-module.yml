@@ -1,0 +1,55 @@
+name: Validate bt-module refactor
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/validate-bt-module.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  affected-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Compile changed runtime
+        run: |
+          python -m compileall -q src/portfolio_optimizer_kr
+
+      - name: Run shared and affected product regression
+        run: |
+          python -m pytest -q \
+            tests/test_analytics.py \
+            tests/test_pipeline.py \
+            tests/test_reporting.py \
+            tests/test_interactive_report_contract.py \
+            tests/test_report_visual_identity.py \
+            tests/test_report_golden_fidelity.py \
+            tests/test_report_p1_polish.py \
+            tests/test_report_user_feedback_v2.py \
+            tests/test_report_user_feedback_v3.py \
+            tests/test_report_user_feedback_v4.py \
+            tests/test_backtest.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_input_persistence.py \
+            tests/test_backtest_report_presentation.py \
+            tests/test_backtest_report_content_contract.py \
+            tests/test_shared_historical_capabilities.py
