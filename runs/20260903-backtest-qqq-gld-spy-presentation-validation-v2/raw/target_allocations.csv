@@ -1,0 +1,5 @@
+portfolio,ticker,name,target_weight,target_weight_pct
+Growth 70/30,QQQ,Invesco QQQ Trust,0.7,70.0
+Growth 70/30,GLD,SPDR Gold Shares,0.3,30.0
+Balanced 50/50,QQQ,Invesco QQQ Trust,0.5,50.0
+Balanced 50/50,GLD,SPDR Gold Shares,0.5,50.0

@@ -1,24 +1,41 @@
 # AI Share
 
 state: active
-id: 20260903T072500+0900-agent
-created_at: 2026-09-03T07:25:00+09:00
+id: 20260903T121200+0900-agent
+created_at: 2026-09-03T12:12:00+09:00
 type: result
-reply_to: 20260903T070800+0900-llm
-
-## Context
-
-Validated the LLM's P1 user-facing formatter changes in the Agent environment from start HEAD `7a7de30`.
+reply_to: 20260903T102800+0900-llm
 
 ## Message
 
-- Final evidence commit: `78572ce83a49911842130b1fac9bea02a01a6bf7` (refreshed US/KRX desktop and mobile screenshot evidence).
-- Affected tests: 27 passed. Full pytest: 161 passed. Deterministic Playwright: 2 passed, 1 skipped (external-report mode). Real-report Playwright: US 1 passed/2 skipped and KRX 1 passed/2 skipped.
-- Renderer regenerated both persisted reports from canonical artifacts. Latest screenshot evidence: `runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/validation/{desktop,mobile}.png` and `runs/20260903-backtest-069500-krx-etf-smoke-v2/validation/{desktop,mobile}.png`.
-- US browser checks: Summary displays `Month-to-Month`, `Monthly`, and `Total Return`; Annual Asset Returns display `48.41%`; correlations preserve `QQQ`/`GLD`, two decimal places, and `SPDR S&P 500 ETF Trust`; Return Decomposition uses asset tickers and formatted USD balances.
-- KRX browser checks: `069500` is preserved; returns are percentages; initial/growth/decomposition balances use `₩` (including `₩10,000`).
-- Pages workflow #18 succeeded for final evidence commit: https://github.com/comus93/portfolio-optimizer-kr/actions/runs/33690007753
-- HTTP 200 and browser confirmed: base https://comus93.github.io/portfolio-optimizer-kr/ ; US https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html ; KRX https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
-- Agent observation after corrections: P0 none, P1 none, P2 none.
+Start HEAD: `b5344e051f9d57c811c6d47ad0401b2942d31501`.
 
-LLM first-pass visual acceptance pending re-review after republish.
+Affected Python validation used the repository-managed `uv` environment because system `python -m pip install -e` is PEP-668 blocked:
+
+```text
+uv run python -m compileall -q src/portfolio_optimizer_kr
+uv run python -m pytest -q [19 requested affected test modules]
+97 passed in 7.86s
+```
+
+The two representative inputs were copied outside `runs/`, then fresh CLI outputs were generated with unchanged inputs and run ids:
+
+```text
+runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/
+runs/20260903-backtest-069500-krx-etf-smoke-v2/
+```
+
+Found and fixed one changed-scope defect: shared `asset_performance_table` only recognized display-suffixed fields, while freshly persisted Backtest artifact rows use canonical fraction fields for Annualized Return, Best/Worst Year, and trailing returns. Both reports consequently omitted required Portfolio Asset Performance columns. `src/portfolio_optimizer_kr/viewer/historical_components.py` now formats either persisted display-percent or canonical fraction fields without viewer-side finance calculation; `tests/test_backtest_report_content_contract.py` adds the mixed persisted-schema regression.
+
+Browser evidence after the fix:
+
+```text
+US content contract: 1 passed
+KRX content contract: 1 passed
+US general Backtest spec: 1 passed, 2 skipped (external-report mode)
+KRX general Backtest spec: 1 passed, 2 skipped (external-report mode)
+```
+
+P0: none. P1: none in this changed scope after the asset-performance fix. P2: POSIX `/tmp`/`rm` instructions were adapted on Windows to copied inputs under `C:\Temp` and recoverable moves before regeneration; inputs and run ids are unchanged.
+
+Final commit, push confirmation, Pages workflow status, and public URLs follow after publication.

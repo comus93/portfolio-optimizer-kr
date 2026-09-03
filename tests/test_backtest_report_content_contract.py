@@ -319,6 +319,23 @@ def test_asset_performance_is_shared_finance_output_and_renderer_only_formats_ar
     ]:
         assert label in rendered
     assert "069500" in rendered
+
+
+def test_asset_performance_renderer_accepts_persisted_fraction_columns():
+    rendered = _asset_performance_table(
+        pd.DataFrame(
+            [{
+                "ticker": "069500", "name": "KODEX 200", "cagr_pct": 12.5,
+                "annualized_return": 0.13, "annualized_volatility_pct": 15.0,
+                "best_year": 0.2, "worst_year": -0.1, "max_drawdown_pct": -18.0,
+                "sharpe_ratio": 0.8, "sortino_ratio": 1.1,
+                "3m": 0.02, "ytd": 0.05, "1y": 0.07, "3y": 0.08, "5y": None, "10y": None,
+            }]
+        )
+    )
+    for label in ["Annualized Return", "Best Year", "Worst Year", "3M", "10Y Annualized"]:
+        assert label in rendered
+    assert "13.00%" in rendered
     assert "69500.0" not in rendered
 
 

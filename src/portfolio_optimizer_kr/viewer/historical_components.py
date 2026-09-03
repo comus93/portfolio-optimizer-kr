@@ -821,14 +821,30 @@ def asset_performance_table(frame: pd.DataFrame) -> str:
         "5y_pct": "5Y Annualized",
         "10y_pct": "10Y Annualized",
     }
-    columns = [column for column in aliases if column in frame]
-    rendered = frame[columns].copy()
-    for column in columns:
-        if column.endswith("_pct"):
-            rendered[column] = rendered[column].map(pct)
-        elif column in {"sharpe_ratio", "sortino_ratio"}:
-            rendered[column] = rendered[column].map(ratio)
-    return table(rendered.rename(columns=aliases), table_id="portfolio-asset-performance")
+    raw_fraction_aliases = {
+        "annualized_return": "Annualized Return",
+        "annualized_volatility": "Standard Deviation",
+        "best_year": "Best Year",
+        "worst_year": "Worst Year",
+        "max_drawdown": "Maximum Drawdown",
+        "3m": "3M", "ytd": "YTD", "1y": "1Y", "3y": "3Y Annualized",
+        "5y": "5Y Annualized", "10y": "10Y Annualized",
+    }
+    rendered = pd.DataFrame(index=frame.index)
+    for column, label in aliases.items():
+        if column in frame:
+            values = frame[column]
+            if column.endswith("_pct"):
+                values = values.map(pct)
+            elif column in {"sharpe_ratio", "sortino_ratio"}:
+                values = values.map(ratio)
+            rendered[label] = values
+    for column, label in raw_fraction_aliases.items():
+        if label not in rendered and column in frame:
+            rendered[label] = frame[column].map(fraction_pct)
+    ordered = list(aliases.values())
+    rendered = rendered[[label for label in ordered if label in rendered]]
+    return table(rendered, table_id="portfolio-asset-performance")
 
 
 def drawdown_presentation(
