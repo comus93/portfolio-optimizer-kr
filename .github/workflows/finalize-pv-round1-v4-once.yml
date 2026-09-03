@@ -1,0 +1,199 @@
+name: Finalize PV round-one v4 once
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - ".github/workflows/finalize-pv-round1-v4-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Patch monthly pagination and regression contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''    return (
+              '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+              '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
+              f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
+              f'<tbody>{"".join(rows)}</tbody></table></div>'
+          )
+          '''
+          new = '''    total_rows = len(rows)
+              first_page_end = min(12, total_rows)
+              return (
+                  '<p class="panel-subtitle">Monthly returns for the configured portfolios</p>'
+                  '<div class="pv-table-page-size" style="display:flex;align-items:center;gap:6px;margin:8px 0">'
+                  '<label for="monthly-page-size">Show</label>'
+                  '<select id="monthly-page-size" aria-label="Monthly returns entries per page"><option value="12" selected>12</option></select>'
+                  '<span>entries</span></div>'
+                  '<div class="table-wrap"><table id="monthly-returns-detail" class="pv-grouped-table wide-detail-table">'
+                  f'<thead><tr>{top}</tr><tr>{second}</tr></thead>'
+                  f'<tbody>{"".join(rows)}</tbody></table></div>'
+                  '<div id="monthly-pagination" class="pv-table-pagination" '
+                  'style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px">'
+                  f'<span id="monthly-page-status">Showing 1 to {first_page_end} of {total_rows} entries</span>'
+                  '<span style="display:flex;gap:6px">'
+                  '<button type="button" id="monthly-page-first">First</button>'
+                  '<button type="button" id="monthly-page-previous">Previous</button>'
+                  '<button type="button" id="monthly-page-next">Next</button>'
+                  '<button type="button" id="monthly-page-last">Last</button>'
+                  '</span></div>'
+                  '''<script>
+          (() => {
+            const table = document.getElementById('monthly-returns-detail');
+            const status = document.getElementById('monthly-page-status');
+            if (!table || !status || table.dataset.paginationReady === 'true') return;
+            table.dataset.paginationReady = 'true';
+            const rows = Array.from(table.tBodies[0]?.rows || []);
+            const pageSize = 12;
+            let page = 0;
+            const buttons = {
+              first: document.getElementById('monthly-page-first'),
+              previous: document.getElementById('monthly-page-previous'),
+              next: document.getElementById('monthly-page-next'),
+              last: document.getElementById('monthly-page-last'),
+            };
+            const lastPage = () => Math.max(0, Math.ceil(rows.length / pageSize) - 1);
+            const render = () => {
+              page = Math.max(0, Math.min(page, lastPage()));
+              const start = page * pageSize;
+              const end = Math.min(start + pageSize, rows.length);
+              rows.forEach((row, index) => { row.hidden = index < start || index >= end; });
+              status.textContent = rows.length
+                ? `Showing ${start + 1} to ${end} of ${rows.length} entries`
+                : 'Showing 0 to 0 of 0 entries';
+              if (buttons.first) buttons.first.disabled = page === 0;
+              if (buttons.previous) buttons.previous.disabled = page === 0;
+              if (buttons.next) buttons.next.disabled = page >= lastPage();
+              if (buttons.last) buttons.last.disabled = page >= lastPage();
+            };
+            buttons.first?.addEventListener('click', () => { page = 0; render(); });
+            buttons.previous?.addEventListener('click', () => { page -= 1; render(); });
+            buttons.next?.addEventListener('click', () => { page += 1; render(); });
+            buttons.last?.addEventListener('click', () => { page = lastPage(); render(); });
+            render();
+          })();
+          </script>'''
+              )
+          '''
+          if old not in text:
+              raise SystemExit("monthly detail return block not found; refusing unsafe patch")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          test = Path("tests/test_monthly_returns_pagination_contract.py")
+          test.write_text('''from __future__ import annotations\n\nimport pandas as pd\n\nfrom portfolio_optimizer_kr.viewer import pv_round1_overlay as overlay\n\n\ndef test_monthly_detail_table_uses_pv_style_12_row_pagination():\n    rows = []\n    for index in range(13):\n        rows.append({\n            "year": 2026 if index < 8 else 2025,\n            "month": 8 - index if index < 8 else 20 - index,\n            "series::Sample Portfolio::return": 0.01,\n            "series::Sample Portfolio::balance": 10000 + index,\n            "asset::SPY::return": 0.02,\n        })\n    frame = pd.DataFrame(rows)\n    html = overlay._monthly_detail_table(\n        frame, ["Sample Portfolio"], None, {"SPY": "State Street SPDR S&P 500 ETF"}, "USD"\n    )\n    assert 'id="monthly-page-size"' in html\n    assert '>12</option>' in html\n    assert 'id="monthly-page-status">Showing 1 to 12 of 13 entries' in html\n    assert 'id="monthly-page-first"' in html\n    assert 'id="monthly-page-previous"' in html\n    assert 'id="monthly-page-next"' in html\n    assert 'id="monthly-page-last"' in html\n    assert "row.hidden = index < start || index >= end" in html\n''', encoding="utf-8")
+
+          config = Path("configs/backtest-pv-reference-parity.yaml")
+          cfg = config.read_text(encoding="utf-8")
+          old_id = "20260903-backtest-pv-reference-parity-yty-v3"
+          new_id = "20260903-backtest-pv-reference-parity-yty-v4"
+          if old_id not in cfg:
+              raise SystemExit("expected v3 run id not found")
+          config.write_text(cfg.replace(old_id, new_id, 1), encoding="utf-8")
+          PY
+
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run affected regression
+        run: |
+          python -m compileall -q src/portfolio_optimizer_kr
+          python -m pytest -q \
+            tests/test_monthly_returns_pagination_contract.py \
+            tests/test_backtest_pv_round1.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_shared_end_to_end.py \
+            tests/test_active_visual_reference_contract.py
+
+      - name: Generate immutable v4 real-data report
+        run: |
+          portfolio-optimizer validate configs/backtest-pv-reference-parity.yaml
+          portfolio-optimizer run configs/backtest-pv-reference-parity.yaml --output-root runs
+          test -f runs/20260903-backtest-pv-reference-parity-yty-v4/report.html
+
+      - name: Validate generated pagination contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html = Path("runs/20260903-backtest-pv-reference-parity-yty-v4/report.html").read_text(encoding="utf-8")
+          for marker in [
+              'id="monthly-page-size"',
+              'id="monthly-page-status">Showing 1 to 12 of 80 entries',
+              'id="monthly-page-first"',
+              'id="monthly-page-previous"',
+              'id="monthly-page-next"',
+              'id="monthly-page-last"',
+              'data-chart="drawdown-combined"',
+              'Risk and Return Metrics',
+              'Annualized Return (CAGR)',
+          ]:
+              assert marker in html, marker
+          assert "Benchmark Summary" not in html
+          PY
+
+      - name: Install Playwright Chromium
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Browser validate monthly pagination
+        run: |
+          python -m http.server 8000 >/tmp/pv-v4-http.log 2>&1 &
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          url = "http://127.0.0.1:8000/runs/20260903-backtest-pv-reference-parity-yty-v4/report.html"
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page(viewport={"width": 1440, "height": 1200})
+              page.goto(url, wait_until="networkidle")
+              table = page.locator("#monthly-returns-detail")
+              table.scroll_into_view_if_needed()
+              rows = table.locator("tbody tr")
+              assert rows.count() == 80
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count() == 12
+              assert page.locator("#monthly-page-status").inner_text() == "Showing 1 to 12 of 80 entries"
+              page.locator("#monthly-page-next").click()
+              assert page.locator("#monthly-page-status").inner_text() == "Showing 13 to 24 of 80 entries"
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count() == 12
+              page.locator("#monthly-page-last").click()
+              assert page.locator("#monthly-page-status").inner_text() == "Showing 73 to 80 of 80 entries"
+              assert page.locator("#monthly-returns-detail tbody tr:visible").count() == 8
+              assert page.locator("#monthly-page-next").is_disabled()
+              page.locator("#monthly-page-first").click()
+              assert page.locator("#monthly-page-status").inner_text() == "Showing 1 to 12 of 80 entries"
+              page.screenshot(path="/tmp/pv-v4-pagination.png", full_page=False)
+              browser.close()
+          PY
+
+      - name: Commit source, contract, config and v4 run
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py \
+            tests/test_monthly_returns_pagination_contract.py \
+            configs/backtest-pv-reference-parity.yaml \
+            runs/20260903-backtest-pv-reference-parity-yty-v4
+          git commit -m "viewer: finalize PV round-one v4 pagination"
+          git pull --rebase origin bt-module
+          git push origin HEAD:bt-module
