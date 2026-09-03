@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install pandas numpy
-      - name: Probe candidate formulas
+      - name: Probe remaining candidates
         run: |
           python - <<'PY'
           import json, math
@@ -28,72 +28,60 @@ jobs:
 
           root = Path('runs/20260903-backtest-pv-reference-parity-yty-v2')
           data = pd.read_csv(root/'raw/monthly_return_series.csv', parse_dates=['date']).set_index('date')
-          annual = pd.read_csv(root/'raw/annual_returns_detail.csv')
+          annual = pd.read_csv(root/'raw/annual_returns_detail.csv').sort_values('year')
           result = json.loads((root/'result.json').read_text())
           config = result.get('configuration', {})
-          print('RF config:', config.get('risk_free'))
           names = ['Sample Portfolio','Portfolio 2','Portfolio 3','benchmark']
-          bm = data['benchmark']
           rf_a = float((config.get('risk_free') or {}).get('effective_annual_rate') or 0.0)
           rf_m = (1+rf_a)**(1/12)-1
           print('rf annual/monthly', rf_a, rf_m)
-          for name in names:
-              r=data[name]
-              beta=r.cov(bm)/bm.var()
-              alpha=(r.mean()-beta*bm.mean())*12
-              sharpe=(r.mean()-rf_m)/r.std(ddof=1)*math.sqrt(12)
-              neg=r[r<0]
-              sort_neg_std=(r.mean()-rf_m)/neg.std(ddof=1)*math.sqrt(12) if len(neg)>1 else float('nan')
-              downside=np.sqrt(np.mean(np.minimum(r.to_numpy(),0.0)**2))
-              sort_down=(r.mean()-rf_m)/downside*math.sqrt(12)
-              sort_geo=(((1+r).prod()**(1/len(r))-1)-rf_m)/downside*math.sqrt(12)
-              print(name, 'alpha',alpha,'sharpe',sharpe,'sort_negstd',sort_neg_std,'sort_down',sort_down,'sort_geo',sort_geo)
-              up=pd.concat([r,bm],axis=1).dropna(); up.columns=['p','b']
-              dn=up[up.b<0]; up=up[up.b>0]
-              def gm(s): return (1+s).prod()**(1/len(s))-1
-              candidates={
-                'up_arith':up.p.mean()/up.b.mean()*100,
-                'down_arith':dn.p.mean()/dn.b.mean()*100,
-                'up_sum':up.p.sum()/up.b.sum()*100,
-                'down_sum':dn.p.sum()/dn.b.sum()*100,
-                'up_gm':gm(up.p)/gm(up.b)*100,
-                'down_gm':gm(dn.p)/gm(dn.b)*100,
-                'up_anngeo':(((1+gm(up.p))**12-1)/((1+gm(up.b))**12-1))*100,
-                'down_anngeo':(((1+gm(dn.p))**12-1)/((1+gm(dn.b))**12-1))*100,
-              }
-              print(name,'capture',candidates)
 
-          infl = annual.sort_values('year')['inflation'].fillna(0).to_numpy(float)
-          years = annual.sort_values('year')['year'].to_numpy(int)
-          cum_infl=np.cumprod(1+infl)
-          print('years/infl/cum', list(zip(years,infl,cum_infl)))
-          def max_rate(returns, perpetual=False, withdraw_start=True, full_partial=True):
+          for name in names:
+              r=data[name].astype(float)
+              excess=r-rf_m
+              downside_rf=np.sqrt(np.mean(np.minimum(excess.to_numpy(),0.0)**2))
+              downside_zero=np.sqrt(np.mean(np.minimum(r.to_numpy(),0.0)**2))
+              sort_rf=excess.mean()/downside_rf*math.sqrt(12)
+              sort_zero=excess.mean()/downside_zero*math.sqrt(12)
+              print(name,'sortino_downside_rf',sort_rf,'sortino_downside_zero',sort_zero,'downside_rf',downside_rf)
+
+          infl = annual['inflation'].fillna(0).to_numpy(float)
+          years = annual['year'].to_numpy(int)
+          factors=np.ones(len(years))
+          for i in range(1,len(years)):
+              factors[i]=factors[i-1]*(1+infl[i-1])
+          print('years/infl/factor_before_year',list(zip(years,infl,factors)))
+
+          def withdrawal_rate(rr, perpetual=False, partial_fraction=0.0):
               lo,hi=0.,1.
-              for _ in range(70):
+              for _ in range(80):
                   rate=(lo+hi)/2
                   bal=1.
                   ok=True
-                  for i,ret in enumerate(returns):
-                      w=rate*cum_infl[i]
-                      if withdraw_start:
-                          bal-=w
-                          if bal<=0: ok=False; break
-                          bal*=1+ret
-                      else:
-                          bal*=1+ret
-                          bal-=w
-                          if bal<=0: ok=False; break
-                  if perpetual and ok: ok=bal>=cum_infl[-1]
+                  for i,ret in enumerate(rr):
+                      bal*=1+float(ret)
+                      fraction=partial_fraction if i==len(rr)-1 else 1.0
+                      bal-=rate*factors[i]*fraction
+                      if bal<=0:
+                          ok=False
+                          break
+                  if perpetual and ok:
+                      terminal_inflation=factors[-1]*(1+infl[-1]*partial_fraction)
+                      ok=bal>=terminal_inflation
                   if ok: lo=rate
                   else: hi=rate
               return lo
+
           for name in names:
-              col=f'series::{name}::return'
-              rr=annual.sort_values('year')[col].to_numpy(float)
-              print(name,'withdraw', {
-                'safe_start':max_rate(rr,False,True),
-                'safe_end':max_rate(rr,False,False),
-                'pwr_start':max_rate(rr,True,True),
-                'pwr_end':max_rate(rr,True,False),
+              rr=annual[f'series::{name}::return'].to_numpy(float)
+              print(name,'withdraw_candidates',{
+                  'no_partial_safe': withdrawal_rate(rr,False,0.0),
+                  'no_partial_pwr': withdrawal_rate(rr,True,0.0),
+                  'half_partial_safe': withdrawal_rate(rr,False,0.5),
+                  'half_partial_pwr': withdrawal_rate(rr,True,0.5),
+                  '8of12_safe': withdrawal_rate(rr,False,8/12),
+                  '8of12_pwr': withdrawal_rate(rr,True,8/12),
+                  'full_partial_safe': withdrawal_rate(rr,False,1.0),
+                  'full_partial_pwr': withdrawal_rate(rr,True,1.0),
               })
           PY
