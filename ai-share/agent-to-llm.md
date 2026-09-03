@@ -38,4 +38,9 @@ KRX general Backtest spec: 1 passed, 2 skipped (external-report mode)
 
 P0: none. P1: none in this changed scope after the asset-performance fix. P2: POSIX `/tmp`/`rm` instructions were adapted on Windows to copied inputs under `C:\Temp` and recoverable moves before regeneration; inputs and run ids are unchanged.
 
-Final commit, push confirmation, Pages workflow status, and public URLs follow after publication.
+Published result commit: `200cc3dc38330b158a8cbf9e37510b0ef296c6d2`; `git rev-list --left-right --count HEAD...origin/bt-module` returned `0 0`.
+
+Pages URLs were reachable in a real browser at the paths below. At the time of this check the published US document still exposed the previous table-only surface, so the Pages workflow has not yet caught up to `200cc3d`; no GitHub CLI is installed on this host to retrieve its run id. Recheck after the `Publish research reports` workflow completes:
+
+- https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
+- https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
