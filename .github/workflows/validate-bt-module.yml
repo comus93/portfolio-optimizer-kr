@@ -57,4 +57,6 @@ jobs:
             tests/test_shared_artifact_persistence.py \
             tests/test_backtest_shared_end_to_end.py \
             tests/test_backtest_pv_round1.py \
+            tests/test_pv_metric_parity.py \
+            tests/test_pv_pagination_contract.py \
             tests/test_shared_market_data_preparation.py
