@@ -4,6 +4,8 @@ Captured PV reference: Jan 2020 - Jul 2026, UI setting Year-to-Year 2020-2026, a
 
 Parity note: this run locks the effective endpoint to Jul 2026 with month-to-month period input because the current engine's Year-to-Year mode expands 2026 through year-end/current available data, while the captured PV result stops at Jul 2026.
 
+The first strict PV-setting execution used Year-to-Year 2020-2026 and correctly validated the YAML, but execution stopped because the engine extended the current end year beyond the captured Jul 2026 endpoint and requested an unavailable FRED TB3MS observation for Sep 2026. That attempt was Actions run `33746523840`. The captured-output parity execution below was Actions run `33746685373` and completed successfully.
+
 Our effective coverage: 2020-01-31 -> 2026-07-31 (79 observations)
 
 | Series | Metric | PV | Ours | Difference |
