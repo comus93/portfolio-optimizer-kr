@@ -47,7 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/apply-pv-visual-review.yml scripts/_apply_pv_visual_review.py
+          git rm .github/workflows/apply-pv-visual-review.yml scripts/_apply_pv_visual_review.py scripts/_pv_payload_*.txt
           git add src tests docs openspec verification
           git commit -m "feat: apply PV backtest visual review"
           git push origin HEAD:bt-module
