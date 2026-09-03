@@ -65,9 +65,6 @@ _SERIES_CONTRAST_SCRIPT = r"""
     const tip = document.querySelector('.tooltip');
     if (!svg || !tip || !rows.length) return;
 
-    // The legacy renderer placed hover circles on the first available series
-    // (normally Provided), so hovering the Optimized line could miss every hit
-    // target. Disable those point targets and use one plot-wide overlay instead.
     svg.querySelectorAll('circle[fill="transparent"]').forEach(node => {
       node.setAttribute('pointer-events', 'none');
     });
@@ -194,8 +191,6 @@ _SERIES_CONTRAST_SCRIPT = r"""
     annotatePartialYears();
   };
 
-  // feedback_v4 performs a delayed final render. Run this pass afterward so
-  // final interaction and explanatory notes belong to the final DOM.
   if (document.readyState === 'complete') setTimeout(applyFinalPresentationFixes, 90);
   else window.addEventListener(
     'load',
@@ -209,8 +204,16 @@ _SERIES_CONTRAST_SCRIPT = r"""
 
 def _effective_risk_free_pct(model: ReportModel) -> float | None:
     configuration: Any = model.metadata.get("configuration", {})
-    risk_free = configuration.get("risk_free", {}) if isinstance(configuration, dict) else {}
-    value = risk_free.get("effective_annual_rate") if isinstance(risk_free, dict) else None
+    risk_free = (
+        configuration.get("risk_free", {})
+        if isinstance(configuration, dict)
+        else {}
+    )
+    value = (
+        risk_free.get("effective_annual_rate")
+        if isinstance(risk_free, dict)
+        else None
+    )
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -227,13 +230,19 @@ def _normalize_frontier_assets(model: ReportModel) -> ReportModel:
         if math.isfinite(sharpe):
             normalized.append(asset)
             continue
-        if rf_pct is None or not math.isfinite(asset.standard_deviation_pct) or asset.standard_deviation_pct == 0:
+        if (
+            rf_pct is None
+            or not math.isfinite(asset.standard_deviation_pct)
+            or asset.standard_deviation_pct == 0
+        ):
             normalized.append(asset)
             continue
         normalized.append(
             replace(
                 asset,
-                sharpe_ratio=(asset.expected_return_pct - rf_pct) / asset.standard_deviation_pct,
+                sharpe_ratio=(
+                    asset.expected_return_pct - rf_pct
+                ) / asset.standard_deviation_pct,
             )
         )
         changed = True
@@ -280,10 +289,27 @@ def generate_report(
     if result_path.is_file():
         result = json.loads(result_path.read_text(encoding="utf-8"))
         configuration = result.get("configuration", {})
-        if isinstance(configuration, dict) and configuration.get("product_mode") == "backtest":
+        if (
+            isinstance(configuration, dict)
+            and configuration.get("product_mode") == "backtest"
+        ):
             from .backtest_renderer import generate_backtest_report
 
             return generate_backtest_report(root, output_path=output_path)
+
     model = build_report_model(root)
     target = Path(output_path) if output_path is not None else root / "report.html"
-    return render_report(model, target, template_path=template_path)
+    rendered = render_report(model, target, template_path=template_path)
+
+    # Optimization-only sections stay on the established renderer. Historical
+    # sections are remounted from the same shared components used by Backtest.
+    from .shared_historical_overlay import (
+        apply_optimizer_shared_historical_components,
+    )
+
+    return apply_optimizer_shared_historical_components(
+        root,
+        rendered,
+        objective_name=model.objective_name,
+        benchmark_label=model.benchmark_name or model.benchmark_symbol,
+    )
