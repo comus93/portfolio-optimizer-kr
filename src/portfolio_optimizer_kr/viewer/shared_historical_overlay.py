@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -101,8 +100,9 @@ def _scale_performance_balance(frame: pd.DataFrame) -> pd.DataFrame:
     for column in out.columns:
         if column in {"metric", "unit"}:
             continue
-        values = pd.to_numeric(out.loc[mask, column], errors="coerce")
-        out.loc[mask, column] = values * 10000.0
+        out.loc[mask, column] = (
+            pd.to_numeric(out.loc[mask, column], errors="coerce") * 10000.0
+        )
     return out
 
 
@@ -127,6 +127,12 @@ def build_optimizer_shared_sections(
     objective_name: str,
     benchmark_label: str | None,
 ) -> dict[str, str]:
+    """Build only sections backed by persisted shared artifacts.
+
+    An older Optimization run may legitimately lack a newly introduced shared
+    artifact. In that case the established legacy renderer remains visible
+    rather than being overwritten by an N/A placeholder.
+    """
     root = Path(run_dir)
     labels = {
         "provided": "Provided Portfolio",
@@ -181,88 +187,138 @@ def build_optimizer_shared_sections(
         _artifact(root, "up_down_market_scatter.csv"), labels
     )
 
-    sections: dict[str, str] = {
-        "#performance-summary .table-slot": hc.performance_summary(
+    sections: dict[str, str] = {}
+
+    def add(selector: str, available: bool, markup: str) -> None:
+        if available and markup:
+            sections[selector] = markup
+
+    add(
+        "#performance-summary .table-slot",
+        not performance.empty,
+        hc.performance_summary(
             performance,
             benchmark,
             portfolio_order,
             benchmark_label,
             "USD",
         ),
-        "#portfolio-growth .chart": hc.growth_svg(
+    )
+    add(
+        "#portfolio-growth .chart",
+        not growth.empty,
+        hc.growth_svg(
             growth,
             portfolio_order,
             {"benchmark": benchmark_label or "Benchmark"},
             "USD",
         ),
-        "#annual-returns .chart": hc.annual_returns_chart(
-            annual, portfolio_order, benchmark_label
-        ),
-        "#trailing-returns .table-slot": hc.trailing_returns_table(
-            trailing, portfolio_order, benchmark_label
-        ),
-        "#asset-correlations .table-slot": hc.correlations_table(
-            correlations, benchmark_label
-        ),
-        "#portfolio-metrics .table-slot": hc.metrics_matrix(
+    )
+    add(
+        "#annual-returns .chart",
+        not annual.empty,
+        hc.annual_returns_chart(annual, portfolio_order, benchmark_label),
+    )
+    add(
+        "#trailing-returns .table-slot",
+        not trailing.empty,
+        hc.trailing_returns_table(trailing, portfolio_order, benchmark_label),
+    )
+    add(
+        "#asset-correlations .table-slot",
+        not correlations.empty,
+        hc.correlations_table(correlations, benchmark_label),
+    )
+    add(
+        "#portfolio-metrics .table-slot",
+        not metrics.empty,
+        hc.metrics_matrix(
             metrics,
             portfolio_order,
             benchmark_label,
             performance,
             "USD",
         ),
-        "#monthly-returns .table-slot": hc.friendly_table(
+    )
+    add(
+        "#monthly-returns .table-slot",
+        not monthly.empty,
+        hc.friendly_table(
             monthly,
             portfolio_order=portfolio_order,
             benchmark_label=benchmark_label,
         ),
-        "#drawdown-chart .chart": hc.drawdown_presentation(
+    )
+    add(
+        "#drawdown-chart .chart",
+        not drawdown_series.empty,
+        hc.drawdown_presentation(
             drawdown_series,
             drawdowns,
             portfolio_order,
             benchmark_label,
         ),
-        "#asset-performance .table-slot": hc.asset_performance_table(
-            asset_performance
-        ),
-        "#portfolio-asset-correlations .table-slot": hc.correlations_table(
-            correlations, benchmark_label
-        ),
-        "#annual-asset-returns .chart": (
-            hc.annual_asset_returns_chart(annual_assets)
-            + hc.annual_asset_returns_table(annual_assets)
-        ),
-        "#rolling-returns-3y .chart": hc.rolling_returns_chart(
-            rolling3, portfolio_order, benchmark_label, 3
-        ),
-        "#rolling-returns-5y .chart": hc.rolling_returns_chart(
-            rolling5, portfolio_order, benchmark_label, 5
-        ),
-    }
+    )
+    add(
+        "#asset-performance .table-slot",
+        not asset_performance.empty,
+        hc.asset_performance_table(asset_performance),
+    )
+    add(
+        "#portfolio-asset-correlations .table-slot",
+        not correlations.empty,
+        hc.correlations_table(correlations, benchmark_label),
+    )
+    add(
+        "#annual-asset-returns .chart",
+        not annual_assets.empty,
+        hc.annual_asset_returns_chart(annual_assets)
+        + hc.annual_asset_returns_table(annual_assets),
+    )
+    add(
+        "#rolling-returns-3y .chart",
+        not rolling3.empty,
+        hc.rolling_returns_chart(rolling3, portfolio_order, benchmark_label, 3),
+    )
+    add(
+        "#rolling-returns-5y .chart",
+        not rolling5.empty,
+        hc.rolling_returns_chart(rolling5, portfolio_order, benchmark_label, 5),
+    )
 
     if not benchmark.empty:
-        sections.update(
-            {
-                "#annualized-active-return .chart": active.annual_active_return(
-                    active_returns, portfolio_order
-                ),
-                "#active-return-contribution .chart": active.active_contribution(
-                    active_contribution,
-                    portfolio_order,
-                ),
-                "#active-return-contribution .table-slot": "",
-                "#rolling-active-return .chart": "".join(
-                    active.rolling_active_risk_panel(
-                        active_returns, portfolio, benchmark_label
-                    )
-                    for portfolio in portfolio_order
-                ),
-                "#up-down-market .chart": _active_up_down_html(
-                    up_down, up_down_observations, portfolio_order
-                ),
-                "#up-down-market .table-slot": "",
-            }
+        add(
+            "#annualized-active-return .chart",
+            not active_returns.empty,
+            active.annual_active_return(active_returns, portfolio_order),
         )
+        add(
+            "#active-return-contribution .chart",
+            not active_contribution.empty,
+            active.active_contribution(active_contribution, portfolio_order),
+        )
+        if not active_contribution.empty:
+            sections["#active-return-contribution .table-slot"] = ""
+        add(
+            "#rolling-active-return .chart",
+            not active_returns.empty,
+            "".join(
+                active.rolling_active_risk_panel(
+                    active_returns, portfolio, benchmark_label
+                )
+                for portfolio in portfolio_order
+            ),
+        )
+        add(
+            "#up-down-market .chart",
+            not up_down.empty and not up_down_observations.empty,
+            _active_up_down_html(
+                up_down, up_down_observations, portfolio_order
+            ),
+        )
+        if not up_down.empty and not up_down_observations.empty:
+            sections["#up-down-market .table-slot"] = ""
+
     return sections
 
 
@@ -273,11 +329,11 @@ def apply_optimizer_shared_historical_components(
     objective_name: str,
     benchmark_label: str | None,
 ) -> Path:
-    """Inject shared server-rendered historical components into Optimizer HTML.
+    """Mount shared historical components over legacy Optimization sections.
 
-    The legacy Optimizer renderer remains responsible for optimization-only
-    sections. JavaScript below only mounts already-rendered HTML and tooltip
-    interaction; it performs no financial calculation.
+    Optimization-only sections remain on the existing renderer. The browser only
+    mounts already-rendered HTML and tooltip interaction; no financial metric is
+    recalculated in JavaScript.
     """
     target = Path(output_path)
     document = target.read_text(encoding="utf-8")
@@ -286,6 +342,9 @@ def apply_optimizer_shared_historical_components(
         objective_name=objective_name,
         benchmark_label=benchmark_label,
     )
+    if not sections or 'id="shared-historical-component-overlay"' in document:
+        return target
+
     payload = json.dumps(sections, ensure_ascii=False).replace("</", "<\\/")
     script = f'''{_STYLE}
 <script id="shared-historical-component-overlay">
@@ -328,8 +387,6 @@ def apply_optimizer_shared_historical_components(
 }})();
 </script>'''
     marker = "</body>"
-    if 'id="shared-historical-component-overlay"' in document:
-        return target
     document = (
         document.replace(marker, f"{script}\n{marker}", 1)
         if marker in document
