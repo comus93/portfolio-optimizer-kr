@@ -1,0 +1,53 @@
+name: Apply PV visual review
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - scripts/_apply_pv_visual_review.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-pv-visual-review-bt-module
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bt-module
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Apply user visual review patch
+        run: python scripts/_apply_pv_visual_review.py
+      - name: Compile
+        run: python -m compileall -q src/portfolio_optimizer_kr
+      - name: Affected regression
+        run: |
+          python -m pytest -q \
+            tests/test_backtest_report_content_contract.py \
+            tests/test_backtest_report_presentation.py \
+            tests/test_active_visual_reference_contract.py \
+            tests/test_pv_visual_review_contract.py \
+            tests/test_shared_historical_capabilities.py \
+            tests/test_backtest_shared_end_to_end.py
+      - name: Diff check
+        run: git diff --check
+      - name: Commit implementation and remove migration machinery
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-pv-visual-review.yml scripts/_apply_pv_visual_review.py
+          git add src tests docs
+          git commit -m "feat: apply PV backtest visual review"
+          git push origin HEAD:bt-module
