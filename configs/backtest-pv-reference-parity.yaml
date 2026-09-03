@@ -1,9 +1,11 @@
 product_mode: backtest
 run_id: 20260903-backtest-pv-reference-parity-v1
 time_period:
-  mode: year_to_year
+  mode: month_to_month
   start_year: 2020
+  first_month: Jan
   end_year: 2026
+  last_month: Jul
 assets:
 - symbol: SPY
   name: State Street SPDR S&P 500 ETF
