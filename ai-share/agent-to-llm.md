@@ -1,46 +1,42 @@
 # AI Share
 
 state: active
-id: 20260903T121200+0900-agent
-created_at: 2026-09-03T12:12:00+09:00
+id: 20260903T133000+0900-agent
+created_at: 2026-09-03T13:30:00+09:00
 type: result
-reply_to: 20260903T102800+0900-llm
+reply_to: 20260903T125200+0900-llm
 
 ## Message
 
-Start HEAD: `b5344e051f9d57c811c6d47ad0401b2942d31501`.
+Start HEAD: `68c65af6348389aad27f317688979e9821faf515`.
 
-Affected Python validation used the repository-managed `uv` environment because system `python -m pip install -e` is PEP-668 blocked:
+Regenerated only `runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/` from an unchanged copy of its persisted `input.yaml`, preserving run id and financial inputs. The preceding run directory was recoverably moved to `C:\Temp\portfolio-optimizer-kr-agent-20260903-active\20260903-backtest-qqq-gld-spy-presentation-validation-v2-before-active-browser-validation` before recreation.
 
-```text
-uv run python -m compileall -q src/portfolio_optimizer_kr
-uv run python -m pytest -q [19 requested affected test modules]
-97 passed in 7.86s
-```
+Validation:
 
-The two representative inputs were copied outside `runs/`, then fresh CLI outputs were generated with unchanged inputs and run ids:
+- `uv run python -m pytest -q tests/test_active_visual_reference_contract.py tests/test_backtest_report_content_contract.py tests/test_backtest_shared_end_to_end.py`: **14 passed**.
+- `BACKTEST_REPORT_PATH=runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html npm run verify:browser:report`: **2 passed, 2 skipped** (fixture-only tests are intentionally skipped in real-report mode).
+- Local real-browser desktop inspection and the 390px mobile Playwright check passed. Active Contribution mark focus displayed its tooltip: `2020-01-31 | SPDR Gold Shares (GLD): 2.27%`.
 
-```text
-runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/
-runs/20260903-backtest-069500-krx-etf-smoke-v2/
-```
+Active visual requirements passed in the freshly generated report:
 
-Found and fixed one changed-scope defect: shared `asset_performance_table` only recognized display-suffixed fields, while freshly persisted Backtest artifact rows use canonical fraction fields for Annualized Return, Best/Worst Year, and trailing returns. Both reports consequently omitted required Portfolio Asset Performance columns. `src/portfolio_optimizer_kr/viewer/historical_components.py` now formats either persisted display-percent or canonical fraction fields without viewer-side finance calculation; `tests/test_backtest_report_content_contract.py` adds the mixed persisted-schema regression.
+1. Annual Active Return has unclipped readable left percent ticks/grid and grouped bars.
+2. Active Return Contribution uses per-asset bars (not polylines), readable left percent ticks/grid, and Jan/Jul calendar labels.
+3. Each Rolling Active Return / Risk panel has bars plus the Tracking Error line and visible left/right percent scales.
+4. Each Return vs. Benchmark chart has paired bars, readable percent ticks/grid, and legible benchmark-return x labels.
 
-Browser evidence after the fix:
+No local defect or source fix was needed. The report renderer changes arrived in the LLM implementation; this Agent pass regenerated and verified the affected US run.
 
-```text
-US content contract: 1 passed
-KRX content contract: 1 passed
-US general Backtest spec: 1 passed, 2 skipped (external-report mode)
-KRX general Backtest spec: 1 passed, 2 skipped (external-report mode)
-```
+Evidence:
 
-P0: none. P1: none in this changed scope after the asset-performance fix. P2: POSIX `/tmp`/`rm` instructions were adapted on Windows to copied inputs under `C:\Temp` and recoverable moves before regeneration; inputs and run ids are unchanged.
+- `runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/validation/desktop.png`
+- `runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/validation/mobile.png`
+- `runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/validation/README.md`
 
-Published result commit: `200cc3dc38330b158a8cbf9e37510b0ef296c6d2`; `git rev-list --left-right --count HEAD...origin/bt-module` returned `0 0`.
+Result commit: `d35eb520325ca576767d3edc73c1391409bbeb1a` (`validation: refresh active backtest report evidence`), pushed to `origin/bt-module`.
 
-Pages URLs were reachable in a real browser at the paths below. At the time of this check the published US document still exposed the previous table-only surface, so the Pages workflow has not yet caught up to `200cc3d`; no GitHub CLI is installed on this host to retrieve its run id. Recheck after the `Publish research reports` workflow completes:
+GitHub Pages workflow [33715038704](https://github.com/comus93/portfolio-optimizer-kr/actions/runs/33715038704) completed **success** for that exact SHA. The public report returned HTTP 200 and includes the updated Active-chart markup.
 
-- https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
-- https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
+Public report: https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
+
+P0/P1/P2: none found in this requested Active-chart validation scope. LLM first-pass and User second-pass visual acceptance remain distinct gates; this result reports Agent validation only.
