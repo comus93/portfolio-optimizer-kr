@@ -1,0 +1,593 @@
+name: Apply asset display order once
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - .github/workflows/apply-asset-display-order-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Patch presentation components
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 match, got {count}")
+              return text.replace(old, new, 1)
+
+          # backtest_renderer.py
+          path = Path('src/portfolio_optimizer_kr/viewer/backtest_renderer.py')
+          text = path.read_text(encoding='utf-8')
+          text = replace_once(
+              text,
+              'from . import historical_active_components as active_components\n',
+              'from . import asset_display as ad\nfrom . import historical_active_components as active_components\n',
+              'backtest import',
+          )
+          old = '''    requested = portfolio_order or _portfolio_order(shaped, [])
+              columns = [name for name in requested if name in pivot.columns]
+              columns.extend(column for column in pivot.columns if column not in columns)
+              pivot = pivot.reindex(columns=columns).reset_index()
+          '''
+          new = '''    requested = portfolio_order or _portfolio_order(shaped, [])
+              columns = [name for name in requested if name in pivot.columns]
+              columns.extend(column for column in pivot.columns if column not in columns)
+              asset_order = ad.asset_display_order_from_allocations(shaped)
+              labels = (
+                  shaped.assign(ticker=shaped["ticker"].astype(str))
+                  .drop_duplicates("ticker")
+                  .set_index("ticker")["asset"]
+                  .astype(str)
+                  .to_dict()
+              )
+              ordered_labels = [labels[ticker] for ticker in asset_order if ticker in labels]
+              ordered_labels.extend(label for label in pivot.index if label not in ordered_labels)
+              pivot = pivot.reindex(index=ordered_labels, columns=columns).reset_index()
+          '''
+          text = replace_once(text, old, new, 'allocation order')
+          old = '''    asset_names = {
+              str(asset.get("symbol")): str(asset.get("name") or "")
+              for asset in configuration.get("assets", [])
+              if isinstance(asset, dict) and asset.get("symbol") is not None
+          }
+          '''
+          new = '''    base_asset_names = ad.asset_names_from_configuration(configuration)
+              asset_order = ad.asset_display_order(result, base_asset_names)
+              asset_names = ad.ordered_asset_names(base_asset_names, asset_order)
+          '''
+          text = replace_once(text, old, new, 'backtest ordered names')
+          path.write_text(text, encoding='utf-8')
+
+          # pv_visual.py
+          path = Path('src/portfolio_optimizer_kr/viewer/pv_visual.py')
+          text = path.read_text(encoding='utf-8')
+          text = replace_once(
+              text,
+              'from . import historical_components as hc\n',
+              'from . import asset_display as ad\nfrom . import historical_components as hc\n',
+              'pv visual import',
+          )
+          text = replace_once(
+              text,
+              '''    tooltip_rows: list[str] | None = None,
+              x_title: str = "Year",
+          ) -> str:
+          ''',
+              '''    tooltip_rows: list[str] | None = None,
+              x_title: str = "Year",
+              series_colors: list[str] | None = None,
+          ) -> str:
+          ''',
+              'grouped colors signature',
+          )
+          text = replace_once(
+              text,
+              '''    if not categories or not series or not values:
+                  return '<p class="muted">N/A</p>'
+
+              y_min, y_max = min(min(values), 0.0), max(max(values), 0.0)
+          ''',
+              '''    if not categories or not series or not values:
+                  return '<p class="muted">N/A</p>'
+              colors = series_colors or hc.PALETTE
+
+              y_min, y_max = min(min(values), 0.0), max(max(values), 0.0)
+          ''',
+              'grouped colors init',
+          )
+          text = replace_once(
+              text,
+              '            color = hc.PALETTE[series_index % len(hc.PALETTE)]\n',
+              '            color = colors[series_index % len(colors)]\n',
+              'grouped mark color',
+          )
+          text = replace_once(
+              text,
+              '''        hc.legend(
+                  (name, hc.PALETTE[index % len(hc.PALETTE)])
+                  for index, (name, _) in enumerate(series)
+              ),
+          ''',
+              '''        hc.legend(
+                  (name, colors[index % len(colors)])
+                  for index, (name, _) in enumerate(series)
+              ),
+          ''',
+              'grouped legend color',
+          )
+          old = '''    years = sorted(int(value) for value in shaped["year"].dropna().unique())
+              tickers: list[str] = []
+              for ticker in shaped["ticker"].astype(str):
+                  if ticker not in tickers:
+                      tickers.append(ticker)
+
+              names = asset_names or {}
+              series: list[tuple[str, list[float | None]]] = []
+          '''
+          new = '''    years = sorted(int(value) for value in shaped["year"].dropna().unique())
+              names = asset_names or {}
+              available: list[str] = []
+              for ticker in shaped["ticker"].astype(str):
+                  if ticker not in available:
+                      available.append(ticker)
+              tickers = [ticker for ticker in names if ticker in available]
+              tickers.extend(ticker for ticker in available if ticker not in tickers)
+              color_map = ad.asset_color_map(tickers)
+              series: list[tuple[str, list[float | None]]] = []
+          '''
+          text = replace_once(text, old, new, 'annual asset order')
+          text = replace_once(
+              text,
+              '''        chart_id="annual-asset-returns-chart",
+                  y_title="Return %",
+                  x_title="Year",
+              )
+          ''',
+              '''        chart_id="annual-asset-returns-chart",
+                  y_title="Return %",
+                  x_title="Year",
+                  series_colors=[color_map[ticker] for ticker in tickers],
+              )
+          ''',
+              'annual asset colors',
+          )
+          old = '''    return (
+                  '<div class="table-wrap correlation-wrap">'
+                  '<table id="correlations-heatmap" '
+                  'class="heatmap monthly-correlations">'
+                  f"<thead><tr><th>Ticker</th><th>Name</th>{header}</tr></thead>"
+                  f"<tbody>{''.join(rows)}</tbody></table></div>"
+              )
+          '''
+          new = '''    min_width = max(640, 54 + 180 + 48 * len(columns))
+              colgroup = (
+                  '<colgroup><col style="width:54px"><col style="width:180px">'
+                  + ''.join('<col class="correlation-value-col" style="width:48px">' for _ in columns)
+                  + '</colgroup>'
+              )
+              return (
+                  f'<div class="table-wrap correlation-wrap" data-correlation-columns="{len(columns)}">'
+                  f'<table id="correlations-heatmap" class="heatmap monthly-correlations" '
+                  f'style="min-width:{min_width}px;table-layout:fixed">{colgroup}'
+                  f"<thead><tr><th>Ticker</th><th>Name</th>{header}</tr></thead>"
+                  f"<tbody>{''.join(rows)}</tbody></table></div>"
+              )
+          '''
+          text = replace_once(text, old, new, 'adaptive correlations')
+          path.write_text(text, encoding='utf-8')
+
+          # historical_active_components.py
+          path = Path('src/portfolio_optimizer_kr/viewer/historical_active_components.py')
+          text = path.read_text(encoding='utf-8')
+          text = replace_once(
+              text,
+              'from . import historical_components as hc\n',
+              'from . import asset_display as ad\nfrom . import historical_components as hc\n',
+              'active import',
+          )
+          text = replace_once(
+              text,
+              '''    *,
+              chart_id: str,
+          ) -> str:
+          ''',
+              '''    *,
+              chart_id: str,
+              color_map: dict[str, str] | None = None,
+          ) -> str:
+          ''',
+              'active chart signature',
+          )
+          text = replace_once(
+              text,
+              '            color = hc.PALETTE[index % len(hc.PALETTE)]\n',
+              '            color = (color_map or {}).get(column, hc.PALETTE[index % len(hc.PALETTE)])\n',
+              'active mark color',
+          )
+          text = replace_once(
+              text,
+              '''        hc.legend((label, hc.PALETTE[index % len(hc.PALETTE)]) for index, (_, label) in enumerate(series)),
+          ''',
+              '''        hc.legend((label, (color_map or {}).get(column, hc.PALETTE[index % len(hc.PALETTE)])) for index, (column, label) in enumerate(series)),
+          ''',
+              'active legend color',
+          )
+          text = replace_once(
+              text,
+              'def _contribution_summary(part: pd.DataFrame, asset_names: dict[str, str]) -> str:\n',
+              'def _contribution_summary(part: pd.DataFrame, asset_names: dict[str, str], asset_order: list[str] | None = None) -> str:\n',
+              'active summary signature',
+          )
+          old = '''    rows = []
+              for ticker, ticker_part in part.groupby(part["ticker"].astype(str)):
+                  ticker_part = ticker_part.sort_values("date")
+          '''
+          new = '''    rows = []
+              available = list(dict.fromkeys(part["ticker"].astype(str)))
+              ordered = [ticker for ticker in (asset_order or []) if ticker in available]
+              ordered.extend(ticker for ticker in available if ticker not in ordered)
+              for ticker in ordered:
+                  ticker_part = part[part["ticker"].astype(str) == ticker].sort_values("date")
+          '''
+          text = replace_once(text, old, new, 'active summary order')
+          old = '''        pivot = part.pivot(index="date", columns="ticker", values="cumulative_active_contribution_pct").reset_index()
+                  series: list[tuple[str, str]] = []
+                  for ticker in pivot.columns:
+                      if ticker == "date":
+                          continue
+                      name = asset_names.get(str(ticker), "").strip()
+                      label = f"{name} ({ticker})" if name else str(ticker)
+                      series.append((str(ticker), label))
+          '''
+          new = '''        pivot = part.pivot(index="date", columns="ticker", values="cumulative_active_contribution_pct").reset_index()
+                  global_order = list(asset_names)
+                  colors = ad.asset_color_map(global_order)
+                  available = [str(ticker) for ticker in pivot.columns if ticker != "date"]
+                  ordered = [ticker for ticker in global_order if ticker in available]
+                  ordered.extend(ticker for ticker in available if ticker not in ordered)
+                  series: list[tuple[str, str]] = []
+                  for ticker in ordered:
+                      name = asset_names.get(str(ticker), "").strip()
+                      label = f"{name} ({ticker})" if name else str(ticker)
+                      series.append((str(ticker), label))
+          '''
+          text = replace_once(text, old, new, 'active series order')
+          text = replace_once(
+              text,
+              '''            f'{_stacked_contribution_chart(pivot, series, chart_id=f"active-contribution-{portfolio}")}'
+                      f'{_contribution_summary(part, asset_names)}</div>'
+          ''',
+              '''            f'{_stacked_contribution_chart(pivot, series, chart_id=f"active-contribution-{portfolio}", color_map=colors)}'
+                      f'{_contribution_summary(part, asset_names, global_order)}</div>'
+          ''',
+              'active chart call',
+          )
+          path.write_text(text, encoding='utf-8')
+
+          # pv_round1_overlay.py
+          path = Path('src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py')
+          text = path.read_text(encoding='utf-8')
+          text = replace_once(
+              text,
+              'from . import backtest_renderer as br\n',
+              'from . import asset_display as ad\nfrom . import backtest_renderer as br\n',
+              'overlay import',
+          )
+          text = replace_once(
+              text,
+              '''    asset_names: dict[str, str],
+              currency: str,
+          ) -> str:
+          ''',
+              '''    asset_names: dict[str, str],
+              currency: str,
+              asset_order: list[str],
+          ) -> str:
+          ''',
+              'assets section signature',
+          )
+          old = '''    asset_performance = _artifact(root, "portfolio_asset_performance.csv")
+              annual_assets = _artifact(root, "annual_asset_returns.csv", raw_first=True)
+              correlations = _artifact(root, "correlations.csv", raw_first=True)
+              returns_decomp = _artifact(root, "return_decomposition.csv")
+              risk_decomp = _artifact(root, "risk_decomposition.csv")
+          '''
+          new = '''    asset_performance = ad.sort_asset_frame(
+                  _artifact(root, "portfolio_asset_performance.csv"), asset_order, ticker_column="ticker"
+              )
+              annual_assets = ad.sort_asset_frame(
+                  _artifact(root, "annual_asset_returns.csv", raw_first=True), asset_order, ticker_column="ticker"
+              )
+              correlations = _artifact(root, "correlations.csv", raw_first=True)
+              returns_decomp = ad.sort_asset_frame(
+                  _artifact(root, "return_decomposition.csv"), asset_order, ticker_column="asset", strip_prefix="contribution_"
+              )
+              risk_decomp = ad.sort_asset_frame(
+                  _artifact(root, "risk_decomposition.csv"), asset_order, ticker_column="asset"
+              )
+          '''
+          text = replace_once(text, old, new, 'assets frame sort')
+          old = '''    asset_names = _asset_names(configuration)
+              currency = _currency(configuration)
+          '''
+          new = '''    base_asset_names = _asset_names(configuration)
+              asset_order = ad.asset_display_order(result, base_asset_names)
+              asset_names = ad.ordered_asset_names(base_asset_names, asset_order)
+              currency = _currency(configuration)
+          '''
+          text = replace_once(text, old, new, 'overlay asset order')
+          text = replace_once(
+              text,
+              '''            asset_names,
+                          currency,
+                      ),
+          ''',
+              '''            asset_names,
+                          currency,
+                          asset_order,
+                      ),
+          ''',
+              'assets section call',
+          )
+          old = '''        _MARKER + "\\n<style>.wide-detail-table{min-width:1850px}.asset-annual-responsive .chart-wrap{overflow-x:hidden}#risk-and-return-metrics td:first-child{white-space:nowrap}</style>\\n</head>",
+          '''
+          new = '''        _MARKER + "\\n<style>"
+                  ".wide-detail-table{min-width:1850px}"
+                  ".asset-annual-responsive .chart-wrap{overflow-x:hidden}"
+                  "#risk-and-return-metrics td:first-child{white-space:nowrap}"
+                  ".correlation-wrap{overflow-x:auto}"
+                  ".correlation-wrap .monthly-correlations{width:100%}"
+                  ".correlation-wrap .heatmap-cell{min-width:0;padding-left:6px;padding-right:6px}"
+                  ".correlation-wrap th:nth-child(1),.correlation-wrap td:nth-child(1){width:54px;white-space:nowrap}"
+                  ".correlation-wrap th:nth-child(2),.correlation-wrap td:nth-child(2){width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+                  ".correlation-wrap thead th:nth-child(n+3){white-space:normal;word-break:break-word;text-align:center;padding-left:4px;padding-right:4px}"
+                  "</style>\\n</head>",
+          '''
+          text = replace_once(text, old, new, 'correlation css')
+          path.write_text(text, encoding='utf-8')
+
+          # Move parity config to a new immutable validation run.
+          path = Path('configs/backtest-pv-reference-parity.yaml')
+          text = path.read_text(encoding='utf-8')
+          if '20260903-backtest-pv-reference-parity-yty-v5' not in text:
+              raise SystemExit('expected v5 run id')
+          path.write_text(
+              text.replace(
+                  '20260903-backtest-pv-reference-parity-yty-v5',
+                  '20260903-backtest-pv-reference-parity-yty-v6',
+                  1,
+              ),
+              encoding='utf-8',
+          )
+          PY
+      - name: Add asset-order regression contract
+        shell: bash
+        run: |
+          cat > tests/test_asset_display_order_contract.py <<'PY'
+          from pathlib import Path
+
+          import pandas as pd
+
+          from portfolio_optimizer_kr.viewer import asset_display as ad
+          from portfolio_optimizer_kr.viewer import backtest_renderer as br
+          from portfolio_optimizer_kr.viewer import pv_visual as pv
+
+
+          EXPECTED = [
+              "QQQ", "SPY", "GLD", "XLE", "TLT", "AIA", "SLV",
+              "XLF", "INDY", "EWJ", "EWY", "GDX",
+          ]
+          NAMES = {
+              "SPY": "State Street SPDR S&P 500 ETF",
+              "GLD": "SPDR Gold Shares",
+              "TLT": "iShares 20+ Year Treasury Bond ETF",
+              "QQQ": "Invesco QQQ Trust",
+              "SLV": "iShares Silver Trust",
+              "GDX": "VanEck Gold Miners ETF",
+              "AIA": "iShares Asia 50 ETF",
+              "XLF": "Financial Select Sector SPDR Fund",
+              "XLE": "Energy Select Sector SPDR Fund",
+              "EWY": "iShares MSCI South Korea ETF",
+              "EWJ": "iShares MSCI Japan ETF",
+              "INDY": "iShares India 50 ETF",
+          }
+
+
+          def result_fixture():
+              return {
+                  "configuration": {
+                      "assets": [
+                          {"symbol": ticker, "name": name}
+                          for ticker, name in NAMES.items()
+                      ]
+                  },
+                  "portfolio_definitions": {
+                      "Sample Portfolio": {"target_weights": {"SPY": .60, "GLD": .20, "TLT": .20}},
+                      "Portfolio 2": {"target_weights": {"GLD": .10, "QQQ": .30, "SLV": .10, "GDX": .10, "AIA": .20, "XLF": .10, "XLE": .10}},
+                      "Portfolio 3": {"target_weights": {"GLD": .10, "QQQ": .40, "SLV": .10, "EWY": .10, "XLE": .10, "EWJ": .10, "INDY": .10}},
+                  },
+              }
+
+
+          def test_asset_display_order_uses_aggregate_weight_then_name():
+              result = result_fixture()
+              assert ad.asset_display_order(result, NAMES) == EXPECTED
+              colors = ad.asset_color_map(EXPECTED)
+              assert len(set(colors.values())) == len(EXPECTED)
+              assert colors["SPY"] == ad.asset_color_map(EXPECTED)["SPY"]
+
+
+          def test_target_allocation_uses_global_asset_order():
+              rows = []
+              result = result_fixture()
+              for portfolio, definition in result["portfolio_definitions"].items():
+                  for ticker in NAMES:
+                      rows.append({
+                          "portfolio": portfolio,
+                          "ticker": ticker,
+                          "name": NAMES[ticker],
+                          "target_weight_pct": definition["target_weights"].get(ticker, 0) * 100,
+                      })
+              html = br._allocation_matrix(pd.DataFrame(rows), list(result["portfolio_definitions"]))
+              positions = [html.index(f"({ticker})") for ticker in EXPECTED]
+              assert positions == sorted(positions)
+
+
+          def test_correlations_are_ordered_and_use_adaptive_min_width():
+              ordered_names = ad.ordered_asset_names(NAMES, EXPECTED)
+              rows = []
+              columns = EXPECTED + ["Sample Portfolio", "Portfolio 2", "Portfolio 3", "benchmark"]
+              for ticker in EXPECTED:
+                  row = {"series": ticker}
+                  row.update({column: 1.0 if column == ticker else 0.25 for column in columns})
+                  rows.append(row)
+              html = pv.correlations_table(
+                  pd.DataFrame(rows),
+                  "State Street SPDR S&P 500 ETF",
+                  ordered_names,
+                  ["Sample Portfolio", "Portfolio 2", "Portfolio 3"],
+              )
+              header = html.split("</thead>", 1)[0]
+              assert [header.index(f">{ticker}<") for ticker in EXPECTED] == sorted(
+                  header.index(f">{ticker}<") for ticker in EXPECTED
+              )
+              body = html.split("<tbody>", 1)[1]
+              assert [body.index(f">{ticker}<") for ticker in EXPECTED] == sorted(
+                  body.index(f">{ticker}<") for ticker in EXPECTED
+              )
+              assert 'data-correlation-columns="16"' in html
+              assert 'min-width:1002px' in html
+
+
+          def test_annual_asset_colors_follow_same_global_order():
+              ordered_names = ad.ordered_asset_names(NAMES, EXPECTED)
+              frame = pd.DataFrame([
+                  {"year": 2025, "ticker": ticker, "return_pct": index + 1}
+                  for index, ticker in enumerate(reversed(EXPECTED))
+              ])
+              html = pv.annual_asset_returns_chart(frame, ordered_names)
+              labels = [f"{NAMES[ticker]} ({ticker})" for ticker in EXPECTED]
+              assert [html.index(label) for label in labels] == sorted(html.index(label) for label in labels)
+              colors = ad.asset_color_map(EXPECTED)
+              for ticker in EXPECTED:
+                  assert colors[ticker] in html
+          PY
+      - name: Install and run changed-scope tests
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+          python -m compileall -q src/portfolio_optimizer_kr
+          python -m pytest -q \
+            tests/test_asset_display_order_contract.py \
+            tests/test_backtest_pv_round1.py \
+            tests/test_pv_pagination_contract.py \
+            tests/test_active_visual_reference_contract.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_shared_end_to_end.py
+      - name: Generate immutable v6 parity run
+        shell: bash
+        run: |
+          portfolio-optimizer validate configs/backtest-pv-reference-parity.yaml
+          portfolio-optimizer run configs/backtest-pv-reference-parity.yaml --output-root runs
+          test -f runs/20260903-backtest-pv-reference-parity-yty-v6/report.html
+      - name: Browser validate ordering, colors and adaptive correlations
+        shell: bash
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          python -m http.server 8000 >/tmp/http.log 2>&1 &
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          expected = ["QQQ", "SPY", "GLD", "XLE", "TLT", "AIA", "SLV", "XLF", "INDY", "EWJ", "EWY", "GDX"]
+          url = 'http://127.0.0.1:8000/runs/20260903-backtest-pv-reference-parity-yty-v6/report.html'
+
+          def tickers_from_headers(page, selector):
+              texts = page.locator(selector).all_inner_texts()
+              return [ticker for ticker in expected if any(f'({ticker})' in text for text in texts)]
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page(viewport={"width": 1440, "height": 1200})
+              page.goto(url, wait_until='networkidle')
+
+              allocation_rows = page.locator('#allocation-matrix tbody tr td:first-child').all_inner_texts()
+              assert [next(t for t in expected if f'({t})' in row) for row in allocation_rows] == expected
+
+              annual_headers = page.locator('#annual-returns-detail thead tr:first-child th').all_inner_texts()
+              annual_assets = [next(t for t in expected if f'({t})' in h) for h in annual_headers if any(f'({t})' in h for t in expected)]
+              assert annual_assets == expected
+              monthly_headers = page.locator('#monthly-returns-detail thead tr:first-child th').all_inner_texts()
+              monthly_assets = [next(t for t in expected if f'({t})' in h) for h in monthly_headers if any(f'({t})' in h for t in expected)]
+              assert monthly_assets == expected
+
+              corr_rows = page.locator('#correlations-heatmap tbody tr td:first-child').all_inner_texts()
+              assert corr_rows == expected
+              corr_headers = page.locator('#correlations-heatmap thead th').all_inner_texts()
+              assert corr_headers[2:2+len(expected)] == expected
+              wrap = page.locator('.correlation-wrap')
+              assert wrap.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
+
+              page.set_viewport_size({"width": 850, "height": 1200})
+              assert wrap.evaluate('(el) => el.scrollWidth > el.clientWidth + 20')
+
+              page.set_viewport_size({"width": 1440, "height": 1200})
+              portfolio_assets = page.locator('#portfolio-assets tbody tr td:first-child').all_inner_texts()
+              assert portfolio_assets == expected
+              return_rows = page.locator('#portfolio-return-decomposition tbody tr td:first-child').all_inner_texts()
+              assert return_rows == expected
+              risk_rows = page.locator('#portfolio-risk-decomposition tbody tr td:first-child').all_inner_texts()
+              assert risk_rows == expected
+
+              annual_legend = page.locator('[data-chart="annual-asset-returns-chart"] .legend-item')
+              # Legend is a sibling before the chart wrapper, so inspect the nearest Assets legend block instead.
+              legend_items = page.locator('#assets .asset-annual-responsive .legend-item').all_inner_texts()
+              assert [next(t for t in expected if f'({t})' in text) for text in legend_items] == expected
+
+              annual_colors = {}
+              for item in page.locator('#assets .asset-annual-responsive .legend-item').all():
+                  text = item.inner_text()
+                  ticker = next(t for t in expected if f'({t})' in text)
+                  annual_colors[ticker] = item.locator('i').evaluate('(el) => el.style.background')
+              sample_items = page.locator('.active-contribution-panel[data-portfolio="Sample Portfolio"] .legend-item').all()
+              for item in sample_items:
+                  text = item.inner_text()
+                  ticker = next(t for t in expected if f'({t})' in text)
+                  assert item.locator('i').evaluate('(el) => el.style.background') == annual_colors[ticker]
+
+              browser.close()
+          PY
+      - name: Commit implementation and v6 run
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            src/portfolio_optimizer_kr/viewer/asset_display.py \
+            src/portfolio_optimizer_kr/viewer/backtest_renderer.py \
+            src/portfolio_optimizer_kr/viewer/pv_visual.py \
+            src/portfolio_optimizer_kr/viewer/historical_active_components.py \
+            src/portfolio_optimizer_kr/viewer/pv_round1_overlay.py \
+            tests/test_asset_display_order_contract.py \
+            configs/backtest-pv-reference-parity.yaml \
+            runs/20260903-backtest-pv-reference-parity-yty-v6
+          git commit -m 'viewer: unify asset order colors and correlation width'
+          git pull --rebase origin bt-module
+          git push origin HEAD:bt-module
