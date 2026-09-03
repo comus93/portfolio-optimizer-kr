@@ -8,10 +8,10 @@
 
 ```text
 1. Analysis Runtime
-   data -> stats -> optimization -> portfolio path -> analytics
+   data -> shared statistics -> product-specific generation -> shared portfolio path -> shared analytics
 
 2. Persistence / Presentation
-   canonical result -> raw/review tables -> self-contained report.html
+   canonical result -> raw/review tables -> product composition + shared report components -> self-contained report.html
 
 3. Research Interaction
    study / experiment / execution control / AI handoff
@@ -45,45 +45,49 @@ GitHub는 optimizer runtime이 아니라 source/version/history와 LLM-Agent bri
 
 ## 3. High-level Flow
 
+제품별 request와 portfolio 생성 방식은 분리하지만, 생성된 target weights 이후의 simulation/evaluation/persistence와 동일 의미의 historical presentation은 공유한다.
+
 ```text
+Optimization
 User / GPT / Agent
         |
         v
-YAML experiment / Streamlit / control/execute.yaml
+YAML / Streamlit / control
         |
         v
-Runner
+Runner -> OptimizationRequest
         |
         v
-OptimizationRequest
+market-data / shared statistics
         |
-        v
-Analysis Pipeline
-  |       |        |         |
- Data   Stats   Optimize   Portfolio
-                    \       /
-                     Analytics
-                        |
-                        v
-                 Canonical Result
-                        |
-                 +------+------+ 
-                 |             |
-             raw/review     report model
-                 |             |
-                 v             v
-             CSV artifacts  report.html
+objective / constraints / solver / frontier
+        |
+optimized or provided target weights
+        |
+        +-----------------------------+
+                                      v
+Backtest                         shared portfolio-simulation
+User / GPT / Agent                    |
+        |                             v
+        v                        shared portfolio-analytics
+YAML / Streamlit / control             |
+        |                             v
+        v                        canonical result
+Runner -> BacktestRequest              |
+        |                       raw/review artifacts
+        v                             |
+market-data / shared statistics        v
+        |                       product report composition
+user-defined target weights            |
+        +-----------------------------+
+                                      v
+                         shared historical report components
+                                      |
+                                      v
+                               report.html
 ```
 
-모든 실행 surface는 동일 YAML contract와 runner로 수렴한다.
-
-```text
-Direct CLI ─┐
-Streamlit ──┼─> YAML Runner -> OptimizationRequest -> analyze_prices()
-Research ───┘
-```
-
-별도 GPT 전용 optimizer path를 만들지 않는다.
+모든 실행 surface는 동일 runner/persistence 방향으로 수렴하되 product request는 억지로 하나의 schema에 합치지 않는다.
 
 ---
 
@@ -93,16 +97,17 @@ Research ───┘
 src/portfolio_optimizer_kr/
 ├─ config/        YAML parsing / validation
 ├─ data/          FDR loading / FX / month-end normalization
-├─ stats/         expected return / covariance / volatility
-├─ optimize/      CVXPY optimization / frontier
-├─ portfolio/     rebalancing / historical path
-├─ analytics/     performance / active / drawdown / decomposition
-├─ report/        canonical JSON + raw/review persistence
-├─ viewer/        presentation model + final HTML renderer
-├─ models.py      canonical request/spec models
-├─ pipeline.py    analysis orchestration
+├─ stats/         shared expected return / covariance / volatility / correlation
+├─ optimize/      Optimization-only objective / CVXPY solver / frontier
+├─ portfolio/     shared rebalancing / historical path simulation
+├─ analytics/     shared performance / active / drawdown / decomposition
+├─ report/        shared canonical JSON + raw/review persistence
+├─ viewer/        product composition + shared historical presentation components
+├─ models.py      product-specific canonical request/spec models
+├─ pipeline.py    Optimization orchestration
+├─ backtest.py    Backtest orchestration
 ├─ research.py    study/control/provenance orchestration
-├─ runner.py      YAML-to-run orchestration
+├─ runner.py      YAML-to-product-run orchestration
 └─ cli.py         CLI entrypoint
 ```
 
@@ -118,20 +123,37 @@ CLI / UI / Research Control
   Configuration / Models
           |
           v
-      Pipeline
-          |
-   +------+------+-------+
-   |      |      |       |
- Data   Stats  Optimize Portfolio
-                   \     /
-                  Analytics
-                     |
-                  Reporting
-                     |
-                   Viewer
+ product orchestration
+   |            |
+   v            v
+market-data   shared statistics
+   |            |
+   +------ product generation -------+
+                                     |
+                                     v
+                          shared portfolio simulation
+                                     |
+                                     v
+                          shared portfolio analytics
+                                     |
+                                     v
+                             shared reporting
+                                     |
+                                     v
+                      product composition / viewer
 ```
 
-Core analytics는 Study, GitHub message, browser DOM을 알지 않는다.
+Core statistics/simulation/analytics는 Study, GitHub message, browser DOM을 알지 않는다.
+
+### Shared capability principle
+
+공통 backend capability와 product별 사용 policy를 구분한다.
+
+- expected return/covariance/volatility/correlation 계산기는 shared statistics다.
+- Optimization은 shared statistics를 ex-ante weight 탐색에 사용한다.
+- Backtest가 현재 특정 shared statistic을 사용하지 않는 것은 허용되지만 별도 product-specific 계산기를 만들 이유가 되지 않는다.
+- rebalancing engine과 portfolio path generation은 shared simulation capability다.
+- Backtest의 run-level rebalancing은 UI/input policy이며 backend engine의 별도 구현을 의미하지 않는다.
 
 ---
 
@@ -160,7 +182,7 @@ Pipeline 이후 계층에는 정규화된 return matrix와 effective RF가 전�
 Data coverage는 run artifact에 남긴다.
 
 ```text
-data_coverage.optimization_monthly_returns
+data_coverage.optimization_monthly_returns or backtest_monthly_returns
 data_coverage.benchmark_overlap
 data_coverage.asset_prices
 ```
@@ -169,30 +191,58 @@ data_coverage.asset_prices
 
 ## 6. Analysis Architecture
 
-### Optimization statistics
+### Shared statistics
 
 ```text
 monthly returns
- -> annual expected returns
- -> annual covariance
- -> annual volatility
+ -> expected returns
+ -> covariance
+ -> volatility
+ -> correlation
+```
+
+위 계산 capability는 product-neutral이다. Optimization은 이를 ex-ante objective/solver 입력으로 사용할 수 있고, Historical Analytics는 covariance/correlation을 realized evaluation이나 decomposition에 사용할 수 있다.
+
+### Optimization-only generation
+
+```text
+shared statistics
+ -> objective / constraints
  -> constrained optimization
+ -> optimized weights
  -> efficient frontier
 ```
 
-Ex-ante optimization statistics와 realized historical statistics는 분리한다.
+Optimization 전용 경계는 수학 계산기 자체가 아니라 **weight를 찾기 위한 search policy와 결과**다.
 
 ### Portfolio path
 
-Provided와 Optimized portfolio는 동일 monthly asset return matrix를 이용한다.
+Provided, Optimized, Backtest user-defined portfolio는 모두 동일 monthly asset return matrix와 shared portfolio path engine을 이용한다.
 
-Rebalancing policy는 portfolio layer가 담당한다.
+Rebalancing policy는 portfolio layer가 담당한다. Product UI가 하나의 rebalancing setting을 여러 portfolio에 공통 적용할 수 있지만, 실제 계산 엔진은 공유한다.
 
 ```text
-monthly
-or
-yearly drift + calendar-year rebalance
+none / monthly / quarterly / semiannual / yearly
+calendar aligned or first-active-month anchored
+canonical drift between rebalance events
 ```
+
+동일 target weights와 동일 market-data/simulation setting이면 weight의 출처와 관계없이 동일 return/weight path를 만들어야 한다.
+
+### Shared historical analytics
+
+```text
+CAGR / annualized return / volatility
+Sharpe / Sortino
+trailing / annual / monthly / rolling returns
+drawdown series / episodes
+asset performance
+correlation / return-risk decomposition
+benchmark-relative active return / tracking error / information ratio
+active contribution / rolling active-risk / conditional benchmark analytics
+```
+
+동일 historical evaluation 의미를 product별 orchestration에서 복제 구현하지 않는다. Product orchestration은 portfolio identity와 applicable input을 shared analytics에 전달하고 결과를 canonical domain/artifact로 조립한다.
 
 ### Benchmark / active analytics
 
@@ -205,6 +255,7 @@ tracking error
 information ratio
 rolling active return
 rolling tracking error
+conditional benchmark-relative analytics
 ```
 
 을 계산한다.
@@ -251,6 +302,8 @@ Interactive presentation      report.html
 Validation evidence           validation/
 ```
 
+공통 historical analytics는 product report가 재계산하지 않도록 canonical result 또는 raw/review artifact에 필요한 identity와 series를 loss 없이 보존한다.
+
 기존 run directory를 silent overwrite하지 않는다.
 
 ---
@@ -259,21 +312,45 @@ Validation evidence           validation/
 
 `report.html`은 persisted run artifact에서 만든 **self-contained static research viewer**다.
 
+개념 구조:
+
 ```text
 run artifacts
     |
-builder.py
+report model / artifact adapter
     |
-ReportModel
-    |
-renderer layers
-    |
-final_renderer.py
-    |
-report.html with inline JSON / SVG / JS
+product report composition
+    |------------------------------|
+    |                              |
+product-specific sections   shared historical report components
+    |                              |
+    +--------------+---------------+
+                   |
+                   v
+               report.html
 ```
 
-현재 renderer는 historical compatibility layer 위에 corrective presentation layer를 순차 적용한다.
+Optimizer와 Backtest의 top-level report composition은 달라도 된다. 그러나 동일 canonical 의미의 historical section은 shared component를 재사용한다.
+
+예:
+
+```text
+Shared historical report components
+├─ Performance Summary
+├─ Portfolio Growth
+├─ Trailing / Annual / Monthly Returns
+├─ Drawdowns
+├─ Portfolio Asset Performance
+├─ Correlations
+├─ Return / Risk Decomposition
+├─ Annual Asset Returns
+├─ Rolling Returns
+└─ applicable benchmark-relative views
+```
+
+Optimization-only Efficient Frontier/constraints/optimized allocation과 Backtest-only overview/portfolio comparison 같은 section 선택과 순서는 product composition이 담당한다.
+
+현재 legacy Optimizer renderer는 historical compatibility layer 위에 corrective presentation layer를 순차 적용하고 있다.
 
 ```text
 base renderer
@@ -283,47 +360,53 @@ base renderer
  -> final_renderer
 ```
 
-`final_renderer.py`가 public generation boundary다.
+기능 안정화 과정에서 shared historical component를 추출하여 Optimizer와 Backtest가 동일 구현을 소비하도록 정리한다. 동일 의미의 section을 별도 renderer에 계속 복제하는 것은 target architecture가 아니다.
 
 중요 원칙:
 
-- canonical finance result는 Python runtime이 계산한다.
+- canonical finance result는 Python runtime의 shared statistics/simulation/analytics가 계산한다.
+- raw/review artifact는 shared calculation 결과를 presentation에 필요한 형태로 보존한다.
 - browser JS는 layout, formatting, interaction만 담당한다.
-- UI layer에서 finance series를 다른 convention으로 새로 계산하지 않는다.
-- final renderer가 missing presentation-only derived value를 보완하더라도 canonical result의 의미를 변경하지 않는다.
-
-향후 renderer layer가 과도하게 누적되면 기능 안정화 후 하나의 consolidated renderer로 정리할 수 있다. 현재는 regression risk를 줄이기 위해 corrective layer 방식을 유지한다.
+- UI layer에서 finance metric/series를 다른 convention으로 새로 계산하지 않는다.
+- chart coordinate transform, axis domain, tooltip selection, display ordering, presentation-only binning은 viewer 책임일 수 있다.
+- 동일 historical section의 calculation뿐 아니라 renderer/report component도 가능한 한 공유하며 product layer는 composition을 담당한다.
 
 ---
 
 ## 9. Interactive Report Presentation
 
-핵심 section:
+공통 historical section 후보:
 
 ```text
-Provided / Optimized allocation
 Performance Summary
 Portfolio Growth
 Annual Returns
 Trailing Returns
-Efficient Frontier Assets
-Asset Correlations
-Efficient Frontier
-Frontier Transition
-Frontier Portfolios
 Annualized Active Return
 Active Return Contribution
 Rolling Active Return and Risk
 Up vs. Down Market
 Portfolio Metrics
 Monthly Returns
-Drawdowns / Stress / Worst Drawdowns
+Drawdowns / Worst Drawdowns
 Portfolio Asset Performance
 Portfolio / Asset Correlations
 Return / Risk Decomposition
 Annual Asset Returns
 Rolling Returns Summary / 3Y / 5Y
 ```
+
+Optimization 전용 section:
+
+```text
+Efficient Frontier Assets
+Efficient Frontier
+Frontier Transition
+Frontier Portfolios
+Optimization constraints / optimized allocation
+```
+
+Backtest 전용 composition에는 Time Period, initial balance, named portfolio collection, Calendar Aligned와 target allocation comparison 등이 포함될 수 있다.
 
 Rolling Active Return and Risk는 dual-axis combo chart다.
 
@@ -358,24 +441,9 @@ studies/<study-id>/experiments/*.yaml
 
 Experiment 자체가 executable YAML이다. 별도 DB manifest를 만들지 않는다.
 
-Experiment identity는 **optimizer Asset Universe의 종목 집합**으로 결정한다.
+Experiment identity는 product가 정의하는 asset/ticker universe 규칙을 따른다. Optimization과 Backtest의 구체 identity policy는 각 product spec에 둔다.
 
-```text
-Asset Universe 동일 -> 같은 Experiment
-종목 추가 / 삭제 / 교체 -> 새 Experiment
-```
-
-기간, Provided weights, min/max constraints, objective, target volatility, rebalancing, benchmark, risk-free convention 등 종목 집합을 바꾸지 않는 조건 변경은 같은 Experiment의 새 Run으로 관리한다.
-
-각 Run의 실제 조건은 `runs/<run_id>/input.yaml`에 snapshot으로 보존한다. 따라서 조건 변경을 표현하기 위한 Experiment `r01/r02` revision 파일은 신규 운영 규칙에서 사용하지 않는다.
-
-신규 운영 파일 예:
-
-```text
-001-qqq-spmo-gld.yaml
-002-qqq-spmo.yaml
-003-qqq-spmo-xle.yaml
-```
+각 Run의 실제 조건은 `runs/<run_id>/input.yaml`에 snapshot으로 보존한다. 따라서 같은 Experiment에서 조건이 달라져도 실행 시점의 effective input을 복원할 수 있다.
 
 ### Execution control
 
@@ -400,7 +468,7 @@ run: true  현재 target을 한 번 실행하라는 요청
 
 일반 research execution에서는 `control/execute.yaml`의 main push가 GitHub Actions trigger다. Action은 `run: true`일 때만 `portfolio-optimizer execute`를 호출하고, 성공한 요청은 최신 요청을 덮어쓰지 않는 조건에서 `run: false`로 consume한다.
 
-`portfolio-optimizer execute`는 새 optimizer가 아니라 target resolution + 기존 runner 호출 orchestration이다.
+`portfolio-optimizer execute`는 새 optimizer/backtester가 아니라 target resolution + 기존 runner 호출 orchestration이다.
 
 ### Provenance
 
@@ -437,6 +505,8 @@ LLM design / Codex implementation
 4. browser/E2E validation when needed
 5. PV live / golden comparison for report work
 ```
+
+Shared capability를 변경하면 해당 capability를 소비하는 제품의 affected-scope regression을 포함한다. 예를 들어 shared simulation/analytics/report component 변경은 Optimization과 Backtest 중 실제 영향을 받는 양쪽을 검증한다.
 
 LLM sandbox가 network/resource 제약으로 repo checkout을 수행할 수 없는 경우 GitHub-side implementation + targeted CI를 1차 검증으로 사용할 수 있다. Agent real-environment validation은 별도 독립 검증으로 유지한다.
 
@@ -486,6 +556,13 @@ Project rules를 PROTOCOL에 중복하지 않는다. Project-specific source of 
 - solver failure
 - invalid residual / non-finite result
 
+### Shared simulation / analytics
+
+- 동일 input에서 product별 historical path divergence
+- 동일 metric의 product별 계산 convention divergence
+- portfolio/asset identity loss
+- benchmark-relative calculation mismatch
+
 ### Persistence
 
 - run-id collision
@@ -495,6 +572,7 @@ Project rules를 PROTOCOL에 중복하지 않는다. Project-specific source of 
 ### Presentation
 
 - canonical result missing required fields
+- shared historical section을 product별로 다르게 해석
 - semantic X/Y mismatch
 - missing treated as zero
 - wrong monetary/percentage unit
@@ -531,7 +609,7 @@ Batch experiment execution
 Cross-run comparison aggregation
 Study navigation/search
 Remote execution / notification
-Consolidated final report renderer
+Consolidated shared historical report components
 Additional risk/performance metrics
 Additional market-data providers
 ```
@@ -539,9 +617,12 @@ Additional market-data providers
 확장 시에도 다음을 유지한다.
 
 ```text
-YAML contract
-single analysis pipeline
-canonical result
-calculation/presentation separation
+product-specific request / generation policy
+shared market data and statistics
+shared portfolio simulation
+shared historical analytics
+shared run artifacts
+shared historical report components
+product-specific report composition
 reproducible run artifact
 ```
