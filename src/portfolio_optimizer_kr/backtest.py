@@ -14,13 +14,13 @@ from portfolio_optimizer_kr.analytics import (
     trailing_returns,
 )
 from portfolio_optimizer_kr.analytics import historical
-from portfolio_optimizer_kr.models import BacktestRequest
-from portfolio_optimizer_kr.pipeline import (
-    _annual_rf,
-    _asset_price_coverage,
-    _benchmark_returns,
+from portfolio_optimizer_kr.data.preparation import (
+    asset_price_coverage as _asset_price_coverage,
+    prepare_benchmark_returns as _benchmark_returns,
     prepare_monthly_returns,
+    resolve_annual_rf as _annual_rf,
 )
+from portfolio_optimizer_kr.models import BacktestRequest
 from portfolio_optimizer_kr.portfolio import PortfolioPath, build_portfolio_path
 from portfolio_optimizer_kr.stats import annualized_statistics
 
@@ -49,10 +49,8 @@ def analyze_backtest_prices(
     annual_rf: float | None = None,
 ) -> dict:
     """Backtest product orchestration over shared data/simulation/analytics."""
-    monthly_returns = prepare_monthly_returns(  # type: ignore[arg-type]
-        request, prices, usdkrw
-    )
-    rf = _annual_rf(request, annual_rf)  # type: ignore[arg-type]
+    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
+    rf = _annual_rf(request, annual_rf)
 
     paths: dict[str, PortfolioPath | _BenchmarkPath] = {}
     for portfolio in request.portfolios:
@@ -63,9 +61,7 @@ def analyze_backtest_prices(
             calendar_aligned=request.calendar_aligned,
         )
 
-    benchmark_returns = _benchmark_returns(  # type: ignore[arg-type]
-        request, prices, usdkrw
-    )
+    benchmark_returns = _benchmark_returns(request, prices, usdkrw)
     if benchmark_returns is not None:
         benchmark_returns = benchmark_returns.loc[
             monthly_returns.index.min() : monthly_returns.index.max()
@@ -204,9 +200,7 @@ def analyze_backtest_prices(
     metrics_table = historical.portfolio_metrics_table(
         paths, benchmark_returns, rf
     )
-    asset_price_coverage = _asset_price_coverage(  # type: ignore[arg-type]
-        request, prices
-    )
+    asset_price_coverage = _asset_price_coverage(request, prices)
 
     portfolio_definitions = {
         portfolio.name: {
