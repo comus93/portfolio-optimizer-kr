@@ -1,2 +1,2 @@
 target: studies/global-multi-asset-allocation/experiments/001-spy-qqq-tlt-gld-cper-mchi-ewy.yaml
-run: true
+run: false
