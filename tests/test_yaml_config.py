@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from portfolio_optimizer_kr.config.yaml import ConfigValidationError, load_run_config
-from portfolio_optimizer_kr.models import OptimizationObjective, RebalancingPeriod, RiskFreeMode
+from portfolio_optimizer_kr.models import OptimizationObjective, ProductMode, RebalancingPeriod, RiskFreeMode
 
 
 def _write(tmp_path: Path, text: str) -> Path:
@@ -12,10 +12,28 @@ def _write(tmp_path: Path, text: str) -> Path:
     return path
 
 
+def test_yaml_requires_explicit_product_mode(tmp_path):
+    path = _write(
+        tmp_path,
+        """
+run_id: missing-mode
+assets:
+  - symbol: A
+  - symbol: B
+risk_free:
+  mode: fixed
+  annual_rate_pct: 0
+""",
+    )
+    with pytest.raises(ConfigValidationError, match="product_mode is required"):
+        load_run_config(path)
+
+
 def test_yaml_percent_fields_convert_to_canonical_request(tmp_path):
     path = _write(
         tmp_path,
         """
+product_mode: optimization
 run_id: demo
 analysis_period:
   start: 2020-01-01
@@ -48,6 +66,7 @@ fx: {}
     spec = load_run_config(path)
     request = spec.request
 
+    assert spec.product_mode is ProductMode.OPTIMIZATION
     assert request.run_id == "demo"
     assert request.start == "2020-01-01"
     assert request.end == "2024-12-31"
@@ -67,6 +86,7 @@ def test_yaml_rejects_partial_or_non_100_provided_weights(tmp_path):
     partial = _write(
         tmp_path,
         """
+product_mode: optimization
 run_id: bad
 assets:
   - symbol: A
@@ -83,6 +103,7 @@ risk_free:
     non_100 = _write(
         tmp_path,
         """
+product_mode: optimization
 run_id: bad
 assets:
   - symbol: A
@@ -102,6 +123,7 @@ def test_target_volatility_requires_explicit_percent_value(tmp_path):
     path = _write(
         tmp_path,
         """
+product_mode: optimization
 run_id: target
 assets:
   - symbol: A
