@@ -1,2 +1,2 @@
 target: studies/qqq-spy-gld-ief-backtest/experiments/001-qqq-spy-gld-ief.yaml
-run: false
+run: true
