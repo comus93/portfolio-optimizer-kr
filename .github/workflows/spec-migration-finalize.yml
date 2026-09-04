@@ -1,0 +1,103 @@
+name: Finalize OpenSpec migration docs
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - '.github/workflows/spec-migration-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bt-module
+          fetch-depth: 0
+      - name: Update OpenSpec and bootstrap docs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'missing expected block in {path}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          report = Path('openspec/changes/bt-module/specs/research-report/spec.md')
+          text = report.read_text(encoding='utf-8')
+          marker = '### Requirement: Combined asset identity uses stacked name and ticker'
+          if marker not in text:
+              text += '''\n\n### Requirement: Combined asset identity uses stacked name and ticker\n사용자-facing report에서 asset `Name`과 `Ticker`를 하나의 label/header/legend item으로 함께 표시할 때는 종목명을 첫 줄에, 괄호로 감싼 ticker를 다음 줄에 표시해야 한다(MUST). `Name (TICKER)`를 한 줄 문자열로 반복해서 사용해서는 안 된다(MUST NOT). Name이 unavailable이면 ticker만 표시할 수 있다(MAY).\n\n#### Scenario: annual/monthly return asset header\n- GIVEN asset name이 `Invesco QQQ Trust Series 1`이고 ticker가 `QQQ`이다\n- WHEN Annual Returns 또는 Monthly Returns의 asset identity header를 표시한다\n- THEN `Invesco QQQ Trust Series 1` 다음 줄에 `(QQQ)`를 표시한다\n\n#### Scenario: chart legend asset identity\n- GIVEN 여러 constituent asset의 Name/Ticker를 chart legend에 함께 표시한다\n- WHEN legend를 렌더링한다\n- THEN 각 item은 Name과 `(Ticker)`를 두 줄 identity로 표시해 긴 한 줄 label이 연속되지 않게 한다\n\n### Requirement: Backtest Monthly Correlations presentation is constituent-only\nBacktest report의 `Monthly Correlations`는 canonical Backtest constituent-asset correlation matrix만 표시해야 하며 portfolio return series 또는 별도 benchmark series를 row/column으로 추가해서는 안 된다(MUST NOT). Benchmark ticker가 constituent asset이기도 한 경우에는 constituent asset으로 한 번 표시해야 한다(MUST).\n\n#### Scenario: benchmark is also SPY constituent\n- GIVEN portfolio constituents가 QQQ/SPY/GLD/IEF이고 benchmark도 SPY이다\n- WHEN Monthly Correlations를 표시한다\n- THEN QQQ/SPY/GLD/IEF asset matrix만 표시하고 `Portfolio 1` 또는 별도 `Benchmark` row/column을 추가하지 않는다\n'''
+              report.write_text(text, encoding='utf-8')
+
+          replace(
+              'openspec/changes/bt-module/design.md',
+              '''## Internal Baseline\n\n기존 문서는 Backtest 설계 baseline으로 사용한다.\n\n```text\nFinance / calculation behavior   docs/specification.md\nReport UI / interaction          docs/report-ui-specification.md\nInput / YAML / runner / viewer   docs/input-ui-contract.md\nArchitecture / responsibility    docs/architecture.md\nValidation procedure             docs/visual-acceptance-contract.md\nResearch execution               docs/research-operation-pipeline.md\nLLM research input               docs/llm-research-input-contract.md\nLLM result analysis              docs/llm-analysis-framework.md\n```\n\nBacktest-specific 신규/변경 사항은 `openspec/changes/bt-module/`에서 정의하고, 확정된 Research Frontend/analysis contract는 위 canonical docs에 반영한다.\n''',
+              '''## Internal Baseline\n\n2026-09-04부터 기존 `docs/specification.md`가 소유하던 finance/calculation/product semantics는 `openspec/specs/`의 capability baseline으로 마이그레이션되었다. `docs/specification.md`는 compatibility pointer다.\n\n```text\nFinance / calculation behavior   openspec/specs/{portfolio-optimization,market-data,portfolio-simulation,portfolio-analytics,run-artifacts,research-report}/spec.md\nReport UI / interaction          docs/report-ui-specification.md            # remaining migration baseline\nInput / YAML / runner / viewer   docs/input-ui-contract.md                  # remaining migration baseline\nArchitecture / responsibility    docs/architecture.md                      # remaining migration baseline\nValidation procedure             docs/visual-acceptance-contract.md         # remaining migration baseline\nResearch execution               docs/research-operation-pipeline.md        # remaining migration baseline\nLLM research input               docs/llm-research-input-contract.md        # execution guide/baseline\nLLM result analysis              docs/llm-analysis-framework.md             # execution guide/baseline\n```\n\nBacktest-specific 신규/변경 사항은 `openspec/changes/bt-module/`에서 baseline OpenSpec에 대한 delta로 정의한다. 아직 OpenSpec으로 완전히 이관되지 않은 capability에 한해서만 위 `docs/` migration baseline을 함께 적용한다.\n'''
+          )
+
+          design = Path('openspec/changes/bt-module/design.md')
+          text = design.read_text(encoding='utf-8')
+          anchor = '''### D11 Display Income\n\nv1에서 제외한다. Canonical total return은 유지하되 dividend/distribution income 자체를 별도 series/report로 분해하지 않는다.\n'''
+          addition = anchor + '''\n### D12 Combined asset identity presentation\n\nReport에서 asset Name과 Ticker를 하나의 사용자-facing identity로 함께 표시할 때는 `Name`을 첫 줄, `(Ticker)`를 다음 줄에 표시한다. 이 규칙은 chart legend와 Annual/Monthly return detail header 등 combined identity를 사용하는 영역에 공통 적용한다.\n\n### D13 Backtest correlation scope\n\nBacktest `Monthly Correlations`의 canonical matrix와 report presentation은 constituent asset 간 monthly-return correlation만 포함한다. Portfolio return series와 별도 benchmark series는 correlation 대상에서 제외한다. Benchmark ticker가 constituent이기도 하면 constituent asset으로 한 번 유지한다.\n'''
+          if '### D12 Combined asset identity presentation' not in text:
+              if anchor not in text:
+                  raise SystemExit('missing D11 anchor')
+              design.write_text(text.replace(anchor, addition, 1), encoding='utf-8')
+
+          replace(
+              'AGENTS.md',
+              '''기존 capability 중 아직 OpenSpec으로 이관되지 않은 상세 contract는 기존 `docs/` 문서가 baseline이다. `migrate-optimizer-to-openspec` change가 완료되어 migration parity가 확인된 capability부터 `openspec/specs/`가 normative source가 되고 동일 요구의 기존 `docs/` 내용은 reference/설명 역할로 전환한다.\n''',
+              '''`openspec/specs/`는 이미 마이그레이션된 capability의 normative baseline이다. 2026-09-04부터 기존 `docs/specification.md`의 finance/calculation/product semantics는 OpenSpec으로 이관되었고 해당 문서는 compatibility pointer로만 유지한다. 아직 완전히 이관되지 않은 report UI, input/runtime, architecture, validation, research-operation capability는 관련 `docs/` 문서를 migration baseline으로 함께 사용한다.\n'''
+          )
+
+          replace(
+              'LLM-README.md',
+              '''MUST\n1. docs/research-operation-pipeline.md\n2. docs/llm-analysis-framework.md\n3. docs/llm-research-input-contract.md\n4. docs/specification.md\n5. docs/architecture.md\n\nCONDITIONAL\n6. docs/report-ui-specification.md        # report/UI 작업 또는 결과 화면 검토 시\n7. AGENTS.md                              # 시스템 개발/수정 작업 시\n''',
+              '''MUST\n1. openspec/config.yaml\n2. 관련 openspec/specs/<capability>/spec.md\n3. active change가 있으면 openspec/changes/<change>/의 proposal/spec/design/tasks\n4. docs/research-operation-pipeline.md\n5. docs/llm-analysis-framework.md\n6. docs/llm-research-input-contract.md\n7. docs/architecture.md\n\nCONDITIONAL\n8. docs/report-ui-specification.md        # 아직 OpenSpec migration baseline, report/UI 작업 시\n9. AGENTS.md                              # 시스템 개발/수정 작업 시\n'''
+          )
+          replace(
+              'LLM-README.md',
+              '''금융 계산 의미론                docs/specification.md\n시스템 구조                     docs/architecture.md\n''',
+              '''금융 계산 / product semantics   openspec/specs/ + active openspec/changes/\n시스템 구조                     docs/architecture.md\n'''
+          )
+
+          tasks = Path('openspec/changes/bt-module/tasks.md')
+          text = tasks.read_text(encoding='utf-8')
+          for item in (
+              '`portfolio-backtest` requirement 최종 parity review',
+              '`market-data` total-return delta review',
+              '`portfolio-simulation` calendar/non-calendar rebalancing/wealth delta review',
+              '`run-artifacts` product-mode/multi-portfolio/Time-Period/schedule-setting delta review',
+              '`research-report` Backtest section/applicability/balance/schedule semantics review',
+              '`research-execution` union-ticker Experiment identity review',
+              '`research-input` confirmed defaults/decision boundary review',
+              '`research-analysis` product-mode branch boundary review',
+              '`agent-verification` conditional human-review gate review',
+          ):
+              text = text.replace(f'- [ ] {item}', f'- [x] {item}')
+          report_anchor = '- [ ] identity/unit/N/A/axis/tooltip/responsive existing contract regression\n'
+          report_add = report_anchor + '- [x] combined asset identity를 `Name` + 줄바꿈 + `(Ticker)`로 통일하고 Annual/Monthly detail header 및 asset legend regression 반영\n- [x] Backtest Monthly Correlations를 constituent asset-only canonical/report scope로 제한하고 portfolio/별도 benchmark series 제외\n'
+          if 'combined asset identity를 `Name`' not in text:
+              if report_anchor not in text:
+                  raise SystemExit('missing tasks report anchor')
+              text = text.replace(report_anchor, report_add, 1)
+          tasks.write_text(text, encoding='utf-8')
+
+      - name: Commit migration consistency updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openspec/changes/bt-module/specs/research-report/spec.md openspec/changes/bt-module/design.md openspec/changes/bt-module/tasks.md AGENTS.md LLM-README.md
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "spec: align bt-module with OpenSpec baseline migration"
+            git push origin HEAD:bt-module
+          fi
