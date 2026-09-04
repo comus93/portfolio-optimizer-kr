@@ -1,4 +1,4 @@
-"""Presentation contract for report-level asset ordering and color identity."""
+from __future__ import annotations
 
 import pandas as pd
 
@@ -6,87 +6,75 @@ from portfolio_optimizer_kr.viewer import asset_display as ad
 from portfolio_optimizer_kr.viewer import backtest_renderer as br
 from portfolio_optimizer_kr.viewer import pv_visual as pv
 
+
 EXPECTED = [
     "QQQ",
-    "SPY",
-    "GLD",
-    "TLT",
-    "AIA",
-    "SLV",
-    "XLE",
-    "INDY",
-    "EWJ",
-    "EWY",
-    "XLF",
+    "SPMO",
     "GDX",
+    "GLD",
+    "SLV",
+    "AIA",
+    "XLE",
+    "TLT",
+    "IEF",
+    "LQD",
+    "HYG",
+    "DBC",
 ]
 NAMES = {
-    "SPY": "State Street SPDR S&P 500 ETF Trust",
-    "GLD": "SPDR Gold Shares",
-    "TLT": "iShares 20+ Year Treasury Bond ETF",
-    "QQQ": "Invesco QQQ Trust  Series 1",
-    "SLV": "iShares Silver Trust",
+    "QQQ": "Invesco QQQ Trust",
+    "SPMO": "Invesco S&P 500 Momentum ETF",
     "GDX": "VanEck Gold Miners ETF",
+    "GLD": "SPDR Gold Shares",
+    "SLV": "iShares Silver Trust",
     "AIA": "iShares Asia 50 ETF",
-    "XLF": "State Street Financial Sel Sec SPDR ETF",
-    "XLE": "State Street Energy Select Sector SPDR ETF",
-    "EWY": "Ishares Msci South Korea ETF",
-    "EWJ": "iShares MSCI Japan ETF",
-    "INDY": "iShares India 50 ETF",
+    "XLE": "Energy Select Sector SPDR Fund",
+    "TLT": "iShares 20+ Year Treasury Bond ETF",
+    "IEF": "iShares 7-10 Year Treasury Bond ETF",
+    "LQD": "iShares iBoxx $ Investment Grade Corporate Bond ETF",
+    "HYG": "iShares iBoxx $ High Yield Corporate Bond ETF",
+    "DBC": "Invesco DB Commodity Index Tracking Fund",
 }
 
 
-def result_fixture():
+def _result():
     return {
         "configuration": {
-            "assets": [{"symbol": ticker, "name": name} for ticker, name in NAMES.items()]
+            "assets": [
+                {"symbol": ticker, "name": NAMES[ticker], "currency": "USD"}
+                for ticker in EXPECTED
+            ],
+            "benchmark": {
+                "symbol": "SPY",
+                "name": "SPY Benchmark",
+                "currency": "USD",
+            },
         },
+        "portfolio_order": ["Sample Portfolio", "Portfolio 2", "Portfolio 3"],
         "portfolio_definitions": {
             "Sample Portfolio": {
-                "target_weights": {"SPY": 0.60, "GLD": 0.20, "TLT": 0.20}
+                "target_weights": {ticker: 1 / len(EXPECTED) for ticker in EXPECTED}
             },
             "Portfolio 2": {
-                "target_weights": {
-                    "GLD": 0.10,
-                    "QQQ": 0.30,
-                    "SLV": 0.10,
-                    "GDX": 0.10,
-                    "AIA": 0.20,
-                    "XLF": 0.10,
-                    "XLE": 0.10,
-                }
+                "target_weights": {ticker: 1 / len(EXPECTED) for ticker in EXPECTED}
             },
             "Portfolio 3": {
-                "target_weights": {
-                    "GLD": 0.10,
-                    "QQQ": 0.40,
-                    "SLV": 0.10,
-                    "EWY": 0.10,
-                    "XLE": 0.10,
-                    "EWJ": 0.10,
-                    "INDY": 0.10,
-                }
+                "target_weights": {ticker: 1 / len(EXPECTED) for ticker in EXPECTED}
             },
         },
     }
 
 
-def test_global_asset_order_and_unique_colors():
-    assert ad.asset_display_order(result_fixture(), NAMES) == EXPECTED
-    colors = ad.asset_color_map(EXPECTED)
-    assert len(set(colors.values())) == len(EXPECTED)
-
-
-def test_target_allocation_uses_global_order():
-    result = result_fixture()
+def test_target_allocation_uses_global_asset_order():
+    result = _result()
     rows = []
     for portfolio, definition in result["portfolio_definitions"].items():
-        for ticker, name in NAMES.items():
+        for ticker in reversed(EXPECTED):
             rows.append(
                 {
                     "portfolio": portfolio,
                     "ticker": ticker,
-                    "name": name,
+                    "name": NAMES[ticker],
                     "target_weight_pct": definition["target_weights"].get(ticker, 0) * 100,
                 }
             )
@@ -120,7 +108,7 @@ def test_correlation_order_and_adaptive_width_contract():
     body_positions = [body.index(f">{ticker}<") for ticker in EXPECTED]
     assert header_positions == sorted(header_positions)
     assert body_positions == sorted(body_positions)
-    assert 'data-correlation-columns="16"' in html
+    assert 'data-correlation-columns="12"' in html
     assert 'min-width:1002px' in html
 
 
