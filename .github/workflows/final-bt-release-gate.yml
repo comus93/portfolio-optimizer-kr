@@ -1,4 +1,4 @@
-name: Inspect bt-module OpenSpec archive inputs
+name: Sync bt-module OpenSpec delta
 
 on:
   push:
@@ -7,10 +7,10 @@ on:
       - '.github/workflows/final-bt-release-gate.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,16 +22,81 @@ jobs:
           node-version: '22'
       - name: Install OpenSpec
         run: npm install -g @fission-ai/openspec@latest
-      - name: Capture archive inputs
+      - name: Verify selected change and specs instructions
         run: |
           openspec status --change bt-module --json > /tmp/status.json
-          openspec instructions archive --change bt-module --json > /tmp/archive-instructions.json || true
           openspec instructions specs --change bt-module --json > /tmp/specs-instructions.json
+      - name: Intelligently merge ADDED-only delta specs
+        shell: python
+        run: |
+          from __future__ import annotations
+          import json
+          import re
+          from pathlib import Path
+
+          status = json.loads(Path('/tmp/status.json').read_text(encoding='utf-8'))
+          specs = status['artifactPaths']['specs']['existingOutputPaths']
+          repo = Path.cwd().resolve()
+          expected_prefix = repo / 'openspec' / 'changes' / 'bt-module' / 'specs'
+          main_root = repo / 'openspec' / 'specs'
+
+          op_re = re.compile(r'^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements\s*$', re.M)
+          req_re = re.compile(r'^### Requirement: (.+?)\s*$', re.M)
+
+          changed = []
+          for raw_path in specs:
+              delta_path = Path(raw_path).resolve()
+              delta_path.relative_to(expected_prefix)
+              capability = delta_path.parent.name
+              text = delta_path.read_text(encoding='utf-8').strip() + '\n'
+
+              operations = op_re.findall(text)
+              if not operations or set(operations) != {'ADDED'} or len(operations) != 1:
+                  raise SystemExit(f'{capability}: expected exactly one ADDED operation, got {operations}')
+
+              before, added = text.split('## ADDED Requirements', 1)
+              added = added.strip()
+              delta_names = req_re.findall(added)
+              if not delta_names:
+                  raise SystemExit(f'{capability}: no requirements found')
+              if len(delta_names) != len(set(delta_names)):
+                  raise SystemExit(f'{capability}: duplicate requirement names inside delta')
+
+              target = main_root / capability / 'spec.md'
+              if target.exists():
+                  main = target.read_text(encoding='utf-8').rstrip()
+                  if '## Requirements' not in main:
+                      raise SystemExit(f'{capability}: existing main spec lacks ## Requirements')
+                  existing_names = set(req_re.findall(main))
+                  overlap = sorted(existing_names.intersection(delta_names))
+                  if overlap:
+                      raise SystemExit(f'{capability}: requirement name already exists: {overlap}')
+                  merged = main + '\n\n' + added + '\n'
+              else:
+                  purpose_match = re.search(r'^## Purpose\s*\n(.*?)(?=^## ADDED Requirements)', text, re.M | re.S)
+                  if not purpose_match:
+                      raise SystemExit(f'{capability}: new capability requires Purpose')
+                  purpose = purpose_match.group(1).strip()
+                  if len(purpose) < 50:
+                      raise SystemExit(f'{capability}: Purpose too short')
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  merged = f'## Purpose\n\n{purpose}\n\n## Requirements\n\n{added}\n'
+
+              target.write_text(merged, encoding='utf-8')
+              changed.append(str(target.relative_to(repo)))
+
+          print('Synced baseline specs:')
+          print('\n'.join(changed))
+      - name: Validate synced baseline
+        run: |
+          openspec validate --specs --strict --no-interactive
           openspec validate --all --strict --no-interactive
-      - uses: actions/upload-artifact@v4
-        with:
-          name: bt-module-openspec-archive-inputs
-          path: |
-            /tmp/status.json
-            /tmp/archive-instructions.json
-            /tmp/specs-instructions.json
+          git diff --check
+      - name: Commit synced baseline specs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openspec/specs
+          git diff --cached --stat
+          git commit -m "openspec: sync bt-module delta into baseline"
+          git push origin HEAD:bt-module
