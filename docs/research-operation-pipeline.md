@@ -4,7 +4,7 @@
 
 이 문서는 `portfolio-optimizer-kr`의 **사용자 연구 실행 운영 파이프라인**을 정의한다.
 
-금융 계산 공식은 `docs/specification.md`, report UI는 `docs/report-ui-specification.md`, 내부 runtime 구조는 `docs/architecture.md`를 따른다. 이 문서는 그 구성요소들을 사용자가 실제로 사용하는 하나의 end-to-end 연구 흐름으로 연결한다.
+금융 계산 및 product semantics는 `openspec/specs/`와 applicable active `openspec/changes/`, report UI의 아직 이관되지 않은 상세 contract는 `docs/report-ui-specification.md`, 내부 runtime 구조는 `docs/architecture.md`를 따른다. 이 문서는 그 구성요소들을 사용자가 실제로 사용하는 하나의 end-to-end 연구 흐름으로 연결한다.
 
 일반 사용자 research run의 canonical execution path는 이 문서를 따른다.
 

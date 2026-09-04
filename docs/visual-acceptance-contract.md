@@ -9,7 +9,7 @@
 Normative source:
 
 ```text
-Finance / calculation semantics   docs/specification.md
+Finance / calculation semantics   openspec/specs/ + active openspec/changes/
 Report UI / interaction semantics docs/report-ui-specification.md
 Architecture / responsibility     docs/architecture.md
 ```
@@ -66,7 +66,7 @@ Static screenshot도 동일하다. Screenshot은 특정 시점의 외부 비교 
 
 ### 3.1 Calculation Contract
 
-`docs/specification.md` 기준으로 automated tests를 수행한다.
+`openspec/specs/`와 applicable active `openspec/changes/` 기준으로 automated tests를 수행한다.
 
 최소 확인:
 

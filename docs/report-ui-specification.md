@@ -9,7 +9,7 @@
 Normative hierarchy:
 
 ```text
-Finance / calculation semantics   docs/specification.md
+Finance / calculation semantics   openspec/specs/ + active openspec/changes/
 Report UI / interaction semantics docs/report-ui-specification.md
 Architecture / responsibility     docs/architecture.md
 Validation procedure              docs/visual-acceptance-contract.md
