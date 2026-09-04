@@ -1,16 +1,25 @@
 ## Purpose
 
-LLM이 Backtest 결과를 Optimization 결과와 혼동하지 않고 historical comparison 관점에서 해석하는 연구 분석 behavior를 정의한다. 기존 optimizer 중심 `docs/llm-analysis-framework.md`는 그대로 두고 Backtest 분석은 별도 capability/guide로 유지한다.
+LLM이 Optimization과 Backtest 결과를 혼동하지 않고 `product_mode`에 따라 올바른 해석 branch를 선택하는 연구 분석 behavior를 정의한다.
+
+Canonical LLM analysis guide는 별도 product 문서로 분리하지 않고 `docs/llm-analysis-framework.md` 하나로 유지한다. 해당 문서 안에서 Optimization과 Backtest branch를 명시적으로 분기한다.
 
 ## ADDED Requirements
 
-### Requirement: Separate Backtest analysis boundary
-Backtest LLM analysis는 optimizer/efficient-frontier 해석과 별도 analysis mode로 유지해야 하며 기존 Optimization 분석 framework를 Backtest 의미에 맞추기 위해 일반화하거나 수정하는 것을 요구해서는 안 된다(MUST).
+### Requirement: Product-mode analysis routing
+LLM은 canonical Run artifact의 explicit `product_mode`를 확인한 뒤 Optimization 또는 Backtest analysis branch를 선택해야 한다(MUST).
+
+`product_mode`가 없거나 지원되지 않는 값이면 결과 내용만 보고 LLM이 임의로 product를 추론해서는 안 된다(MUST NOT).
+
+#### Scenario: Optimization 결과 분석
+- GIVEN `product_mode: optimization`인 Run이 존재한다
+- WHEN LLM이 결과를 분석한다
+- THEN `docs/llm-analysis-framework.md`의 Optimization Analysis Branch를 사용한다
 
 #### Scenario: Backtest 결과 분석
-- GIVEN optimization 결과 없이 Backtest 결과만 존재한다
-- WHEN LLM이 분석한다
-- THEN Efficient Frontier/optimizer structure 단계 없이 Backtest historical-comparison contract를 사용한다
+- GIVEN `product_mode: backtest`인 Run이 존재한다
+- WHEN LLM이 결과를 분석한다
+- THEN 같은 `docs/llm-analysis-framework.md`의 Backtest Analysis Branch를 사용하고 Efficient Frontier/optimizer structure 단계는 적용하지 않는다
 
 ### Requirement: Backtest analysis is historical comparison
 Backtest 분석은 이미 정의된 portfolio들의 historical realized behavior를 비교해야 하며 결과를 Optimization 또는 optimal allocation의 증거로 표현해서는 안 된다(MUST NOT).
@@ -30,6 +39,8 @@ LLM은 서로 다른 portfolio를 비교하기 전에 requested/effective period
 
 ### Requirement: Performance and risk comparison
 LLM은 사용자 질문에 필요한 범위에서 CAGR/realized return, volatility, Sharpe/Sortino, MDD, Best/Worst period 등 canonical historical metrics를 이용해 portfolio 차이를 설명해야 한다(MUST).
+
+CAGR, arithmetic annualized return, active return은 계산 의미가 다르면 동일한 수익률 개념으로 혼용해서는 안 된다(MUST NOT).
 
 #### Scenario: 수익과 위험 trade-off
 - GIVEN Portfolio A는 CAGR이 높고 Portfolio B는 MDD와 volatility가 낮다
@@ -60,13 +71,28 @@ Benchmark가 존재하는 경우에만 active return, tracking error, informatio
 - WHEN 결과를 분석한다
 - THEN benchmark-relative metric을 0으로 간주하거나 가상의 benchmark를 추가하지 않는다
 
-### Requirement: Contribution and diversification interpretation
-Return/risk decomposition과 correlations가 존재하면 portfolio 차이를 설명하는 supporting evidence로 사용할 수 있지만 correlation 하나만으로 diversification 효과를 단정해서는 안 된다(MUST NOT).
+### Requirement: Correlation structure is an explicit analysis step
+Backtest analysis는 correlation을 독립적인 구조 evidence로 다루고 asset redundancy, independent movement, benchmark relationship을 확인해야 한다(MUST).
+
+Correlation matrix를 단순 나열하거나 낮은 correlation 하나만으로 diversification utility를 확정해서는 안 된다(MUST NOT).
 
 #### Scenario: 낮은 correlation asset
 - GIVEN 특정 asset이 다른 asset과 낮은 correlation을 보인다
 - WHEN portfolio utility를 설명한다
 - THEN 실제 allocation/contribution/drawdown evidence 없이 낮은 correlation만으로 필수 diversifier라고 단정하지 않는다
+
+#### Scenario: stress diversification evidence 부족
+- GIVEN full-period correlation은 낮지만 stress conditional correlation artifact가 없다
+- WHEN crisis diversification을 설명한다
+- THEN stress에서도 독립적이었다고 단정하지 않고 evidence gap으로 남긴다
+
+### Requirement: Contribution and diversification interpretation
+Return/risk decomposition과 allocation, correlation, drawdown evidence를 함께 사용해 portfolio 차이를 설명해야 한다(MUST).
+
+#### Scenario: 작은 return contribution의 diversifier
+- GIVEN 특정 asset의 return contribution은 작지만 allocation과 drawdown/risk evidence가 존재한다
+- WHEN 해당 asset의 역할을 설명한다
+- THEN standalone return만으로 불필요하다고 판단하지 않고 실제 portfolio-level risk/diversification evidence를 함께 본다
 
 ### Requirement: Fact and interpretation separation
 LLM은 canonical result에서 직접 관측된 사실과 그 사실에 대한 해석 또는 가설을 구분해야 한다(MUST).
