@@ -1,8 +1,8 @@
-name: Execute research optimization
+name: Execute research run
 
 on:
   push:
-    branches: [main]
+    branches: [main, bt-module]
     paths:
       - "control/execute.yaml"
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: research-execution
+  group: research-execution-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -58,6 +58,26 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
+      - name: Snapshot source-backed asset names
+        if: steps.gate.outputs.should_run == 'true'
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET_EXPERIMENT="$(python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          payload = yaml.safe_load(Path('control/execute.yaml').read_text(encoding='utf-8')) or {}
+          target = str(payload.get('target') or '').strip()
+          if not target:
+              raise SystemExit('control/execute.yaml requires target')
+          print(target)
+          PY
+          )"
+          python scripts/hydrate_asset_names.py "$TARGET_EXPERIMENT"
+          echo "target_experiment=$TARGET_EXPERIMENT" >> "$GITHUB_OUTPUT"
+
       - name: Execute selected research experiment
         if: steps.gate.outputs.should_run == 'true'
         id: execute
@@ -85,17 +105,19 @@ jobs:
           test -f "$RUN_PATH/report.html"
           test -d "$RUN_PATH/review"
 
-      - name: Commit generated run artifacts
+      - name: Commit canonical input and generated run artifacts
         if: steps.gate.outputs.should_run == 'true'
         shell: bash
         run: |
           set -euo pipefail
           RUN_PATH="${{ steps.execute.outputs.run_path }}"
           RUN_ID="${{ steps.execute.outputs.run_id }}"
+          TARGET_EXPERIMENT="${{ steps.prepare.outputs.target_experiment }}"
+          TARGET_BRANCH="${GITHUB_REF_NAME}"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$RUN_PATH"
+          git add "$RUN_PATH" "$TARGET_EXPERIMENT"
 
           if git diff --cached --quiet; then
             echo "No generated run artifacts to commit" >&2
@@ -103,8 +125,8 @@ jobs:
           fi
 
           git commit -m "runs: add $RUN_ID"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git pull --rebase origin "$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
 
       - name: Publish run to GitHub Pages
         if: steps.gate.outputs.should_run == 'true'
@@ -113,7 +135,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh workflow run publish-reports.yml --ref main
+          gh workflow run publish-reports.yml --ref "$GITHUB_REF_NAME"
 
       - name: Consume execution request
         if: steps.gate.outputs.should_run == 'true' && github.event_name == 'push'
@@ -121,16 +143,17 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_FINGERPRINT="${{ steps.gate.outputs.fingerprint }}"
+          TARGET_BRANCH="${GITHUB_REF_NAME}"
 
-          git fetch origin main
-          CURRENT_FINGERPRINT="$(git show origin/main:control/execute.yaml | sha256sum | awk '{print $1}')"
+          git fetch origin "$TARGET_BRANCH"
+          CURRENT_FINGERPRINT="$(git show origin/$TARGET_BRANCH:control/execute.yaml | sha256sum | awk '{print $1}')"
 
           if [[ "$CURRENT_FINGERPRINT" != "$SOURCE_FINGERPRINT" ]]; then
             echo "A newer execution request exists; leaving control/execute.yaml untouched."
             exit 0
           fi
 
-          git pull --rebase origin main
+          git pull --rebase origin "$TARGET_BRANCH"
           CURRENT_FINGERPRINT="$(sha256sum control/execute.yaml | awk '{print $1}')"
           if [[ "$CURRENT_FINGERPRINT" != "$SOURCE_FINGERPRINT" ]]; then
             echo "Execution request changed while synchronizing; leaving it untouched."
@@ -160,7 +183,7 @@ jobs:
           git add control/execute.yaml
           git commit -m "control: consume execution request"
 
-          if ! git push origin HEAD:main; then
+          if ! git push origin HEAD:"$TARGET_BRANCH"; then
             echo "Remote changed before reset push; preserving the newer request."
             exit 0
           fi
