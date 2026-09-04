@@ -1,6 +1,6 @@
 ## Purpose
 
-LLM/User Research Frontend가 Optimization과 Backtest를 구분해 필요한 사용자 결정을 수집하고 canonical Backtest input을 생성하는 behavior를 정의한다.
+LLM/User Research Frontend가 Optimization과 Backtest를 구분해 필요한 사용자 결정을 수집하고, 두 product 모두 explicit `product_mode`를 포함한 canonical input을 생성하는 behavior를 정의한다.
 
 ## ADDED Requirements
 
@@ -13,12 +13,44 @@ Research Frontend는 사용자의 연구 의도가 Optimization인지 Backtest�
 - THEN Optimization objective나 min/max constraint를 요구하지 않고 Backtest input flow를 사용한다
 
 #### Scenario: 제품 의도가 모호함
-- GIVEN 사용자가 `이 포트폴리오 분석해`처럼 Optimization과 Backtest 중 어느 쪽인지 결과 의미가 달라지는 요청을 한다
+- GIVEN 사용자가 Optimization과 Backtest 둘 다 합리적으로 가능한 요청을 한다
 - WHEN 현재 대화만으로 product mode를 확정할 수 없다
 - THEN 임의로 선택하지 않고 필요한 최소 질문으로 의도를 확인한다
 
+#### Scenario: 고정 비중만 주고 실행 요청
+- GIVEN 사용자가 `QQQ 30%, SPY 30%, GLD 30%, IEF 10%로 돌려보자`라고 요청한다
+- WHEN Optimization은 이 비중을 Provided Portfolio로 사용할 수 있고 Backtest는 target allocation으로 사용할 수 있다
+- THEN 비중이 있다는 이유만으로 Backtest를 선택하지 않고 어느 product인지 사용자에게 확인한다
+
+### Requirement: Explicit product mode is mandatory
+Research Frontend가 생성하거나 갱신하는 canonical Experiment YAML은 Optimization과 Backtest 모두 `product_mode`를 명시해야 한다(MUST).
+
+지원값은 canonical하게 다음 둘이다.
+
+```text
+optimization
+backtest
+```
+
+`product_mode` 누락을 Optimization으로 암묵 해석해서는 안 된다(MUST NOT).
+
+#### Scenario: Optimization input 생성
+- GIVEN 사용자가 Optimization 의도를 확정했다
+- WHEN Experiment YAML을 생성한다
+- THEN `product_mode: optimization`을 명시한다
+
+#### Scenario: Backtest input 생성
+- GIVEN 사용자가 Backtest 의도를 확정했다
+- WHEN Experiment YAML을 생성한다
+- THEN `product_mode: backtest`를 명시한다
+
+#### Scenario: product mode 누락
+- GIVEN canonical YAML에 `product_mode`가 없다
+- WHEN 실행 입력을 검증한다
+- THEN Optimization으로 fallback하지 않고 invalid input으로 거부한다
+
 ### Requirement: Reuse already-provided information
-사용자가 대화에서 이미 제공한 Backtest 입력은 다시 질문하지 않아야 한다(MUST NOT).
+사용자가 대화에서 이미 제공한 입력은 다시 질문하지 않아야 한다(MUST NOT).
 
 #### Scenario: weights와 기간이 이미 있음
 - GIVEN 사용자가 portfolio weights와 analysis period를 이미 명시했다
@@ -153,7 +185,7 @@ Backtest v1 Research Frontend는 Cashflows, Rebalance Bands, Leverage, Display I
 - THEN 제외된 advanced option을 필수 또는 지원되는 v1 입력으로 노출하지 않는다
 
 ### Requirement: No redundant approval after explicit execution intent
-사용자가 이미 실행 의도를 명시했고 필요한 Backtest 입력과 사용자 결정이 모두 해소되면 다시 불필요한 승인 질문을 만들어서는 안 된다(MUST NOT).
+사용자가 이미 실행 의도를 명시했고 필요한 입력과 사용자 결정이 모두 해소되면 다시 불필요한 승인 질문을 만들어서는 안 된다(MUST NOT).
 
 #### Scenario: `이 조건으로 백테스트해줘`
 - GIVEN 유효한 Backtest input이 모두 확정되었다
@@ -175,4 +207,3 @@ Research Frontend가 asset 또는 benchmark의 `name`을 canonical YAML에 기�
 - GIVEN 사용자가 ETF ticker와 portfolio 조건을 확정했다
 - WHEN canonical YAML을 최초 생성한다
 - THEN FDR ETF listing metadata의 해당 종목명을 `name`에 기록하고 이후 Optimization/Backtest와 report가 동일한 persisted name을 사용한다
-
