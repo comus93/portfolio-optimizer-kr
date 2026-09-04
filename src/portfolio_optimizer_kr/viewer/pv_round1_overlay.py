@@ -216,8 +216,9 @@ def _detail_header(
         second.extend(["<th>Return</th>", "<th>Balance</th>"])
     for ticker in tickers:
         name = asset_names.get(ticker, "").strip()
-        label = f"{name} ({ticker})" if name else ticker
-        top.append(f'<th rowspan="2">{hc.esc(label)}</th>')
+        label = ad.asset_identity_label(name, ticker)
+        label_html = hc.esc(label).replace("\n", "<br>")
+        top.append(f'<th rowspan="2">{label_html}</th>')
     return "".join(top), "".join(second)
 
 

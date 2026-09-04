@@ -122,6 +122,10 @@ def test_pv_round1_artifacts_and_report_contract(tmp_path):
     assert "Active Return Contribution" in html
     assert 'id="annual-returns-detail"' in html
     assert 'id="monthly-returns-detail"' in html
+    assert '<th rowspan="2">Asset A<br>(A)</th>' in html
+    assert '<th rowspan="2">Asset B<br>(B)</th>' in html
+    assert 'Asset A (A)' not in html
+    assert 'Asset B (B)' not in html
     assert 'data-chart="drawdown-combined"' in html
     assert "drawdown-panel" not in html
     assert "drawdown-episodes-panel" in html
