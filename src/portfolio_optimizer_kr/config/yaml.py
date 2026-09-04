@@ -28,8 +28,8 @@ class ConfigValidationError(ValueError):
 @dataclass(frozen=True)
 class RunConfig:
     request: OptimizationRequest | BacktestRequest
+    product_mode: ProductMode
     usdkrw_symbol: str | None = None
-    product_mode: ProductMode = ProductMode.OPTIMIZATION
 
 
 def _mapping(value: Any, field: str) -> Mapping[str, Any]:
@@ -148,7 +148,9 @@ def _parse_fx(config: Mapping[str, Any]) -> str | None:
 
 
 def _normalise_product_mode(value: Any) -> ProductMode:
-    text = str(value or "optimization").strip().lower().replace("-", "_")
+    if value is None or not str(value).strip():
+        raise ConfigValidationError("product_mode is required")
+    text = str(value).strip().lower().replace("-", "_")
     aliases = {
         "optimizer": "optimization",
         "optimize": "optimization",
@@ -391,7 +393,7 @@ def request_from_config(config: Mapping[str, Any]) -> RunConfig:
     if not run_id:
         raise ConfigValidationError("run_id is required")
 
-    product_mode = _normalise_product_mode(config.get("product_mode", "optimization"))
+    product_mode = _normalise_product_mode(config.get("product_mode"))
     assets = _parse_asset_rows(config)
     if product_mode is ProductMode.BACKTEST:
         request: OptimizationRequest | BacktestRequest = _backtest_request_from_config(
@@ -401,8 +403,8 @@ def request_from_config(config: Mapping[str, Any]) -> RunConfig:
         request = _optimization_request_from_config(config, run_id, assets)
     return RunConfig(
         request=request,
-        usdkrw_symbol=_parse_fx(config),
         product_mode=product_mode,
+        usdkrw_symbol=_parse_fx(config),
     )
 
 
