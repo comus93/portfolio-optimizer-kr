@@ -29,7 +29,20 @@ jobs:
           pip install -e '.[dev]'
           npm install -g @fission-ai/openspec@latest
       - name: Full Python regression
-        run: pytest -q
+        shell: bash
+        run: |
+          set +e
+          pytest -q 2>&1 | tee /tmp/pytest.log
+          code=${PIPESTATUS[0]}
+          echo "$code" > /tmp/pytest.exit
+          exit 0
+      - name: Upload regression log
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-bt-release-gate-pytest
+          path: /tmp/pytest.log
+      - name: Enforce full Python regression
+        run: test "$(cat /tmp/pytest.exit)" = "0"
       - name: Strict OpenSpec validation
         run: openspec validate --all --strict --no-interactive
       - name: Real-data Backtest release matrix
@@ -57,8 +70,6 @@ jobs:
               AssetSpec('IEF', name='iShares 7-10 Year Treasury Bond ETF', currency='USD'),
               AssetSpec('SPY', name='SPDR S&P 500 ETF Trust', currency='USD'),
           ]
-          # One network hydration, then the exact real FDR series are reused across
-          # the policy matrix so this gate tests finance behavior rather than network repetition.
           cached = real_loader.load_many(universe, start='2020-12-01', end='2024-12-31')
           for symbol, series in cached.items():
               assert series.attrs.get('return_semantics') == 'total_return', (symbol, series.attrs)
@@ -72,7 +83,6 @@ jobs:
                   return real_loader.load_economic_series(symbol, start, end)
 
           loader = CachedRealLoader()
-
           assets = [
               {'symbol':'QQQ','name':'Invesco QQQ Trust','currency':'USD'},
               {'symbol':'GLD','name':'SPDR Gold Shares','currency':'USD'},
@@ -85,7 +95,6 @@ jobs:
               {'name':'Portfolio 3','weights_pct':{'QQQ':20,'GLD':40,'IEF':40}},
           ]
           benchmark = {'symbol':'SPY','name':'SPDR S&P 500 ETF Trust','currency':'USD'}
-
           cases = [
               ('three-no-benchmark', 'month_to_month', 'monthly', True, None, three),
               ('m2m-benchmark', 'month_to_month', 'monthly', True, benchmark, one),
@@ -98,7 +107,6 @@ jobs:
               ('none', 'month_to_month', 'none', False, benchmark, one),
               ('monthly-unaligned', 'month_to_month', 'monthly', False, benchmark, one),
           ]
-
           results = []
           for case, mode, period, aligned, bm, portfolios in cases:
               cfg = {
@@ -131,18 +139,8 @@ jobs:
                   assert 'benchmark-relative' not in html.lower()
               else:
                   assert 'benchmark-relative' in html.lower()
-              results.append({
-                  'case': case,
-                  'time_period_mode': mode,
-                  'rebalancing': period,
-                  'calendar_aligned': aligned,
-                  'benchmark': None if bm is None else bm['symbol'],
-                  'portfolios': len(portfolios),
-                  'output': str(out),
-              })
+              results.append({'case':case,'time_period_mode':mode,'rebalancing':period,'calendar_aligned':aligned,'benchmark':None if bm is None else bm['symbol'],'portfolios':len(portfolios)})
 
-          # Real-path behavioral sanity: schedules that should differ produce distinct
-          # ending balances on nontrivial market data, while monthly is alignment-invariant.
           def ending(case):
               payload = json.loads((runs / f'release-{case}' / 'result.json').read_text(encoding='utf-8'))
               first = next(iter(payload['portfolio_performance'].values()))
@@ -151,7 +149,6 @@ jobs:
           assert abs(ending('quarterly-aligned') - ending('quarterly-anchored')) > 1e-6
           assert abs(ending('semiannual-aligned') - ending('semiannual-anchored')) > 1e-6
           assert abs(ending('m2m-benchmark') - ending('none')) > 1e-6
-
           print(json.dumps(results, indent=2))
       - name: Control must be idle
         shell: python
