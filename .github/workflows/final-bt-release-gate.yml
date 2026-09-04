@@ -1,4 +1,4 @@
-name: Archive completed bt-module OpenSpec change
+name: Validate promoted main
 
 on:
   push:
@@ -7,45 +7,36 @@ on:
       - '.github/workflows/final-bt-release-gate.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  archive:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: bt-module
+          ref: main
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install OpenSpec
-        run: npm install -g @fission-ai/openspec@latest
-      - name: Verify change is complete before archive
-        shell: python
+      - name: Install project and OpenSpec
         run: |
-          import json, subprocess
-          data = json.loads(subprocess.check_output([
-              'openspec','status','--change','bt-module','--json'
-          ], text=True))
-          assert data['isPlanningComplete'] is True, data
-          assert data['isComplete'] is True, data
-          assert all(a['status'] == 'done' for a in data['artifacts']), data['artifacts']
-      - name: Archive change without altering synced baseline
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+          npm install -g @fission-ai/openspec@latest
+      - name: Full Python regression
+        run: python -m pytest -q
+      - name: Strict OpenSpec validation
         run: |
-          set -euo pipefail
-          test -d openspec/changes/bt-module
-          test ! -e openspec/changes/archive/2026-09-04-bt-module
-          git mv openspec/changes/bt-module openspec/changes/archive/2026-09-04-bt-module
           openspec validate --specs --strict --no-interactive
           openspec validate --all --strict --no-interactive
-          git diff --check
-      - name: Commit archive
+      - name: Main control is idle
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add openspec/changes openspec/specs
-          git diff --cached --stat
-          git commit -m "openspec: archive completed bt-module change"
-          git push origin HEAD:bt-module
+          grep -Eq '^[[:space:]]*run:[[:space:]]*false([[:space:]]*#.*)?[[:space:]]*$' control/execute.yaml
+      - name: Verify promoted commit
+        run: |
+          test "$(git rev-parse HEAD)" = "fe63f32986c7130a66d9e7d331b45f63d07f2474"
