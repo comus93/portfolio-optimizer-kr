@@ -1,0 +1,5 @@
+portfolio,ticker,name,target_weight_pct
+Portfolio 1,QQQ,Invesco QQQ Trust  Series 1,30.0
+Portfolio 1,SPY,State Street SPDR S&P 500 ETF Trust,30.0
+Portfolio 1,GLD,SPDR Gold Shares,30.0
+Portfolio 1,IEF,iShares 7-10 Year Treasury Bond ETF,10.0
