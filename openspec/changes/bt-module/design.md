@@ -13,7 +13,7 @@ PV는 비규범 reference다. PV의 계산값, 구현 방식, hidden field, 문�
 
 ## Internal Baseline
 
-기존 문서는 수정하지 않고 Backtest 설계 baseline으로 사용한다.
+기존 문서는 Backtest 설계 baseline으로 사용한다.
 
 ```text
 Finance / calculation behavior   docs/specification.md
@@ -23,10 +23,10 @@ Architecture / responsibility    docs/architecture.md
 Validation procedure             docs/visual-acceptance-contract.md
 Research execution               docs/research-operation-pipeline.md
 LLM research input               docs/llm-research-input-contract.md
-Optimizer result analysis        docs/llm-analysis-framework.md
+LLM result analysis              docs/llm-analysis-framework.md
 ```
 
-Backtest-specific 신규/변경 사항만 `openspec/changes/bt-module/`에 작성한다.
+Backtest-specific 신규/변경 사항은 `openspec/changes/bt-module/`에서 정의하고, 확정된 Research Frontend/analysis contract는 위 canonical docs에 반영한다.
 
 ## Product and Shared Boundary
 
@@ -104,6 +104,13 @@ shared historical report components + product-specific sections
 
 Backtest request는 `OptimizationRequest`에 억지로 끼워 넣지 않는다. Product request boundary는 분리하되 이후 shared data/statistics/simulation/analytics/persistence/report component를 재사용한다. 완료된 run은 재계산 없이 persisted artifact만으로 Viewer에서 열 수 있어야 한다.
 
+`product_mode`는 Optimization과 Backtest 모두 canonical YAML에서 mandatory discriminator다. 값이 없으면 Optimization으로 silent fallback하지 않고 validation error로 거부한다.
+
+```text
+product_mode: optimization
+product_mode: backtest
+```
+
 ## Confirmed Decisions
 
 ### D1 Experiment identity
@@ -142,19 +149,46 @@ Month-to-Month은 Start Year / First Month / End Year / Last Month를, Year-to-Y
 
 이름이 없으면 입력 순서대로 `Portfolio 1`, `Portfolio 2`, `Portfolio 3`을 자동 생성한다.
 
-### D7 Backtest LLM analysis boundary
+### D7 Product-mode LLM analysis boundary
 
-기존 `docs/llm-analysis-framework.md`는 Optimization/Frontier 분석 전용으로 유지한다. Backtest는 별도 `research-analysis` capability/guide에서 historical comparison을 다룬다.
+`docs/llm-analysis-framework.md` 하나를 canonical LLM analysis guide로 유지한다. 별도 Backtest analysis 문서를 만들지 않고 explicit `product_mode`에 따라 내부 branch를 선택한다.
 
 ```text
-1. Effective data coverage
-2. Return / risk comparison
-3. Drawdown / recovery
-4. Annual / rolling consistency
-5. Benchmark-relative behavior when applicable
-6. Contribution / diversification evidence
-7. Evidence limitation / next Backtest
+product_mode: optimization
+→ Optimization Analysis Branch
+
+product_mode: backtest
+→ Backtest Analysis Branch
 ```
+
+`product_mode`가 누락되거나 지원하지 않는 값이면 결과 내용을 보고 LLM이 product를 추론하지 않는다. Run identity/input 문제로 취급한다.
+
+Optimization branch는 기존 7단계 구조를 유지한다.
+
+```text
+1. Portfolio Diagnosis
+2. Optimizer Structure
+3. Asset Utility
+4. Efficient Allocation Range
+5. Frontier Fragility
+6. Evidence Sufficiency & Robustness
+7. Next Research
+```
+
+Backtest branch는 historical realized comparison에 집중한다.
+
+```text
+1. Effective Data Coverage
+2. Return / Risk
+3. Drawdown / Recovery
+4. Annual / Rolling Consistency
+5. Benchmark-relative Behavior
+6. Correlation Structure
+7. Contribution / Diversification Evidence
+8. Evidence Limitation / Next Research
+```
+
+Correlation은 독립적인 구조 evidence로 다루되 matrix를 단순 나열하지 않는다. 낮은 correlation만으로 diversifier 역할을 확정하지 않고 allocation, contribution, drawdown/risk evidence와 함께 판단한다. Stress conditional correlation evidence가 없으면 crisis diversification을 단정하지 않는다.
 
 Backtest 결과만으로 optimal/efficient frontier/적정 최적 비중을 주장하지 않는다.
 
@@ -286,7 +320,17 @@ Display Income section은 v1에서 제공하지 않는다.
 
 기존 Study / Experiment / Run / `control/execute.yaml` 구조를 재사용한다. Backtest 전용 orchestration DB, opaque request id, 별도 Agent execution engine은 만들지 않는다.
 
+Research Frontend는 실행 조건을 만들기 전에 product intent를 확정한다.
+
+- Optimization 또는 Backtest가 자연어에서 명확하면 해당 product로 진행한다.
+- 둘 다 합리적으로 가능한 요청이면 LLM이 임의 선택하지 않고 사용자에게 최소 질문으로 확인한다.
+- 비중이 있다는 사실만으로 Backtest라고 단정하지 않는다. Optimization에서도 Provided Portfolio로 사용할 수 있다.
+- Product가 확정되면 Optimization과 Backtest 모두 canonical YAML에 explicit `product_mode`를 기록한다.
+- `product_mode`가 누락된 input은 실행하지 않는다.
+
 Research Frontend는 이미 받은 값을 다시 묻지 않고 mechanical validation을 먼저 수행한다. Backtest에서 optimizer objective/min/max/target-vol 질문은 하지 않는다. Canonical defaults는 effective YAML/input에 명시적으로 persist한다.
+
+Run 결과 해석은 `context.yaml` / `input.yaml`의 explicit `product_mode`를 사용해 `docs/llm-analysis-framework.md`의 해당 branch로 deterministic routing한다.
 
 ## Agent Verification
 
@@ -314,4 +358,3 @@ Shared capability change는 해당 capability를 소비하는 Optimization/Backt
 - reason: replace manually authored instrument names with FDR provider names while retaining the shared `AssetSpec.name` contract
 - affected products: portfolio-optimization, portfolio-backtest
 - affected regression: FDR metadata resolution, shared config hydration, report-level asset ordering/name rendering
-
