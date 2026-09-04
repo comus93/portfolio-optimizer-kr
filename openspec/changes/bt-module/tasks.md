@@ -6,7 +6,7 @@
 - [x] D4 analysis period default = full common effective period
 - [x] D5 Time Period = Month-to-Month / Year-to-Year, default Month-to-Month
 - [x] D6 portfolio name default = Portfolio 1..3
-- [x] D7 Backtest LLM analysis = 별도 research-analysis capability/guide
+- [x] D7 LLM analysis = 단일 `docs/llm-analysis-framework.md`에서 explicit `product_mode` 기반 Optimization / Backtest branch
 - [x] D8 human visual review = material layout/interaction change에만 completion gate
 - [x] D9 Calendar Aligned = Yes/No 모두 지원, No는 first-active-month anchor
 - [x] D10 Rebalancing = run-level 공통, default Monthly
@@ -22,7 +22,7 @@
 - [ ] `research-report` Backtest section/applicability/balance/schedule semantics review
 - [ ] `research-execution` union-ticker Experiment identity review
 - [ ] `research-input` confirmed defaults/decision boundary review
-- [ ] `research-analysis` separate Backtest analysis boundary review
+- [ ] `research-analysis` product-mode branch boundary review
 - [ ] `agent-verification` conditional human-review gate review
 - [ ] OpenSpec strict validation 수행
 
@@ -36,7 +36,7 @@
 
 ## 4. Product Input / Models
 
-- [ ] explicit product mode를 canonical YAML contract에 추가
+- [x] explicit `product_mode`를 Optimization / Backtest 모두 canonical YAML contract에서 mandatory로 강제하고 silent Optimization fallback 제거
 - [ ] Backtest-specific request model 추가
 - [ ] portfolio collection schema 구현, v1 validation limit=3 적용
 - [ ] portfolio name / target allocations / initial balance / optional benchmark 입력 구현
@@ -127,7 +127,9 @@
 
 ## 11. LLM Research Frontend / Analysis
 
-- [ ] product-intent-aware input flow 구현/가이드 반영
+- [x] product-intent-aware input guide 반영: 명확하면 진행, Optimization/Backtest가 모두 가능하면 최소 질문으로 확인
+- [x] 고정 비중 존재 여부를 product 결정 heuristic으로 사용하지 않도록 명시
+- [x] Optimization / Backtest 모두 Experiment YAML에 explicit `product_mode` 기록
 - [ ] Backtest에서 optimizer objective/min-max 질문 금지
 - [ ] benchmark default SPY, explicit none/override 반영
 - [ ] initial balance 10,000 default 반영
@@ -138,7 +140,9 @@
 - [ ] portfolio name default 반영
 - [ ] mechanical validation 후 필요한 사용자 decision만 질문
 - [ ] explicit execution intent 후 redundant approval 방지
-- [ ] 별도 Backtest historical-comparison analysis guide 반영
+- [x] 단일 `docs/llm-analysis-framework.md`에 Optimization / Backtest branch 반영
+- [x] Backtest branch에 Correlation Structure를 독립 단계로 반영하고 correlation-only diversifier 판정 금지
+- [x] Run 분석 시 `product_mode` 기반 deterministic branch routing, 누락 시 결과 내용으로 추론 금지
 
 ## 12. Agent Verification Framework
 
