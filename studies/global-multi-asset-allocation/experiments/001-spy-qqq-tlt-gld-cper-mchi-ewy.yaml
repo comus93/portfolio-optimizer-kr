@@ -1,3 +1,4 @@
+product_mode: optimization
 assets:
   - {symbol: SPY, name: SPDR S&P 500 ETF Trust, currency: USD, provided_weight_pct: 20, min_weight_pct: 0, max_weight_pct: 50}
   - {symbol: QQQ, name: Invesco QQQ Trust, currency: USD, provided_weight_pct: 30, min_weight_pct: 0, max_weight_pct: 50}
