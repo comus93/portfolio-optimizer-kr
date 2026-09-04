@@ -37,54 +37,54 @@
 ## 4. Product Input / Models
 
 - [x] explicit `product_mode`를 Optimization / Backtest 모두 canonical YAML contract에서 mandatory로 강제하고 silent Optimization fallback 제거
-- [ ] Backtest-specific request model 추가
-- [ ] portfolio collection schema 구현, v1 validation limit=3 적용
-- [ ] portfolio name / target allocations / initial balance / optional benchmark 입력 구현
-- [ ] `Month-to-Month` / `Year-to-Year` Time Period mode 구현
-- [ ] Month-to-Month의 Start Year / First Month / End Year / Last Month 입력 구현
-- [ ] Year-to-Year의 Start Year / End Year 입력 및 month non-applicable 처리
+- [x] Backtest-specific request model 추가
+- [x] portfolio collection schema 구현, v1 validation limit=3 적용
+- [x] portfolio name / target allocations / initial balance / optional benchmark 입력 구현
+- [x] `Month-to-Month` / `Year-to-Year` Time Period mode 구현
+- [x] Month-to-Month의 Start Year / First Month / End Year / Last Month 입력 구현
+- [x] Year-to-Year의 Start Year / End Year 입력 및 month non-applicable 처리
 - [ ] period selector year range를 data-supported range에서 동적으로 구성
-- [ ] Calendar Aligned Yes/No 입력 구현, default Yes
-- [ ] run-level rebalancing input 구현, default Monthly
+- [x] Calendar Aligned Yes/No 입력 구현, default Yes
+- [x] run-level rebalancing input 구현, default Monthly
 - [ ] cashflow / band rebalance / leverage / Display Income / style / factor / regime field는 v1에서 노출하지 않음
-- [ ] dividend reinvest toggle은 만들지 않고 canonical total return 사용
-- [ ] YAML round-trip과 exact `input.yaml` persistence 테스트
+- [x] dividend reinvest toggle은 만들지 않고 canonical total return 사용
+- [x] YAML round-trip과 exact `input.yaml` persistence 테스트
 
 ## 5. Shared Simulation
 
-- [ ] `none` rebalancing path 구현 및 drift 검증
-- [ ] calendar-aligned quarterly rebalancing 구현
-- [ ] calendar-aligned semiannual rebalancing 구현
-- [ ] calendar-aligned yearly behavior regression
-- [ ] non-calendar quarterly first-active-month + 3개월 schedule 구현/검증
-- [ ] non-calendar semiannual first-active-month + 6개월 schedule 구현/검증
-- [ ] non-calendar yearly first-active-month + 12개월 schedule 구현/검증
-- [ ] monthly가 Calendar Aligned와 무관하게 매월 rebalance되는지 검증
-- [ ] none이 Calendar Aligned와 무관하게 drift하는지 검증
-- [ ] mid-schedule analysis start behavior 검증
-- [ ] actual initial-balance wealth path 구현
-- [ ] multi-portfolio independent path identity 검증
+- [x] `none` rebalancing path 구현 및 drift 검증
+- [x] calendar-aligned quarterly rebalancing 구현
+- [x] calendar-aligned semiannual rebalancing 구현
+- [x] calendar-aligned yearly behavior regression
+- [x] non-calendar quarterly first-active-month + 3개월 schedule 구현/검증
+- [x] non-calendar semiannual first-active-month + 6개월 schedule 구현/검증
+- [x] non-calendar yearly first-active-month + 12개월 schedule 구현/검증
+- [x] monthly가 Calendar Aligned와 무관하게 매월 rebalance되는지 검증
+- [x] none이 Calendar Aligned와 무관하게 drift하는지 검증
+- [x] mid-schedule analysis start behavior 검증
+- [x] actual initial-balance wealth path 구현
+- [x] multi-portfolio independent path identity 검증
 
 ## 6. Backtest Pipeline / Runner
 
-- [ ] Optimization과 Backtest runner dispatch 분리
-- [ ] Backtest에서 optimization objective/frontier 없이 market-data → simulation → analytics 경로 실행
-- [ ] shared `portfolio-analytics` 재사용, duplicate formula 생성 금지
-- [ ] run-level rebalancing / Calendar Aligned setting을 모든 portfolio에 동일 적용
+- [x] Optimization과 Backtest runner dispatch 분리
+- [x] Backtest에서 optimization objective/frontier 없이 market-data → simulation → analytics 경로 실행
+- [x] shared `portfolio-analytics` 재사용, duplicate formula 생성 금지
+- [x] run-level rebalancing / Calendar Aligned setting을 모든 portfolio에 동일 적용
 - [ ] benchmark 없음/있음 양쪽 실행 검증
-- [ ] common effective period / coverage evidence 보존
-- [ ] Month-to-Month / Year-to-Year requested period가 canonical market-data period로 올바르게 전달되는지 검증
+- [x] common effective period / coverage evidence 보존
+- [x] Month-to-Month / Year-to-Year requested period가 canonical market-data period로 올바르게 전달되는지 검증
 
 ## 7. Artifacts
 
-- [ ] Backtest `result.json` canonical domain 구현
-- [ ] product mode와 Time Period mode/boundaries persistence 구현
-- [ ] Calendar Aligned와 run-level rebalancing persistence 구현
-- [ ] frontend defaults(SPY/10,000/Portfolio n/Month-to-Month/Calendar Aligned Yes/Monthly)가 effective `input.yaml`에 명시되는지 검증
-- [ ] portfolio collection identity가 raw/review에서 유지되도록 구현
-- [ ] `(portfolio, asset)` series identity 보존
-- [ ] existing run directory silent overwrite 방지 regression
-- [ ] persisted Backtest run을 재실행 없이 Viewer에서 열 수 있도록 구현
+- [x] Backtest `result.json` canonical domain 구현
+- [x] product mode와 Time Period mode/boundaries persistence 구현
+- [x] Calendar Aligned와 run-level rebalancing persistence 구현
+- [x] frontend defaults(SPY/10,000/Portfolio n/Month-to-Month/Calendar Aligned Yes/Monthly)가 effective `input.yaml`에 명시되는지 검증
+- [x] portfolio collection identity가 raw/review에서 유지되도록 구현
+- [x] `(portfolio, asset)` series identity 보존
+- [x] existing run directory silent overwrite 방지 regression
+- [x] persisted Backtest run을 재실행 없이 Viewer에서 열 수 있도록 구현
 
 ## 8. Input UI
 
@@ -104,16 +104,16 @@
 
 ## 9. Research Report
 
-- [ ] Backtest overview 구현
-- [ ] Time Period mode / requested-effective boundaries / Calendar Aligned / run-level rebalancing 표시
-- [ ] target allocation comparison 구현
-- [ ] actual initial-balance growth comparison 구현
-- [ ] Backtest realized-only Performance Summary 적용
-- [ ] shared annual/monthly/trailing/rolling/drawdown/asset/correlation/decomposition section 재사용
-- [ ] benchmark-relative section conditional applicability 구현
-- [ ] Optimization-only Frontier section을 Backtest에서 제외
-- [ ] Display Income section을 v1에서 생성하지 않음
-- [ ] identity/unit/N/A/axis/tooltip/responsive existing contract regression
+- [x] Backtest overview 구현
+- [x] Time Period mode / requested-effective boundaries / Calendar Aligned / run-level rebalancing 표시
+- [x] target allocation comparison 구현
+- [x] actual initial-balance growth comparison 구현
+- [x] Backtest realized-only Performance Summary 적용
+- [x] shared annual/monthly/trailing/rolling/drawdown/asset/correlation/decomposition section 재사용
+- [x] benchmark-relative section conditional applicability 구현
+- [x] Optimization-only Frontier section을 Backtest에서 제외
+- [x] Display Income section을 v1에서 생성하지 않음
+- [x] identity/unit/N/A/axis/tooltip/responsive existing contract regression
 - [x] combined asset identity를 `Name` + 줄바꿈 + `(Ticker)`로 통일하고 Annual/Monthly detail header 및 asset legend regression 반영
 - [x] Backtest Monthly Correlations를 constituent asset-only canonical/report scope로 제한하고 portfolio/별도 benchmark series 제외
 
@@ -122,51 +122,51 @@
 - [ ] union ticker set 기반 Backtest Experiment identity 구현
 - [ ] union 동일 + portfolio membership/weights 변경은 same Experiment/new Run인지 검증
 - [ ] union ticker 변경은 new Experiment인지 검증
-- [ ] Study / Experiment / Run provenance에 product mode 보존
-- [ ] `control/execute.yaml`에서 Backtest experiment 실행 가능하도록 generalize
-- [ ] explicit run intent 없이 experiment 수정만으로 실행되지 않는지 확인
-- [ ] 별도 Agent/opaque request execution path를 만들지 않음
+- [x] Study / Experiment / Run provenance에 product mode 보존
+- [x] `control/execute.yaml`에서 Backtest experiment 실행 가능하도록 generalize
+- [x] explicit run intent 없이 experiment 수정만으로 실행되지 않는지 확인
+- [x] 별도 Agent/opaque request execution path를 만들지 않음
 
 ## 11. LLM Research Frontend / Analysis
 
 - [x] product-intent-aware input guide 반영: 명확하면 진행, Optimization/Backtest가 모두 가능하면 최소 질문으로 확인
 - [x] 고정 비중 존재 여부를 product 결정 heuristic으로 사용하지 않도록 명시
 - [x] Optimization / Backtest 모두 Experiment YAML에 explicit `product_mode` 기록
-- [ ] Backtest에서 optimizer objective/min-max 질문 금지
-- [ ] benchmark default SPY, explicit none/override 반영
-- [ ] initial balance 10,000 default 반영
-- [ ] period 미지정 시 full common period 적용
-- [ ] Time Period default Month-to-Month 적용
-- [ ] Calendar Aligned default Yes 적용
-- [ ] run-level rebalancing default Monthly 적용
-- [ ] portfolio name default 반영
-- [ ] mechanical validation 후 필요한 사용자 decision만 질문
-- [ ] explicit execution intent 후 redundant approval 방지
+- [x] Backtest에서 optimizer objective/min-max 질문 금지
+- [x] benchmark default SPY, explicit none/override 반영
+- [x] initial balance 10,000 default 반영
+- [x] period 미지정 시 full common period 적용
+- [x] Time Period default Month-to-Month 적용
+- [x] Calendar Aligned default Yes 적용
+- [x] run-level rebalancing default Monthly 적용
+- [x] portfolio name default 반영
+- [x] mechanical validation 후 필요한 사용자 decision만 질문
+- [x] explicit execution intent 후 redundant approval 방지
 - [x] 단일 `docs/llm-analysis-framework.md`에 Optimization / Backtest branch 반영
 - [x] Backtest branch에 Correlation Structure를 독립 단계로 반영하고 correlation-only diversifier 판정 금지
 - [x] Run 분석 시 `product_mode` 기반 deterministic branch routing, 누락 시 결과 내용으로 추론 금지
 
 ## 12. Agent Verification Framework
 
-- [ ] 최소 `verification/profile.yaml` 구조 도입 여부를 현재 repo에 맞게 결정
-- [ ] `scripts/verify.py` 또는 기존 test/run entrypoint를 재사용해 minimal verification entrypoint 구성
-- [ ] calculation test → real run → result verification 흐름 구현
-- [ ] report change에서 browser semantic verification 추가
-- [ ] shared change의 Optimization affected regression 포함
-- [ ] requirement/test/acceptance를 Agent가 임의 변경하지 않는 blocker rule 유지
-- [ ] material layout/interaction change에서만 human visual review gate 적용
+- [x] 최소 `verification/profile.yaml` 구조 도입 여부를 현재 repo에 맞게 결정
+- [x] `scripts/verify.py` 또는 기존 test/run entrypoint를 재사용해 minimal verification entrypoint 구성
+- [x] calculation test → real run → result verification 흐름 구현
+- [x] report change에서 browser semantic verification 추가
+- [x] shared change의 Optimization affected regression 포함
+- [x] requirement/test/acceptance를 Agent가 임의 변경하지 않는 blocker rule 유지
+- [x] material layout/interaction change에서만 human visual review gate 적용
 
 ## 13. Completion Verification
 
-- [ ] Backtest synthetic/contract tests PASS
-- [ ] Optimization affected regression PASS
-- [ ] 실제 1-portfolio Backtest run 검증
+- [x] Backtest synthetic/contract tests PASS
+- [x] Optimization affected regression PASS
+- [x] 실제 1-portfolio Backtest run 검증
 - [ ] 실제 3-portfolio Backtest run 검증
 - [ ] benchmark 없음/있음 real run 검증
 - [ ] Month-to-Month / Year-to-Year real run 검증
 - [ ] monthly/quarterly/semiannual/yearly/none policy 검증
 - [ ] Calendar Aligned Yes/No schedule 검증
-- [ ] generated report browser semantic verification
+- [x] generated report browser semantic verification
 - [ ] material visual change가 있으면 human visual review 완료
 - [ ] P0/P1 blocker 없음
-- [ ] validation evidence와 result commit 기록
+- [x] validation evidence와 result commit 기록
