@@ -1,0 +1,4 @@
+run_id: 20260904-0001
+study: studies/qqq-spy-gld-ief-backtest/study.md
+experiment: studies/qqq-spy-gld-ief-backtest/experiments/001-qqq-spy-gld-ief.yaml
+product_mode: backtest
