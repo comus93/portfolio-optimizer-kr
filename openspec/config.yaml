@@ -4,17 +4,18 @@ context: |
   Project: portfolio-optimizer-kr, a Python 3.11 portfolio research system.
   Write OpenSpec artifacts in Korean.
   Portfolio Visualizer is an external reference, not a normative source.
-  Existing internal contracts remain the migration baseline until the relevant capability is migrated into OpenSpec.
-  The migration baseline is not limited to docs/specification.md. Preserve applicable semantics from:
-  - docs/specification.md for finance/calculation behavior
+  `openspec/specs/` is the canonical baseline for capabilities already migrated into OpenSpec.
+  As of 2026-09-04, the finance/calculation/product semantics previously owned by docs/specification.md have been migrated into OpenSpec baseline capabilities.
+  docs/specification.md is now a compatibility pointer and capability map, not a normative finance specification.
+  For capabilities not yet fully migrated, preserve applicable semantics from the remaining internal migration baselines:
   - docs/report-ui-specification.md for report UI/interaction behavior
   - docs/input-ui-contract.md for input/YAML/runner/viewer behavior
   - docs/architecture.md for architecture and responsibility boundaries
   - docs/visual-acceptance-contract.md for validation procedure and completion checks
   - docs/research-operation-pipeline.md for user research execution behavior
   - docs/llm-research-input-contract.md for LLM/User research input behavior
-  - docs/llm-analysis-framework.md for Optimization-specific LLM analysis behavior
-  Historical correction/reference documents may inform parity review only when consistent with the current internal contracts.
+  - docs/llm-analysis-framework.md for product-mode-specific LLM analysis execution guidance
+  Historical correction/reference documents may inform parity review only when consistent with the current canonical OpenSpec and remaining migration baselines.
   External references such as Portfolio Visualizer may fill product-design gaps but must not override existing internal contracts automatically.
   Target product capabilities are portfolio-optimization and portfolio-backtest.
   Shared finance/presentation capabilities are market-data, portfolio-simulation, portfolio-analytics, run-artifacts, and research-report.
@@ -31,7 +32,8 @@ rules:
   specs:
     - Define observable behavior and testable scenarios, not implementation steps.
     - State financial formulas explicitly when they are part of the behavior contract.
-    - Preserve applicable existing internal contract semantics during migration; do not use docs/specification.md as the only baseline.
+    - Treat `openspec/specs/` as canonical for migrated capabilities.
+    - Preserve applicable semantics from remaining migration-baseline docs only for capabilities not yet fully migrated.
     - Do not duplicate a shared formula or acceptance rule in portfolio-optimization and portfolio-backtest specs.
     - Keep research/tooling capability behavior separate from finance formulas unless the behavior directly changes a finance contract.
   design:
@@ -41,7 +43,7 @@ rules:
   tasks:
     - Prefer affected-scope tests during iteration and include real-run/browser checks when the change needs them.
     - Include regression tasks for every existing product capability affected by a shared capability change.
-    - Include parity review against applicable existing internal contracts before treating migrated OpenSpec as the sole normative source.
+    - Include parity review against applicable canonical OpenSpec and remaining migration-baseline docs before completion.
 
 operations:
   apply:
