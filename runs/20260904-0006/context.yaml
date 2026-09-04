@@ -1,0 +1,4 @@
+run_id: 20260904-0006
+study: studies/global-multi-asset-allocation/study.md
+experiment: studies/global-multi-asset-allocation/experiments/001-spy-qqq-tlt-gld-cper-mchi-ewy.yaml
+product_mode: optimization
