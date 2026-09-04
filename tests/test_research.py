@@ -17,6 +17,7 @@ from portfolio_optimizer_kr.research import (
 
 
 EXPERIMENT_YAML = """
+product_mode: optimization
 analysis_period:
   start: 2020-01-01
   end: 2020-03-31
@@ -166,6 +167,7 @@ def test_controlled_execution_generates_effective_input_and_context(tmp_path):
 
     assert output.parent == repo / "runs"
     assert effective["run_id"] == output.name
+    assert effective["product_mode"] == "optimization"
     assert effective["benchmark"] == DEFAULT_RESEARCH_BENCHMARK
     assert context == {
         "run_id": output.name,
