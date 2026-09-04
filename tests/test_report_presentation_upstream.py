@@ -54,8 +54,15 @@ def test_frontier_landmarks_use_optimizer_moments_for_provided_and_optimized():
 def test_up_down_scatter_contains_each_aligned_month_not_summary_rows():
     index = pd.to_datetime(["2025-01-31", "2025-02-28", "2025-03-31"])
     benchmark = pd.Series([0.01, -0.02, 0.0], index=index)
-    provided = SimpleNamespace(returns=pd.Series([0.015, -0.01, 0.005], index=index))
-    optimized = SimpleNamespace(returns=pd.Series([0.012, -0.015, 0.004], index=index))
+    weights = pd.DataFrame({"asset": [1.0, 1.0, 1.0]}, index=index)
+    provided = SimpleNamespace(
+        returns=pd.Series([0.015, -0.01, 0.005], index=index),
+        weights=weights,
+    )
+    optimized = SimpleNamespace(
+        returns=pd.Series([0.012, -0.015, 0.004], index=index),
+        weights=weights,
+    )
 
     table = _up_down_scatter_table(
         {"provided": provided, "optimized": optimized}, benchmark
