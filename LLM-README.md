@@ -20,15 +20,17 @@ comus93/portfolio-optimizer-kr의 LLM-README.md 읽고 이어가자
 
 ```text
 MUST
-1. docs/research-operation-pipeline.md
-2. docs/llm-analysis-framework.md
-3. docs/llm-research-input-contract.md
-4. docs/specification.md
-5. docs/architecture.md
+1. openspec/config.yaml
+2. 관련 openspec/specs/<capability>/spec.md
+3. active change가 있으면 openspec/changes/<change>/의 proposal/spec/design/tasks
+4. docs/research-operation-pipeline.md
+5. docs/llm-analysis-framework.md
+6. docs/llm-research-input-contract.md
+7. docs/architecture.md
 
 CONDITIONAL
-6. docs/report-ui-specification.md        # report/UI 작업 또는 결과 화면 검토 시
-7. AGENTS.md                              # 시스템 개발/수정 작업 시
+8. docs/report-ui-specification.md        # 아직 OpenSpec migration baseline, report/UI 작업 시
+9. AGENTS.md                              # 시스템 개발/수정 작업 시
 ```
 
 핵심 operating contract:
@@ -52,7 +54,7 @@ docs/llm-analysis-framework.md
 연구 입력 / product intent      docs/llm-research-input-contract.md
 연구 운영 흐름                  docs/research-operation-pipeline.md
 결과 분석 / 해석                docs/llm-analysis-framework.md
-금융 계산 의미론                docs/specification.md
+금융 계산 / product semantics   openspec/specs/ + active openspec/changes/
 시스템 구조                     docs/architecture.md
 Report UI                       docs/report-ui-specification.md
 개발 / 검증 운영                AGENTS.md 및 ai-share/

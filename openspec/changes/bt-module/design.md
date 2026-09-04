@@ -13,20 +13,20 @@ PV는 비규범 reference다. PV의 계산값, 구현 방식, hidden field, 문�
 
 ## Internal Baseline
 
-기존 문서는 Backtest 설계 baseline으로 사용한다.
+2026-09-04부터 기존 `docs/specification.md`가 소유하던 finance/calculation/product semantics는 `openspec/specs/`의 capability baseline으로 마이그레이션되었다. `docs/specification.md`는 compatibility pointer다.
 
 ```text
-Finance / calculation behavior   docs/specification.md
-Report UI / interaction          docs/report-ui-specification.md
-Input / YAML / runner / viewer   docs/input-ui-contract.md
-Architecture / responsibility    docs/architecture.md
-Validation procedure             docs/visual-acceptance-contract.md
-Research execution               docs/research-operation-pipeline.md
-LLM research input               docs/llm-research-input-contract.md
-LLM result analysis              docs/llm-analysis-framework.md
+Finance / calculation behavior   openspec/specs/{portfolio-optimization,market-data,portfolio-simulation,portfolio-analytics,run-artifacts,research-report}/spec.md
+Report UI / interaction          docs/report-ui-specification.md            # remaining migration baseline
+Input / YAML / runner / viewer   docs/input-ui-contract.md                  # remaining migration baseline
+Architecture / responsibility    docs/architecture.md                      # remaining migration baseline
+Validation procedure             docs/visual-acceptance-contract.md         # remaining migration baseline
+Research execution               docs/research-operation-pipeline.md        # remaining migration baseline
+LLM research input               docs/llm-research-input-contract.md        # execution guide/baseline
+LLM result analysis              docs/llm-analysis-framework.md             # execution guide/baseline
 ```
 
-Backtest-specific 신규/변경 사항은 `openspec/changes/bt-module/`에서 정의하고, 확정된 Research Frontend/analysis contract는 위 canonical docs에 반영한다.
+Backtest-specific 신규/변경 사항은 `openspec/changes/bt-module/`에서 baseline OpenSpec에 대한 delta로 정의한다. 아직 OpenSpec으로 완전히 이관되지 않은 capability에 한해서만 위 `docs/` migration baseline을 함께 적용한다.
 
 ## Product and Shared Boundary
 
@@ -227,6 +227,14 @@ Monthly  ← Research Frontend default
 ### D11 Display Income
 
 v1에서 제외한다. Canonical total return은 유지하되 dividend/distribution income 자체를 별도 series/report로 분해하지 않는다.
+
+### D12 Combined asset identity presentation
+
+Report에서 asset Name과 Ticker를 하나의 사용자-facing identity로 함께 표시할 때는 `Name`을 첫 줄, `(Ticker)`를 다음 줄에 표시한다. 이 규칙은 chart legend와 Annual/Monthly return detail header 등 combined identity를 사용하는 영역에 공통 적용한다.
+
+### D13 Backtest correlation scope
+
+Backtest `Monthly Correlations`의 canonical matrix와 report presentation은 constituent asset 간 monthly-return correlation만 포함한다. Portfolio return series와 별도 benchmark series는 correlation 대상에서 제외한다. Benchmark ticker가 constituent이기도 하면 constituent asset으로 한 번 유지한다.
 
 ## PV Settings Mapping
 

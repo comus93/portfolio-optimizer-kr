@@ -209,3 +209,25 @@ Backtest v1 report는 distribution income breakdown 또는 `Display Income` sect
 - GIVEN Backtest portfolio에 dividend/distribution을 지급하는 asset이 있다
 - WHEN v1 report를 생성한다
 - THEN total-return performance는 표시하되 별도 income amount/series를 추정하여 표시하지 않는다
+
+
+### Requirement: Combined asset identity uses stacked name and ticker
+사용자-facing report에서 asset `Name`과 `Ticker`를 하나의 label/header/legend item으로 함께 표시할 때는 종목명을 첫 줄에, 괄호로 감싼 ticker를 다음 줄에 표시해야 한다(MUST). `Name (TICKER)`를 한 줄 문자열로 반복해서 사용해서는 안 된다(MUST NOT). Name이 unavailable이면 ticker만 표시할 수 있다(MAY).
+
+#### Scenario: annual/monthly return asset header
+- GIVEN asset name이 `Invesco QQQ Trust Series 1`이고 ticker가 `QQQ`이다
+- WHEN Annual Returns 또는 Monthly Returns의 asset identity header를 표시한다
+- THEN `Invesco QQQ Trust Series 1` 다음 줄에 `(QQQ)`를 표시한다
+
+#### Scenario: chart legend asset identity
+- GIVEN 여러 constituent asset의 Name/Ticker를 chart legend에 함께 표시한다
+- WHEN legend를 렌더링한다
+- THEN 각 item은 Name과 `(Ticker)`를 두 줄 identity로 표시해 긴 한 줄 label이 연속되지 않게 한다
+
+### Requirement: Backtest Monthly Correlations presentation is constituent-only
+Backtest report의 `Monthly Correlations`는 canonical Backtest constituent-asset correlation matrix만 표시해야 하며 portfolio return series 또는 별도 benchmark series를 row/column으로 추가해서는 안 된다(MUST NOT). Benchmark ticker가 constituent asset이기도 한 경우에는 constituent asset으로 한 번 표시해야 한다(MUST).
+
+#### Scenario: benchmark is also SPY constituent
+- GIVEN portfolio constituents가 QQQ/SPY/GLD/IEF이고 benchmark도 SPY이다
+- WHEN Monthly Correlations를 표시한다
+- THEN QQQ/SPY/GLD/IEF asset matrix만 표시하고 `Portfolio 1` 또는 별도 `Benchmark` row/column을 추가하지 않는다

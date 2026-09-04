@@ -27,7 +27,7 @@ Shared
 
 Optimization과 Backtest는 별도 product capability다. 공통 데이터, 계산, simulation, artifact, presentation 규칙은 shared capability에 한 번만 정의한다.
 
-기존 capability 중 아직 OpenSpec으로 이관되지 않은 상세 contract는 기존 `docs/` 문서가 baseline이다. `migrate-optimizer-to-openspec` change가 완료되어 migration parity가 확인된 capability부터 `openspec/specs/`가 normative source가 되고 동일 요구의 기존 `docs/` 내용은 reference/설명 역할로 전환한다.
+`openspec/specs/`는 이미 마이그레이션된 capability의 normative baseline이다. 2026-09-04부터 기존 `docs/specification.md`의 finance/calculation/product semantics는 OpenSpec으로 이관되었고 해당 문서는 compatibility pointer로만 유지한다. 아직 완전히 이관되지 않은 report UI, input/runtime, architecture, validation, research-operation capability는 관련 `docs/` 문서를 migration baseline으로 함께 사용한다.
 
 개발 전 우선 확인 순서:
 

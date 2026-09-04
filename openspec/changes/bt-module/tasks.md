@@ -15,15 +15,15 @@
 
 ## 2. OpenSpec Completion
 
-- [ ] `portfolio-backtest` requirement 최종 parity review
-- [ ] `market-data` total-return delta review
-- [ ] `portfolio-simulation` calendar/non-calendar rebalancing/wealth delta review
-- [ ] `run-artifacts` product-mode/multi-portfolio/Time-Period/schedule-setting delta review
-- [ ] `research-report` Backtest section/applicability/balance/schedule semantics review
-- [ ] `research-execution` union-ticker Experiment identity review
-- [ ] `research-input` confirmed defaults/decision boundary review
-- [ ] `research-analysis` product-mode branch boundary review
-- [ ] `agent-verification` conditional human-review gate review
+- [x] `portfolio-backtest` requirement 최종 parity review
+- [x] `market-data` total-return delta review
+- [x] `portfolio-simulation` calendar/non-calendar rebalancing/wealth delta review
+- [x] `run-artifacts` product-mode/multi-portfolio/Time-Period/schedule-setting delta review
+- [x] `research-report` Backtest section/applicability/balance/schedule semantics review
+- [x] `research-execution` union-ticker Experiment identity review
+- [x] `research-input` confirmed defaults/decision boundary review
+- [x] `research-analysis` product-mode branch boundary review
+- [x] `agent-verification` conditional human-review gate review
 - [ ] OpenSpec strict validation 수행
 
 ## 3. Total-return Feasibility
@@ -114,6 +114,8 @@
 - [ ] Optimization-only Frontier section을 Backtest에서 제외
 - [ ] Display Income section을 v1에서 생성하지 않음
 - [ ] identity/unit/N/A/axis/tooltip/responsive existing contract regression
+- [x] combined asset identity를 `Name` + 줄바꿈 + `(Ticker)`로 통일하고 Annual/Monthly detail header 및 asset legend regression 반영
+- [x] Backtest Monthly Correlations를 constituent asset-only canonical/report scope로 제한하고 portfolio/별도 benchmark series 제외
 
 ## 10. Research Workflow
 
