@@ -1,3 +1,4 @@
+# Re-run against current bt-module after regression-contract cleanup.
 name: Final bt-module release gate
 
 on:
