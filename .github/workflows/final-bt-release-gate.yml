@@ -1,0 +1,162 @@
+name: Final bt-module release gate
+
+on:
+  push:
+    branches: [release-gate-work]
+    paths:
+      - '.github/workflows/final-bt-release-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bt-module
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project and OpenSpec
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev]'
+          npm install -g @fission-ai/openspec@latest
+      - name: Full Python regression
+        run: pytest -q
+      - name: Strict OpenSpec validation
+        run: openspec validate --all --strict --no-interactive
+      - name: Real-data Backtest release matrix
+        shell: python
+        run: |
+          from __future__ import annotations
+          import json
+          from pathlib import Path
+          import yaml
+
+          from portfolio_optimizer_kr.data import FDRLoader
+          from portfolio_optimizer_kr.models import AssetSpec
+          from portfolio_optimizer_kr.runner import run_yaml
+
+          root = Path('/tmp/bt-release-gate')
+          configs = root / 'configs'
+          runs = root / 'runs'
+          configs.mkdir(parents=True, exist_ok=True)
+          runs.mkdir(parents=True, exist_ok=True)
+
+          real_loader = FDRLoader()
+          universe = [
+              AssetSpec('QQQ', name='Invesco QQQ Trust', currency='USD'),
+              AssetSpec('GLD', name='SPDR Gold Shares', currency='USD'),
+              AssetSpec('IEF', name='iShares 7-10 Year Treasury Bond ETF', currency='USD'),
+              AssetSpec('SPY', name='SPDR S&P 500 ETF Trust', currency='USD'),
+          ]
+          # One network hydration, then the exact real FDR series are reused across
+          # the policy matrix so this gate tests finance behavior rather than network repetition.
+          cached = real_loader.load_many(universe, start='2020-12-01', end='2024-12-31')
+          for symbol, series in cached.items():
+              assert series.attrs.get('return_semantics') == 'total_return', (symbol, series.attrs)
+
+          class CachedRealLoader:
+              def load_many(self, assets, start=None, end=None):
+                  return {asset.symbol: cached[asset.symbol] for asset in assets}
+              def load_series(self, symbol, start=None, end=None):
+                  return real_loader.load_series(symbol, start, end)
+              def load_economic_series(self, symbol, start=None, end=None):
+                  return real_loader.load_economic_series(symbol, start, end)
+
+          loader = CachedRealLoader()
+
+          assets = [
+              {'symbol':'QQQ','name':'Invesco QQQ Trust','currency':'USD'},
+              {'symbol':'GLD','name':'SPDR Gold Shares','currency':'USD'},
+              {'symbol':'IEF','name':'iShares 7-10 Year Treasury Bond ETF','currency':'USD'},
+          ]
+          one = [{'name':'Portfolio 1','weights_pct':{'QQQ':40,'GLD':30,'IEF':30}}]
+          three = [
+              {'name':'Portfolio 1','weights_pct':{'QQQ':40,'GLD':30,'IEF':30}},
+              {'name':'Portfolio 2','weights_pct':{'QQQ':60,'GLD':20,'IEF':20}},
+              {'name':'Portfolio 3','weights_pct':{'QQQ':20,'GLD':40,'IEF':40}},
+          ]
+          benchmark = {'symbol':'SPY','name':'SPDR S&P 500 ETF Trust','currency':'USD'}
+
+          cases = [
+              ('three-no-benchmark', 'month_to_month', 'monthly', True, None, three),
+              ('m2m-benchmark', 'month_to_month', 'monthly', True, benchmark, one),
+              ('y2y-benchmark', 'year_to_year', 'yearly', True, benchmark, one),
+              ('quarterly-aligned', 'month_to_month', 'quarterly', True, benchmark, one),
+              ('quarterly-anchored', 'month_to_month', 'quarterly', False, benchmark, one),
+              ('semiannual-aligned', 'month_to_month', 'semiannual', True, benchmark, one),
+              ('semiannual-anchored', 'month_to_month', 'semiannual', False, benchmark, one),
+              ('yearly-anchored', 'month_to_month', 'yearly', False, benchmark, one),
+              ('none', 'month_to_month', 'none', False, benchmark, one),
+              ('monthly-unaligned', 'month_to_month', 'monthly', False, benchmark, one),
+          ]
+
+          results = []
+          for case, mode, period, aligned, bm, portfolios in cases:
+              cfg = {
+                  'product_mode':'backtest',
+                  'run_id':f'release-{case}',
+                  'time_period':{'mode':mode,'start_year':2021,'end_year':2024},
+                  'assets':assets,
+                  'portfolios':portfolios,
+                  'benchmark':bm,
+                  'initial_balance':10000,
+                  'rebalancing':{'period':period,'calendar_aligned':aligned},
+                  'risk_free':{'mode':'fixed','annual_rate_pct':0},
+              }
+              if mode == 'month_to_month':
+                  cfg['time_period']['first_month'] = 'Feb'
+                  cfg['time_period']['last_month'] = 'Nov'
+              path = configs / f'{case}.yaml'
+              path.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding='utf-8')
+              out = run_yaml(path, runs, loader=loader)
+              payload = json.loads((out / 'result.json').read_text(encoding='utf-8'))
+              html = (out / 'report.html').read_text(encoding='utf-8')
+              effective = payload['configuration']
+              assert effective['product_mode'] == 'backtest'
+              assert effective['rebalancing_period'] == period
+              assert effective['calendar_aligned'] is aligned
+              assert (effective.get('benchmark') is None) == (bm is None)
+              assert len(payload['portfolio_definitions']) == len(portfolios)
+              assert 'Efficient Frontier' not in html
+              if bm is None:
+                  assert 'benchmark-relative' not in html.lower()
+              else:
+                  assert 'benchmark-relative' in html.lower()
+              results.append({
+                  'case': case,
+                  'time_period_mode': mode,
+                  'rebalancing': period,
+                  'calendar_aligned': aligned,
+                  'benchmark': None if bm is None else bm['symbol'],
+                  'portfolios': len(portfolios),
+                  'output': str(out),
+              })
+
+          # Real-path behavioral sanity: schedules that should differ produce distinct
+          # ending balances on nontrivial market data, while monthly is alignment-invariant.
+          def ending(case):
+              payload = json.loads((runs / f'release-{case}' / 'result.json').read_text(encoding='utf-8'))
+              first = next(iter(payload['portfolio_performance'].values()))
+              return float(first['end_balance'])
+          assert abs(ending('m2m-benchmark') - ending('monthly-unaligned')) < 1e-8
+          assert abs(ending('quarterly-aligned') - ending('quarterly-anchored')) > 1e-6
+          assert abs(ending('semiannual-aligned') - ending('semiannual-anchored')) > 1e-6
+          assert abs(ending('m2m-benchmark') - ending('none')) > 1e-6
+
+          print(json.dumps(results, indent=2))
+      - name: Control must be idle
+        shell: python
+        run: |
+          import yaml
+          p = yaml.safe_load(open('control/execute.yaml', encoding='utf-8'))
+          assert p.get('run') is False, p
+          print(p)
