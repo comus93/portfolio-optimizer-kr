@@ -1,0 +1,21 @@
+product_mode: backtest
+assets:
+- symbol: QQQ
+  currency: USD
+- symbol: SPY
+  currency: USD
+- symbol: GLD
+  currency: USD
+- symbol: IEF
+  currency: USD
+portfolios:
+- weights_pct:
+    QQQ: 30
+    SPY: 30
+    GLD: 30
+    IEF: 10
+benchmark:
+  symbol: SPY
+  currency: USD
+risk_free:
+  mode: us_3m_tbill
