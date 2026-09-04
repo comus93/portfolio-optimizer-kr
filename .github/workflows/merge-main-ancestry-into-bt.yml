@@ -1,0 +1,32 @@
+name: Merge main ancestry into bt-module
+
+on:
+  push:
+    branches: [bt-module]
+    paths:
+      - '.github/workflows/merge-main-ancestry-into-bt.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  merge-ours:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bt-module
+          fetch-depth: 0
+      - name: Merge main ancestry without changing bt-module tree
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          BEFORE_TREE="$(git rev-parse HEAD^{tree})"
+          MAIN_SHA="$(git rev-parse origin/main)"
+          git merge -s ours --no-ff "$MAIN_SHA" -m "merge: record main ancestry without changing bt-module tree"
+          AFTER_TREE="$(git rev-parse HEAD^{tree})"
+          test "$BEFORE_TREE" = "$AFTER_TREE"
+          git diff --exit-code HEAD^1 HEAD
+          git push origin HEAD:bt-module
