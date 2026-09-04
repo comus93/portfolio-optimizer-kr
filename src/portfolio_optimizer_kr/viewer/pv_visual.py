@@ -605,7 +605,7 @@ def annual_asset_returns_chart(
             shaped["ticker"].astype(str) == ticker
         ].set_index("year")["_return_pct"]
         name = names.get(ticker, "").strip()
-        label = f"{name} ({ticker})" if name else ticker
+        label = ad.asset_identity_label(name, ticker)
         series.append(
             (
                 label,
@@ -648,28 +648,17 @@ def correlations_table(
         row_keys = all_series
 
     if names:
-        asset_columns = [
-            key for key in names if key in frame.columns
-        ]
+        # Monthly Correlations is an asset-to-asset matrix. Portfolio and
+        # benchmark series are intentionally excluded even when present in a
+        # legacy persisted correlation artifact. A benchmark ticker that is
+        # also a constituent remains here through the asset identity itself.
+        columns = [key for key in names if key in frame.columns]
     else:
-        asset_columns = [
-            column for column in frame.columns if column != "series"
-        ]
-
-    extra_columns = [
-        name
-        for name in (portfolio_order or [])
-        if name in frame.columns and name not in asset_columns
-    ]
-    if "benchmark" in frame.columns and "benchmark" not in asset_columns:
-        extra_columns.append("benchmark")
-    columns = asset_columns + [
-        column for column in extra_columns if column not in asset_columns
-    ]
-    if not columns:
         columns = [
             column for column in frame.columns if column != "series"
         ]
+    if not columns:
+        columns = [key for key in row_keys if key in frame.columns]
 
     lookup = frame.copy()
     lookup["series"] = lookup["series"].astype(str)

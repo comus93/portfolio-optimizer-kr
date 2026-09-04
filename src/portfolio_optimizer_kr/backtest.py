@@ -178,9 +178,9 @@ def analyze_backtest_prices(
             stats.covariance,
         ).to_dict()
 
-    correlation = historical.correlations_table(
-        monthly_returns, paths, benchmark_returns
-    )
+    # Backtest Monthly Correlations is strictly constituent asset-to-asset.
+    # Portfolio paths and benchmark-relative behavior have dedicated analytics.
+    correlation = stats.correlation.copy()
     growth = historical.growth_table(
         paths,
         initial_balance=request.initial_balance,

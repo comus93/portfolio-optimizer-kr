@@ -84,8 +84,8 @@ def test_annual_asset_returns_preserve_ticker_series_and_shared_year_hover():
     )
     rendered = _annual_asset_returns_chart(annual_assets, {"QQQ": "Invesco QQQ Trust", "GLD": "SPDR Gold Shares"})
     assert 'data-chart="annual-asset-returns-chart"' in rendered
-    assert "Invesco QQQ Trust (QQQ)" in rendered
-    assert "SPDR Gold Shares (GLD)" in rendered
+    assert "Invesco QQQ Trust<br>(QQQ)" in rendered
+    assert "SPDR Gold Shares<br>(GLD)" in rendered
     assert 'class="chart-mark shared-hover-zone grouped-hover-zone"' in rendered
     assert 'data-tooltip-json=' in rendered
 
@@ -158,6 +158,32 @@ def test_active_return_section_contains_all_accepted_views():
     assert "Return vs. Benchmark" in rendered
     assert "active-contribution-hover-zone" in rendered
     assert "rolling-active-hover-zone" in rendered
+    assert "Invesco QQQ Trust<br>(QQQ)" in rendered
+    assert "SPDR Gold Shares<br>(GLD)" in rendered
+
+
+def test_monthly_correlations_render_constituent_assets_only():
+    correlations = pd.DataFrame(
+        [
+            {"series": "QQQ", "QQQ": 1.0, "GLD": 0.20, "SPY": 0.85, "Growth 70/30": 0.94, "benchmark": 0.85},
+            {"series": "GLD", "QQQ": 0.20, "GLD": 1.0, "SPY": 0.10, "Growth 70/30": 0.31, "benchmark": 0.10},
+            {"series": "SPY", "QQQ": 0.85, "GLD": 0.10, "SPY": 1.0, "Growth 70/30": 0.91, "benchmark": 1.0},
+            {"series": "Growth 70/30", "QQQ": 0.94, "GLD": 0.31, "SPY": 0.91, "Growth 70/30": 1.0, "benchmark": 0.91},
+            {"series": "benchmark", "QQQ": 0.85, "GLD": 0.10, "SPY": 1.0, "Growth 70/30": 0.91, "benchmark": 1.0},
+        ]
+    )
+    rendered = _correlations_table(
+        correlations,
+        BENCHMARK,
+        {"QQQ": "Invesco QQQ Trust", "GLD": "SPDR Gold Shares", "SPY": "SPDR S&P 500 ETF Trust"},
+        ["Growth 70/30"],
+    )
+    for ticker in ("QQQ", "GLD", "SPY"):
+        assert f"<th>{ticker}</th>" in rendered
+    assert "Growth 70/30" not in rendered
+    assert "<th>benchmark</th>" not in rendered
+    assert "<th>Growth 70/30</th>" not in rendered
+    assert "SPDR S&amp;P 500 ETF Trust" in rendered
 
 
 def test_asset_performance_is_shared_finance_output_and_split_for_presentation():

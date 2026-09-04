@@ -277,8 +277,12 @@ def nice_step(span: float, target_ticks: int = 6) -> float:
 
 
 def legend(items: Iterable[tuple[str, str]]) -> str:
+    def label_html(value: Any) -> str:
+        return esc(value).replace("\n", "<br>")
+
     return '<div class="legend">' + "".join(
-        f'<span class="legend-item"><i style="background:{color}"></i>{esc(label)}</span>'
+        f'<span class="legend-item"><i style="background:{color}"></i>'
+        f'<span class="legend-label">{label_html(label)}</span></span>'
         for label, color in items
     ) + "</div>"
 

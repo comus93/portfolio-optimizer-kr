@@ -25,6 +25,13 @@ ASSET_PALETTE = [
 ]
 
 
+def asset_identity_label(name: Any, ticker: Any, *, separator: str = "\n") -> str:
+    """Human-readable combined asset identity: name, then parenthesized ticker."""
+    ticker_text = str(ticker or "").strip()
+    name_text = str(name or "").strip()
+    return f"{name_text}{separator}({ticker_text})" if name_text else ticker_text
+
+
 def asset_names_from_configuration(configuration: dict[str, Any]) -> dict[str, str]:
     return {
         str(asset.get("symbol")): str(asset.get("name") or "")

@@ -121,7 +121,7 @@ def _allocation_matrix(frame: pd.DataFrame, portfolio_order: list[str] | None = 
     shaped = frame.copy()
     shaped["asset"] = shaped.apply(
         lambda row: (
-            f"{row.get('name')} ({row.get('ticker')})"
+            ad.asset_identity_label(row.get("name"), row.get("ticker"))
             if pd.notna(row.get("name")) and str(row.get("name")).strip()
             else str(row.get("ticker"))
         ),
@@ -459,6 +459,8 @@ th:first-child,td:first-child {{ text-align:left; }} th {{ background:#f5f7fa; c
 thead tr:first-child th[colspan] {{ text-align:center; background:#edf3fa; border-bottom:1px solid #d4deea; }}
 tbody tr:nth-child(even) {{ background:#fafbfc; }}
 .identity-cell {{ font-weight:500; }} .negative-value {{ color:#b42318; }}
+#allocation-matrix td:first-child {{ white-space:pre-line; }}
+.legend-label {{ display:inline-block; line-height:1.25; text-align:left; }}
 .monthly-correlations th {{ position:sticky; top:0; z-index:1; }} .heatmap-cell {{ font-variant-numeric:tabular-nums; text-align:center; min-width:72px; }}
 .legend {{ display:flex; flex-wrap:wrap; gap:18px; justify-content:center; margin:8px 0 10px; }}
 .legend-item {{ display:inline-flex; align-items:center; gap:6px; font-size:12px; }} .legend-item i {{ width:18px; height:3px; display:inline-block; }}

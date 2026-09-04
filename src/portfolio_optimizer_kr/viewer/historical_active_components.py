@@ -259,7 +259,7 @@ def active_contribution(
         series: list[tuple[str, str]] = []
         for ticker in ordered:
             name = asset_names.get(str(ticker), "").strip()
-            label = f"{name} ({ticker})" if name else str(ticker)
+            label = ad.asset_identity_label(name, ticker)
             series.append((str(ticker), label))
         blocks.append(
             f'<div class="analysis-panel active-contribution-panel" data-portfolio="{hc.esc(portfolio)}">'

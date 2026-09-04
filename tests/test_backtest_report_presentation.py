@@ -50,9 +50,9 @@ def test_allocation_uses_union_assets_preserves_order_and_mutes_non_holdings():
     )
     rendered = _allocation_matrix(allocations, PORTFOLIOS)
     assert rendered.index("Growth 70/30") < rendered.index("Balanced 50/50")
-    assert rendered.count("Invesco QQQ Trust (QQQ)") == 1
-    assert rendered.count("SPDR Gold Shares (GLD)") == 1
-    assert rendered.count("iShares 20+ Year Treasury (TLT)") == 1
+    assert rendered.count("Invesco QQQ Trust\n(QQQ)") == 1
+    assert rendered.count("SPDR Gold Shares\n(GLD)") == 1
+    assert rendered.count("iShares 20+ Year Treasury\n(TLT)") == 1
     assert "70.00%" in rendered and "50.00%" in rendered
     assert "—" in rendered
 

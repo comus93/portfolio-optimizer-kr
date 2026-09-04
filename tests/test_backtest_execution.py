@@ -94,6 +94,10 @@ def test_run_yaml_dispatches_backtest_and_generates_self_contained_report(tmp_pa
     assert "Defensive" in html
     assert "benchmark-relative" in html.lower()
 
+    correlations = pd.read_csv(output / "raw" / "correlations.csv", dtype={"series": str})
+    assert list(correlations["series"]) == ["A", "B"]
+    assert list(correlations.columns) == ["series", "A", "B"]
+
 
 def _make_research_repo(tmp_path: Path, *, benchmark_line: str = "") -> Path:
     repo = tmp_path / "repo"
