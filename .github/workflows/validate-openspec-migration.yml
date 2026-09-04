@@ -22,9 +22,17 @@ jobs:
           node-version: '22'
       - name: Install OpenSpec CLI
         run: npm install -g @fission-ai/openspec@latest
-      - name: Strict validate OpenSpec
+      - name: Archive superseded optimizer migration change
+        run: |
+          src='openspec/changes/migrate-optimizer-to-openspec'
+          dst='openspec/changes/archive/2026-09-04-migrate-optimizer-to-openspec'
+          if [ -d "$src" ]; then
+            mkdir -p openspec/changes/archive
+            git mv "$src" "$dst"
+          fi
+      - name: Strict validate final OpenSpec state
         run: openspec validate --all --strict --no-interactive
-      - name: Mark strict validation complete
+      - name: Mark migration validation complete
         shell: python
         run: |
           from pathlib import Path
@@ -32,15 +40,16 @@ jobs:
           text = p.read_text(encoding='utf-8')
           old = '- [ ] OpenSpec strict validation 수행'
           if old in text:
-              p.write_text(text.replace(old, '- [x] OpenSpec strict validation 수행', 1), encoding='utf-8')
-      - name: Commit validation task state
+              text = text.replace(old, '- [x] OpenSpec strict validation 수행', 1)
+          p.write_text(text, encoding='utf-8')
+      - name: Commit completed migration state
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add openspec/changes/bt-module/tasks.md
+          git add openspec/changes/archive openspec/changes/bt-module/tasks.md
           if git diff --cached --quiet; then
-            echo "No task update"
+            echo "No migration state update"
           else
-            git commit -m "spec: record strict OpenSpec validation"
+            git commit -m "spec: archive completed optimizer OpenSpec migration"
             git push origin HEAD:bt-module
           fi
