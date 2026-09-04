@@ -1,4 +1,4 @@
-# Re-run against current bt-module after regression-contract cleanup.
+# Re-run against current bt-module after restoring the original display-order fixture.
 name: Final bt-module release gate
 
 on:
