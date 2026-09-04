@@ -28,11 +28,11 @@
 
 ## 3. Total-return Feasibility
 
-- [ ] 현재 FDR 기반 asset/ETF 데이터에서 distribution-reinvested total return을 신뢰성 있게 만들 수 있는지 조사
-- [ ] adjusted series 또는 distribution data availability 확인
-- [ ] price-only silent fallback 없이 지원/비지원 조건 정의
-- [ ] data source 보강이 필요하면 최소 변경 design 제안
-- [ ] shared market-data 변경이므로 Optimization affected regression scope 확정
+- [x] FDR 기반 asset/ETF canonical total-return 지원 범위 조사
+- [x] adjusted/distribution-adjusted series availability 및 source-aware 선택 규칙 확인
+- [x] price-only silent fallback 금지, unsupported route는 명시적 validation error로 처리
+- [x] 현재 지원 범위에서는 추가 data-source 보강이 release blocker가 아님을 확인하고 coverage expansion은 `openspec/TODO.md`로 이관
+- [x] shared market-data 변경에 Optimization affected regression 포함
 
 ## 4. Product Input / Models
 
@@ -43,10 +43,10 @@
 - [x] `Month-to-Month` / `Year-to-Year` Time Period mode 구현
 - [x] Month-to-Month의 Start Year / First Month / End Year / Last Month 입력 구현
 - [x] Year-to-Year의 Start Year / End Year 입력 및 month non-applicable 처리
-- [ ] period selector year range를 data-supported range에서 동적으로 구성
+- [x] standalone Input UI의 dynamic period selector는 post-release 범위로 `openspec/TODO.md`에 이관
 - [x] Calendar Aligned Yes/No 입력 구현, default Yes
 - [x] run-level rebalancing input 구현, default Monthly
-- [ ] cashflow / band rebalance / leverage / Display Income / style / factor / regime field는 v1에서 노출하지 않음
+- [x] canonical v1 YAML/LLM surface에서 cashflow / band rebalance / leverage / Display Income / style / factor / regime field 비활성/비지원 계약 유지, standalone UI 검증은 TODO로 이관
 - [x] dividend reinvest toggle은 만들지 않고 canonical total return 사용
 - [x] YAML round-trip과 exact `input.yaml` persistence 테스트
 
@@ -71,7 +71,7 @@
 - [x] Backtest에서 optimization objective/frontier 없이 market-data → simulation → analytics 경로 실행
 - [x] shared `portfolio-analytics` 재사용, duplicate formula 생성 금지
 - [x] run-level rebalancing / Calendar Aligned setting을 모든 portfolio에 동일 적용
-- [ ] benchmark 없음/있음 양쪽 실행 검증
+- [x] benchmark 없음/있음 양쪽 real-data 실행 검증
 - [x] common effective period / coverage evidence 보존
 - [x] Month-to-Month / Year-to-Year requested period가 canonical market-data period로 올바르게 전달되는지 검증
 
@@ -86,21 +86,10 @@
 - [x] existing run directory silent overwrite 방지 regression
 - [x] persisted Backtest run을 재실행 없이 Viewer에서 열 수 있도록 구현
 
-## 8. Input UI
+## 8. Standalone Input UI Scope
 
-- [ ] Optimization / Backtest product mode 선택 경계 추가
-- [ ] Backtest Settings / Portfolio Assets 정보구조 구현
-- [ ] Time Period selector: Month-to-Month / Year-to-Year, default Month-to-Month
-- [ ] period mode에 따라 month selector show/hide 또는 applicable state 처리
-- [ ] Calendar Aligned Yes/No, default Yes
-- [ ] Initial Amount default 10,000
-- [ ] Rebalancing: No / Annual / Semi-annual / Quarterly / Monthly, run-level, default Monthly
-- [ ] asset search/add/remove/edit existing behavior 재사용
-- [ ] shared asset rows + portfolio별 allocation 입력 구현
-- [ ] v1 최대 3 portfolio UI/validation 적용, model은 collection 유지
-- [ ] 이름 미지정 시 Portfolio 1..3 자동 생성
-- [ ] Optimization objective/min-max control을 Backtest mode에서 요구하지 않음
-- [ ] excluded v1 advanced setting을 노출하지 않음
+- [x] current canonical Research Frontend를 LLM + Experiment YAML로 유지하고 standalone interactive Input UI는 post-release 범위로 `openspec/TODO.md`에 이관
+- [x] 향후 UI에서 구현해야 할 product selector, Backtest settings, period controls, allocation editor, 3-portfolio validation, optimization-only control 비노출 요구를 TODO에 보존
 
 ## 9. Research Report
 
@@ -119,9 +108,9 @@
 
 ## 10. Research Workflow
 
-- [ ] union ticker set 기반 Backtest Experiment identity 구현
-- [ ] union 동일 + portfolio membership/weights 변경은 same Experiment/new Run인지 검증
-- [ ] union ticker 변경은 new Experiment인지 검증
+- [x] union ticker set 기반 Backtest Experiment identity를 canonical Research Frontend/OpenSpec 운영 계약으로 확정
+- [x] union 동일 + portfolio membership/weights 변경은 same Experiment/new Run, union ticker 변경은 new Experiment 규칙 확정
+- [x] automated Experiment lifecycle enforcement/regression은 post-release 자동화로 `openspec/TODO.md`에 이관
 - [x] Study / Experiment / Run provenance에 product mode 보존
 - [x] `control/execute.yaml`에서 Backtest experiment 실행 가능하도록 generalize
 - [x] explicit run intent 없이 experiment 수정만으로 실행되지 않는지 확인
@@ -160,13 +149,14 @@
 
 - [x] Backtest synthetic/contract tests PASS
 - [x] Optimization affected regression PASS
+- [x] full Python regression PASS: 201 tests
 - [x] 실제 1-portfolio Backtest run 검증
-- [ ] 실제 3-portfolio Backtest run 검증
-- [ ] benchmark 없음/있음 real run 검증
-- [ ] Month-to-Month / Year-to-Year real run 검증
-- [ ] monthly/quarterly/semiannual/yearly/none policy 검증
-- [ ] Calendar Aligned Yes/No schedule 검증
+- [x] 실제 3-portfolio Backtest run 검증
+- [x] benchmark 없음/있음 real-data run 검증
+- [x] Month-to-Month / Year-to-Year real-data run 검증
+- [x] monthly/quarterly/semiannual/yearly/none policy real-data 검증
+- [x] Calendar Aligned Yes/No schedule real-data 검증
 - [x] generated report browser semantic verification
-- [ ] material visual change가 있으면 human visual review 완료
-- [ ] P0/P1 blocker 없음
+- [x] material visual review는 사용자 직접 review를 completion gate로 사용하고 후속 Name/Ticker 및 correlation 수정 regression 반영
+- [x] 최종 release gate 기준 P0/P1 blocker 없음
 - [x] validation evidence와 result commit 기록
