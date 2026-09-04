@@ -38,6 +38,7 @@ def test_run_yaml_uses_prior_month_warmup_and_preserves_input(tmp_path):
     config = tmp_path / "run.yaml"
     config.write_text(
         """
+product_mode: optimization
 run_id: demo-run
 analysis_period:
   start: 2020-01-01
@@ -93,6 +94,7 @@ def test_default_risk_free_loads_tb3ms_for_effective_return_months(tmp_path):
     config = tmp_path / "run.yaml"
     config.write_text(
         """
+product_mode: optimization
 run_id: tbill-default
 analysis_period:
   start: 2020-01-01
@@ -139,6 +141,7 @@ def test_us_3m_tbill_requires_every_effective_return_month(tmp_path):
     config = tmp_path / "run.yaml"
     config.write_text(
         """
+product_mode: optimization
 run_id: tbill-gap
 analysis_period:
   start: 2020-01-01
@@ -172,6 +175,7 @@ def test_mixed_currency_run_requires_explicit_fx_symbol(tmp_path):
     config = tmp_path / "mixed.yaml"
     config.write_text(
         """
+product_mode: optimization
 run_id: mixed
 assets:
   - symbol: KR
@@ -194,6 +198,7 @@ def test_mixed_currency_run_loads_configured_fx_series(tmp_path):
     config = tmp_path / "mixed.yaml"
     config.write_text(
         """
+product_mode: optimization
 run_id: mixed
 analysis_period:
   start: 2020-01-01
