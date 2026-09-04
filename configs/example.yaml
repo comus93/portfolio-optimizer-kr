@@ -1,3 +1,4 @@
+product_mode: optimization
 run_id: example-max-sharpe
 
 analysis_period:
