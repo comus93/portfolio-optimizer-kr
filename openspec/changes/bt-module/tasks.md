@@ -24,7 +24,7 @@
 - [x] `research-input` confirmed defaults/decision boundary review
 - [x] `research-analysis` product-mode branch boundary review
 - [x] `agent-verification` conditional human-review gate review
-- [ ] OpenSpec strict validation 수행
+- [x] OpenSpec strict validation 수행
 
 ## 3. Total-return Feasibility
 
