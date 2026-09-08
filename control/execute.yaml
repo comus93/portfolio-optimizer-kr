@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/005-direct-proxy-max-return-vol11.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/006-core-max-sharpe.yaml
+run: true
