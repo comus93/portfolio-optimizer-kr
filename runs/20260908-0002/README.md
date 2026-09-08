@@ -1,0 +1,3 @@
+# Optimization run
+
+Run ID: `20260908-0002`. `result.json` is canonical full precision; `raw/` preserves decimal tables; `review/` contains human/LLM-readable presentation units.

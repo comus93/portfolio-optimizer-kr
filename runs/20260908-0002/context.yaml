@@ -1,0 +1,4 @@
+run_id: 20260908-0002
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/002-direct-proxy-max-sharpe.yaml
+product_mode: optimization
