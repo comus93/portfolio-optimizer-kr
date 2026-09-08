@@ -1,0 +1,4 @@
+run_id: 20260908-0003
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/003-direct-proxy-max-return-vol13.yaml
+product_mode: optimization
