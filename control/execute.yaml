@@ -1,2 +1,2 @@
-target: studies/global-multi-asset-allocation/experiments/001-spy-qqq-tlt-gld-cper-mchi-ewy.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/001-native-fdr-coverage.yaml
+run: true
