@@ -1,0 +1,2 @@
+portfolio,start_balance,end_balance,annualized_return,best_year,worst_year,sharpe_ex_post,sortino,cagr_pct,annualized_volatility_pct,max_drawdown_pct
+Coverage Probe,10000.0,19259.12921348315,0.30767114828891884,0.5976315064720468,-0.05447336666092051,1.1188078229071476,3.0477407640192484,31.15374059927378,27.49991035005957,-26.410835214446948

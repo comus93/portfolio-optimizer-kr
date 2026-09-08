@@ -1,0 +1,4 @@
+run_id: 20260908-0001
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/001-native-fdr-coverage.yaml
+product_mode: backtest

@@ -1,0 +1,11 @@
+metric,unit,Coverage Probe
+Start Balance,balance,10000.0
+End Balance,balance,19259.12921348315
+CAGR,pct,31.15374059927378
+Annualized Return,pct,30.767114828891884
+Standard Deviation,pct,27.49991035005957
+Best Year,pct,59.763150647204675
+Worst Year,pct,-5.447336666092051
+Maximum Drawdown,pct,-26.410835214446948
+Sharpe Ratio (ex-post),ratio,1.1188078229071476
+Sortino Ratio,ratio,3.0477407640192484

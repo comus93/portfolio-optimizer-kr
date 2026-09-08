@@ -1,0 +1,52 @@
+product_mode: backtest
+assets:
+- symbol: '411060'
+  currency: KRW
+  name: ACE KRX금현물
+- symbol: '476760'
+  currency: KRW
+  name: ACE 미국30년국채액티브
+- symbol: '385560'
+  currency: KRW
+  name: RISE KIS국고채30년Enhanced
+- symbol: '379810'
+  currency: KRW
+  name: KODEX 미국나스닥100
+- symbol: '283580'
+  currency: KRW
+  name: KODEX 차이나CSI300
+- symbol: '152100'
+  currency: KRW
+  name: PLUS 200
+- symbol: '458730'
+  currency: KRW
+  name: TIGER 미국배당다우존스
+- symbol: '453810'
+  currency: KRW
+  name: KODEX 인도Nifty50
+- symbol: '241180'
+  currency: KRW
+  name: TIGER 일본니케이225
+portfolios:
+- name: Coverage Probe
+  weights_pct:
+    '411060': 100
+    '476760': 0
+    '385560': 0
+    '379810': 0
+    '283580': 0
+    '152100': 0
+    '458730': 0
+    '453810': 0
+    '241180': 0
+benchmark: null
+risk_free:
+  mode: fixed
+  annual_rate_pct: 0
+initial_balance: 10000
+time_period:
+  mode: month_to_month
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+run_id: 20260908-0001
