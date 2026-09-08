@@ -1,0 +1,4 @@
+run_id: 20260908-0006
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/006-core-max-sharpe.yaml
+product_mode: optimization
