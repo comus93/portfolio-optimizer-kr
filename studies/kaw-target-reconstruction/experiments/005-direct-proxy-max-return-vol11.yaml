@@ -1,0 +1,73 @@
+product_mode: optimization
+analysis_period:
+  start: 2021-11-01
+  end: 2026-08-31
+assets:
+- symbol: '133690'
+  name: TIGER 미국나스닥100
+  currency: KRW
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '402970'
+  name: ACE 미국배당다우존스
+  currency: KRW
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: 069500
+  name: KODEX 200
+  currency: KRW
+  provided_weight_pct: 8
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '168580'
+  name: ACE 중국본토CSI300
+  currency: KRW
+  provided_weight_pct: 8.5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '200250'
+  name: KIWOOM 인도Nifty50(합성)
+  currency: KRW
+  provided_weight_pct: 8.5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '101280'
+  name: KODEX 일본TOPIX100
+  currency: KRW
+  provided_weight_pct: 5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '385560'
+  name: RISE KIS국고채30년Enhanced
+  currency: KRW
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '132030'
+  name: KODEX 골드선물(H)
+  currency: KRW
+  provided_weight_pct: 20
+  min_weight_pct: 0
+  max_weight_pct: 60
+benchmark:
+  symbol: SPY
+  name: State Street SPDR S&P 500 ETF Trust
+  currency: USD
+optimization:
+  objective: target_volatility
+  target_volatility_pct: 11
+  frontier_points: 100
+portfolio:
+  rebalancing_period: monthly
+risk_free:
+  mode: us_3m_tbill
+fx:
+  usdkrw_symbol: USD/KRW
