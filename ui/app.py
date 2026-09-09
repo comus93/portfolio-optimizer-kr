@@ -317,7 +317,7 @@ def _optimization_input() -> tuple[dict, str]:
 
 def _backtest_input() -> tuple[dict, str]:
     st.subheader("Portfolio Assets")
-    portfolio_count = st.number_input("Portfolios", min_value=1, max_value=3, value=1, step=1)
+    portfolio_count = st.number_input("Portfolios", min_value=1, max_value=4, value=1, step=1)
     portfolio_names = [
         st.text_input(f"Portfolio {idx} name", value=f"Portfolio {idx}", key=f"bt_name_{idx}")
         for idx in range(1, int(portfolio_count) + 1)

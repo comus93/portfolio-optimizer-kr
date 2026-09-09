@@ -76,7 +76,7 @@ def test_year_to_year_period_uses_full_calendar_year_boundaries():
     assert str(spec.request.end) == "2025-12-31"
 
 
-def test_backtest_rejects_more_than_three_portfolios():
+def test_backtest_accepts_four_portfolios():
     config = _backtest_config()
     config["portfolios"] = [
         {"weights_pct": {"A": 50, "B": 50}},
@@ -85,7 +85,21 @@ def test_backtest_rejects_more_than_three_portfolios():
         {"weights_pct": {"A": 80, "B": 20}},
     ]
 
-    with pytest.raises(ConfigValidationError, match="at most 3"):
+    spec = request_from_config(config)
+    assert len(spec.request.portfolios) == 4
+
+
+def test_backtest_rejects_more_than_four_portfolios():
+    config = _backtest_config()
+    config["portfolios"] = [
+        {"weights_pct": {"A": 50, "B": 50}},
+        {"weights_pct": {"A": 60, "B": 40}},
+        {"weights_pct": {"A": 70, "B": 30}},
+        {"weights_pct": {"A": 80, "B": 20}},
+        {"weights_pct": {"A": 90, "B": 10}},
+    ]
+
+    with pytest.raises(ConfigValidationError, match="at most 4"):
         request_from_config(config)
 
 

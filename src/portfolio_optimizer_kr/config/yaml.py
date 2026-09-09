@@ -329,8 +329,8 @@ def _backtest_request_from_config(
     portfolio_rows = config.get("portfolios")
     if not isinstance(portfolio_rows, list) or not portfolio_rows:
         raise ConfigValidationError("portfolios must be a non-empty list")
-    if len(portfolio_rows) > 3:
-        raise ConfigValidationError("backtest v1 supports at most 3 portfolios")
+    if len(portfolio_rows) > 4:
+        raise ConfigValidationError("backtest v1 supports at most 4 portfolios")
 
     asset_symbols = [asset.symbol for asset in assets]
     asset_set = set(asset_symbols)

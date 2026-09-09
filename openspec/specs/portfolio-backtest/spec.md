@@ -13,23 +13,23 @@ Backtest run은 Optimization run과 구분되는 독립 product mode여야 하�
 - THEN optimization objective를 요구하지 않고 historical portfolio simulation과 analytics를 수행한다
 
 ### Requirement: V1 portfolio comparison limit
-Backtest v1 사용자-facing input은 1개 이상 3개 이하의 named portfolio를 동시에 비교할 수 있어야 한다(MUST).
+Backtest v1 사용자-facing input은 1개 이상 4개 이하의 named portfolio를 동시에 비교할 수 있어야 한다(MUST).
 
-#### Scenario: 세 portfolio 비교
-- GIVEN Portfolio A, Portfolio B, Portfolio C가 정의되어 있다
+#### Scenario: 네 portfolio 비교
+- GIVEN Portfolio A, Portfolio B, Portfolio C, Portfolio D가 정의되어 있다
 - WHEN backtest를 실행한다
-- THEN 세 portfolio의 identity가 결과와 report 전체에서 구분되어 유지된다
+- THEN 네 portfolio의 identity가 결과와 report 전체에서 구분되어 유지된다
 
-#### Scenario: v1에서 네 portfolio 요청
-- GIVEN 사용자-facing v1 configuration에 네 portfolio가 입력된다
+#### Scenario: v1에서 다섯 portfolio 요청
+- GIVEN 사용자-facing v1 configuration에 다섯 portfolio가 입력된다
 - WHEN input validation을 수행한다
 - THEN v1 comparison limit을 초과한 명시적 validation error를 반환한다
 
 ### Requirement: Extensible portfolio collection model
-Canonical Backtest configuration과 result는 portfolio를 fixed `portfolio1`, `portfolio2`, `portfolio3` schema field가 아니라 identity를 가진 collection으로 표현해야 한다(MUST). v1의 최대 3개 제한은 product validation policy이며 canonical model 자체의 구조적 최대치로 고정해서는 안 된다(MUST NOT).
+Canonical Backtest configuration과 result는 portfolio를 fixed `portfolio1`, `portfolio2`, `portfolio3` schema field가 아니라 identity를 가진 collection으로 표현해야 한다(MUST). v1의 최대 4개 제한은 product validation policy이며 canonical model 자체의 구조적 최대치로 고정해서는 안 된다(MUST NOT).
 
 #### Scenario: 향후 portfolio limit 확장
-- GIVEN 향후 product policy가 3개보다 많은 portfolio를 허용하도록 변경된다
+- GIVEN 향후 product policy가 4개보다 많은 portfolio를 허용하도록 변경된다
 - WHEN canonical schema를 확장한다
 - THEN 기존 portfolio identity/weight representation을 재설계하지 않고 collection limit 변경으로 확장할 수 있어야 한다
 
@@ -145,7 +145,7 @@ Backtest에서 기존 shared historical analytics와 동일한 의미를 사용�
 - THEN shared portfolio-analytics requirement와 동일한 convention을 사용한다
 
 ### Requirement: Backtest input surface
-사용자-facing Backtest 입력은 최소 Time Period mode와 period boundaries, Calendar Aligned, initial balance, 1~3개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, run-level rebalancing policy를 구성할 수 있어야 한다(MUST).
+사용자-facing Backtest 입력은 최소 Time Period mode와 period boundaries, Calendar Aligned, initial balance, 1~4개의 portfolio name, asset/ticker, portfolio별 allocation, optional benchmark, run-level rebalancing policy를 구성할 수 있어야 한다(MUST).
 
 #### Scenario: UI에서 Backtest 구성
 - GIVEN 사용자가 Backtest product mode를 선택했다
