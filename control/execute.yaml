@@ -1,2 +1,2 @@
 target: studies/kaw-target-reconstruction/experiments/006-core-max-sharpe.yaml
-run: false
+run: true
