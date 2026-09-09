@@ -31,12 +31,13 @@ rebalancing:
   period: monthly
   calendar_aligned: true
 
-# Default research RF: previously resolved U.S. 3-Month T-Bill effective rate.
-# Source run: runs/20260908-0002/result.json
+# Default U.S. 3-Month T-Bill convention.
+# Normal runs reuse the cached effective annual rate from runs/20260908-0002
+# instead of fetching FRED/FDR TB3MS on every execution.
 risk_free:
-  mode: fixed
-  annual_rate_pct: 3.8394827586206895
+  mode: us_3m_tbill
 
-# Use dynamic provider resolution only when explicitly required:
+# Use fixed only for an explicitly requested custom annual RF:
 # risk_free:
-#   mode: us_3m_tbill
+#   mode: fixed
+#   annual_rate_pct: 2.5
