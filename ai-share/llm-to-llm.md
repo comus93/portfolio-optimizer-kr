@@ -54,11 +54,11 @@ portfolio generation != portfolio evaluation
 
 Optimization과 Backtest 모두 target weights 이후 shared simulation / analytics / persistence를 사용한다.
 
-## 3. Global default risk-free convention — IMPORTANT
+## 3. Global Research Frontend default risk-free convention — IMPORTANT
 
-2026-09-09 사용자 결정으로 KAW 한정 우회가 아니라 **Optimization과 Backtest research의 기본 RF convention**으로 승격한다.
+2026-09-09 사용자 결정으로 KAW 한정 우회가 아니라 **Optimization과 Backtest canonical research run의 기본 RF convention**으로 승격한다.
 
-사용자가 RF를 별도로 언급하지 않으면 Research Frontend는 다음 값을 canonical input에 명시한다.
+사용자가 RF를 별도로 언급하지 않으면 `research.py::_apply_research_defaults()`가 다음 effective input을 materialize하고 completed run의 `input.yaml`에 그대로 보존한다.
 
 ```yaml
 risk_free:
@@ -76,18 +76,19 @@ percent: 3.8394827586206895%
 source period: 2021-11-01 ~ 2026-08-31
 ```
 
-이 값은 임의의 별도 fixed-rate 경제가정이 아니다. 기존 `us_3m_tbill` 경로로 실제 resolve한 effective rate를 **pinned U.S. 3-Month T-Bill value**로 재사용하는 것이다.
+이 값은 임의의 별도 fixed-rate 경제가정이 아니다. 기존 `us_3m_tbill` 경로로 실제 resolve한 effective rate를 **pinned U.S. 3-Month T-Bill value**로 재사용하는 것이다. Executable input에는 이미 resolve된 숫자를 provider 재조회 없이 보존하기 위해 `fixed` representation을 사용한다.
 
 목적:
 
-- 반복 Optimization/Backtest에서 FDR/FRED `TB3MS` 재조회 제거
+- 반복 Optimization/Backtest research run에서 FDR/FRED `TB3MS` 재조회 제거
 - provider 상태와 무관한 deterministic research run
 - 동일 연구 간 RF consistency
 
 Important semantics:
 
-- 사용자가 RF를 명시하면 그 입력이 우선한다.
-- explicit `risk_free.mode: us_3m_tbill` dynamic provider mode는 계속 지원한다.
+- 사용자가 custom fixed RF를 명시하면 그 입력이 우선한다.
+- 사용자가 explicit `risk_free.mode: us_3m_tbill`을 명시하면 기존 dynamic provider behavior를 그대로 사용한다.
+- raw YAML parser / runner의 explicit RF mode semantics는 변경하지 않는다.
 - pinned 값이 source period의 dynamic result와 동일하다는 뜻이며, 다른 analysis period의 period-specific TB3MS 평균과 항상 동일하다고 주장하지 않는다.
 
 Implementation/change tracking:
@@ -96,8 +97,6 @@ Implementation/change tracking:
 openspec/changes/2026-09-09-pin-default-us3m-rate/
 GitHub Issue #1: FDR TB3MS 무위험수익률 조회 의존성 제거/캐시화
 ```
-
-Canonical config package는 RF가 생략된 user research input을 위 fixed value로 materialize하는 fallback도 가진다.
 
 ## 4. KAW benchmark definitions
 
