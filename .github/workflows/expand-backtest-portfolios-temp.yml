@@ -1,0 +1,122 @@
+name: Expand backtest portfolio comparison limit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/expand-backtest-portfolios-temp.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Expand limit from 3 to 4
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/portfolio_optimizer_kr/config/yaml.py")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              'if len(portfolio_rows) > 3:\n        raise ConfigValidationError("backtest v1 supports at most 3 portfolios")',
+              'if len(portfolio_rows) > 4:\n        raise ConfigValidationError("backtest v1 supports at most 4 portfolios")',
+          )
+          path.write_text(text, encoding="utf-8")
+
+          path = Path("ui/app.py")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              'st.number_input("Portfolios", min_value=1, max_value=3, value=1, step=1)',
+              'st.number_input("Portfolios", min_value=1, max_value=4, value=1, step=1)',
+          )
+          path.write_text(text, encoding="utf-8")
+
+          path = Path("tests/test_backtest.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''def test_backtest_rejects_more_than_three_portfolios():
+              config = _backtest_config()
+              config["portfolios"] = [
+                  {"weights_pct": {"A": 50, "B": 50}},
+                  {"weights_pct": {"A": 60, "B": 40}},
+                  {"weights_pct": {"A": 70, "B": 30}},
+                  {"weights_pct": {"A": 80, "B": 20}},
+              ]
+
+              with pytest.raises(ConfigValidationError, match="at most 3"):
+                  request_from_config(config)
+          '''.replace('          ', '')
+          new = '''def test_backtest_accepts_four_portfolios():
+              config = _backtest_config()
+              config["portfolios"] = [
+                  {"weights_pct": {"A": 50, "B": 50}},
+                  {"weights_pct": {"A": 60, "B": 40}},
+                  {"weights_pct": {"A": 70, "B": 30}},
+                  {"weights_pct": {"A": 80, "B": 20}},
+              ]
+
+              spec = request_from_config(config)
+              assert len(spec.request.portfolios) == 4
+
+
+          def test_backtest_rejects_more_than_four_portfolios():
+              config = _backtest_config()
+              config["portfolios"] = [
+                  {"weights_pct": {"A": 50, "B": 50}},
+                  {"weights_pct": {"A": 60, "B": 40}},
+                  {"weights_pct": {"A": 70, "B": 30}},
+                  {"weights_pct": {"A": 80, "B": 20}},
+                  {"weights_pct": {"A": 90, "B": 10}},
+              ]
+
+              with pytest.raises(ConfigValidationError, match="at most 4"):
+                  request_from_config(config)
+          '''.replace('          ', '')
+          if old not in text:
+              raise SystemExit("expected test block not found")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+
+          path = Path("openspec/specs/portfolio-backtest/spec.md")
+          text = path.read_text(encoding="utf-8")
+          replacements = {
+              "1개 이상 3개 이하의 named portfolio": "1개 이상 4개 이하의 named portfolio",
+              "#### Scenario: 세 portfolio 비교": "#### Scenario: 네 portfolio 비교",
+              "Portfolio A, Portfolio B, Portfolio C가 정의되어 있다": "Portfolio A, Portfolio B, Portfolio C, Portfolio D가 정의되어 있다",
+              "THEN 세 portfolio의 identity": "THEN 네 portfolio의 identity",
+              "#### Scenario: v1에서 네 portfolio 요청": "#### Scenario: v1에서 다섯 portfolio 요청",
+              "사용자-facing v1 configuration에 네 portfolio가 입력된다": "사용자-facing v1 configuration에 다섯 portfolio가 입력된다",
+              "v1의 최대 3개 제한": "v1의 최대 4개 제한",
+              "product policy가 3개보다 많은 portfolio": "product policy가 4개보다 많은 portfolio",
+              "1~3개의 portfolio name": "1~4개의 portfolio name",
+          }
+          for old_text, new_text in replacements.items():
+              if old_text not in text:
+                  raise SystemExit(f"expected spec text not found: {old_text}")
+              text = text.replace(old_text, new_text)
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Install and test
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+          pytest -q tests/test_backtest.py tests/test_backtest_execution.py tests/test_backtest_report_content_contract.py tests/test_backtest_report_presentation.py
+      - name: Commit validated change and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/expand-backtest-portfolios-temp.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/portfolio_optimizer_kr/config/yaml.py ui/app.py tests/test_backtest.py openspec/specs/portfolio-backtest/spec.md .github/workflows/expand-backtest-portfolios-temp.yml
+          git commit -m "backtest: support four portfolio comparisons"
+          git pull --rebase origin main
+          git push origin HEAD:main
