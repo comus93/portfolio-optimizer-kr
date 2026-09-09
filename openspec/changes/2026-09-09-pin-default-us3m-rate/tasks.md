@@ -7,4 +7,5 @@
 - [x] Add Optimization and Backtest research-default regression tests.
 - [x] Update examples and LLM handover to the final pinned-default semantics.
 - [x] Verify affected regression scope: 23 targeted tests passed in GitHub Actions.
-- [ ] Update/close GitHub Issue #1 and archive this change after verification.
+- [x] Update GitHub Issue #1 with the resolved default path and remaining explicit-dynamic scope.
+- [ ] Archive this change after its requirement is folded into the canonical `research-input` baseline.
