@@ -36,7 +36,7 @@ Strategic cash is 0%. Small cash balances caused only by integer-share execution
 
 ## 3. Proxy definitions
 
-### 3.1 KAW Direct Proxy
+### 3.1 KAW Direct Proxy v2 — current canonical definition
 
 Design principle: preserve the current nine sleeves as directly as practical while extending the common usable history beyond the current native ETF set.
 
@@ -48,13 +48,21 @@ Design principle: preserve the current nine sleeves as directly as practical whi
 | China | 168580 ACE 중국본토CSI300 | 8.5% |
 | India | 200250 KIWOOM 인도Nifty50(합성) | 8.5% |
 | Japan | 101280 KODEX 일본TOPIX100 | 5.0% |
-| US long Treasury | TLT | 15.0% |
+| US long Treasury | **267440 RISE 미국장기국채선물(H)** | **15.0%** |
 | KR 30Y Treasury | 385560 RISE KIS국고채30년Enhanced | 15.0% |
 | Gold | 132030 KODEX 골드선물(H) | 20.0% |
 
 **Common valid test period:** 2021-11 onward.
 
-For the bridge tests in this report, the analysis period is **2021-11-01 to 2026-08-31**.
+267440 was listed in 2017, so replacing TLT with 267440 does not shorten the existing 2021-11 common start.
+
+For bridge and recent-period comparison, the standard analysis period remains **2021-11-01 to 2026-08-31** unless explicitly changed.
+
+#### Direct Proxy versioning note
+
+Earlier experiments in this report used **TLT 15%** for the US long-Treasury sleeve. Those runs are retained as **Direct Proxy v1** historical evidence.
+
+They must not be silently interpreted as results for the new canonical Direct Proxy v2. Key Direct optimization and Direct-vs-Core movement-fidelity metrics should be rerun with 267440 before being used as current comparison evidence against the user's TO-BE portfolio.
 
 ### 3.2 KAW Core
 
@@ -87,17 +95,21 @@ Unless a later experiment explicitly states otherwise, KAW reconstruction studie
 - Benchmark: SPY
 - Common bridge period: 2021-11-01 to 2026-08-31
 
-### 4.1 Study-wide risk-free-rate convention
+### 4.1 Risk-free-rate convention
 
 The dynamic `risk_free.mode: us_3m_tbill` path currently depends on FinanceDataReader/FRED resolving `TB3MS` on every run. This caused a reproducibility failure during the Core rerun.
 
-Until that provider/caching issue is fixed, **all KAW-related follow-up research should reuse the same fixed annual risk-free rate unless explicitly overridden:**
+For repeated KAW research over the already-resolved bridge period, use the following fixed rate unless explicitly overridden:
 
-- **Annual risk-free rate: 3.8394827586206895%**
+```yaml
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
+```
+
+- Annual risk-free rate: **3.8394827586206895%**
 - Decimal form: `0.038394827586206895`
-- Source: successful Direct Proxy run `runs/20260908-0002/result.json`
-
-This is a study-level convention, not a new framework-wide economic assumption.
+- Source: successful Direct Proxy v1 run `runs/20260908-0002/result.json`
 
 Tracking issue:
 - GitHub Issue #1: https://github.com/comus93/portfolio-optimizer-kr/issues/1
@@ -120,13 +132,13 @@ Because the real-account period is shorter than the proxy bridge period, this is
 
 ---
 
-## 6. Direct Proxy optimization results
+## 6. Direct Proxy v1 optimization results — TLT-based historical evidence
 
-### 6.1 Main results
+The following results use the former Direct Proxy definition with **TLT 15%**. They remain useful as historical study evidence but are **not current Direct Proxy v2 results**.
 
 | Objective | CAGR | Std Dev | Sharpe | MDD |
 |---|---:|---:|---:|---:|
-| Provided KAW Direct Proxy | 8.60% | 9.95% | 0.50 | -15.78% |
+| Provided KAW Direct Proxy v1 | 8.60% | 9.95% | 0.50 | -15.78% |
 | Max Sharpe | 16.66% | 9.37% | 1.29 | -8.23% |
 | Max Return @ 10.5% vol | 17.79% | 10.50% | 1.26 | -10.28% |
 | Max Return @ 11.0% vol | 18.20% | 11.00% | 1.24 | -10.86% |
@@ -134,20 +146,30 @@ Because the real-account period is shorter than the proxy bridge period, this is
 | Max Return @ 13.0% vol | 19.53% | 13.00% | 1.15 | -12.83% |
 | SPY benchmark | 16.74% | 14.30% | 0.89 | -13.40% |
 
-Interpretation:
+Interpretation at the time:
 
 - The real account reported annual volatility of **10.52%** over a shorter period.
-- Therefore **10.5% to 11.5%** is treated as the main fairness region for Max Return comparisons.
-- **13%** is retained as an aggressive reference rather than the primary fairness target.
-- The Max Sharpe result is kept independent of the target-volatility fairness exercise.
+- Therefore **10.5% to 11.5%** was treated as the main fairness region for Max Return comparisons.
+- **13%** was retained as an aggressive reference.
 
-### 6.2 Direct Proxy evidence
+### 6.1 Direct Proxy v1 evidence
 
 - Max Sharpe: https://comus93.github.io/portfolio-optimizer-kr/runs/20260908-0002/report.html
 - Max Return @ 10.5%: https://comus93.github.io/portfolio-optimizer-kr/runs/20260908-0004/report.html
 - Max Return @ 11.0%: https://comus93.github.io/portfolio-optimizer-kr/runs/20260908-0005/report.html
 - Max Return @ 11.5%: https://comus93.github.io/portfolio-optimizer-kr/runs/20260909-0002/report.html
 - Max Return @ 13.0%: https://comus93.github.io/portfolio-optimizer-kr/runs/20260908-0003/report.html
+
+### 6.2 Direct Proxy v2 rerun status
+
+Not yet executed after the 267440 revision.
+
+Required before the next canonical recent-period TO-BE comparison:
+
+- Provided-weight Direct v2 performance
+- Max Sharpe
+- Main target-volatility comparison around 10.5% to 11.5%
+- Direct v2 vs Core movement-fidelity metrics
 
 ---
 
@@ -162,8 +184,6 @@ After correcting the all-USD FX handling bug described later in this report, KAW
 | Max Return @ 11.5% vol | 22.25% | 11.50% | 1.48 | -11.92% |
 | SPY benchmark | 16.74% | 14.30% | 0.89 | -13.40% |
 
-Core therefore does **not** reproduce Direct Proxy absolute return/efficient-frontier levels closely. Its optimized frontier is materially stronger over this specific 2021-11 to 2026-08 sample.
-
 ### 7.1 Core evidence
 
 - Core Max Sharpe: https://comus93.github.io/portfolio-optimizer-kr/runs/20260909-0009/report.html
@@ -173,15 +193,11 @@ Core therefore does **not** reproduce Direct Proxy absolute return/efficient-fro
 
 An earlier all-USD Core run, including the temporary 12% target-volatility experiment, was generated before the FX bug was fixed. Those metrics were USD-based even though KRW reporting was intended and are **not used for research conclusions**.
 
-The old 12% run is retained only as an audit artifact, not as valid evidence.
-
 ---
 
-## 8. Direct Proxy vs Core movement fidelity
+## 8. Direct Proxy v1 vs Core movement fidelity — historical bridge evidence
 
-Absolute performance differs, but the behavior bridge is much stronger than the performance tables alone suggest.
-
-Using the **provided-weight portfolios** over the same 58 monthly observations:
+The original bridge used TLT-based Direct Proxy v1. Using the provided-weight portfolios over the same 58 monthly observations:
 
 | Comparison | Result |
 |---|---:|
@@ -192,24 +208,19 @@ Using the **provided-weight portfolios** over the same 58 monthly observations:
 | **Drawdown-series correlation** | **0.944** |
 | **Maximum-drawdown trough** | **Both 2022-12** |
 
-Interpretation:
+These figures established that the original Core mapping was behaviorally promising, but they now belong specifically to **Direct Proxy v1 vs Core**.
 
-- Core and Direct Proxy usually move in the same direction.
-- Drawdown timing is especially similar.
-- Core behaves as a somewhat higher-amplitude version of Direct Proxy, consistent with beta near 1.10.
-- Therefore Core is **not a precise absolute-performance substitute**, but it is a plausible **behavior proxy** for studying long-term trend, regime response, strengths, and weaknesses.
-
-This distinction is central to all future long-horizon interpretation.
+The same movement-fidelity table must be recomputed for **Direct Proxy v2 (267440) vs Core** before being cited as the current canonical bridge result.
 
 ---
 
-## 9. Sleeve decomposition: Direct to Core, one-at-a-time
+## 9. Sleeve decomposition — Direct Proxy v1 to Core
 
-To identify which proxy substitutions alter behavior, each sleeve was replaced independently while keeping the rest of Direct Proxy unchanged.
+The following decomposition also used the old TLT-based Direct baseline and is retained for provenance.
 
 | Single replacement | Provided Std Dev | Change vs Direct | Max Sharpe Std Dev | Max Sharpe |
 |---|---:|---:|---:|---:|
-| Direct baseline | 9.95% | baseline | 9.37% | 1.291 |
+| Direct baseline v1 | 9.95% | baseline | 9.37% | 1.291 |
 | Gold -> GLD | 10.11% | +0.16%p | 10.80% | 1.485 |
 | Bond -> TLT 30% | 9.95% | ~0.00%p | 9.37% | 1.291 |
 | China + India -> EEM 17% | 11.01% | +1.06%p | 9.37% | 1.291 |
@@ -217,11 +228,7 @@ To identify which proxy substitutions alter behavior, each sleeve was replaced i
 | Korea -> EWY | 10.00% | +0.05%p | 9.37% | 1.291 |
 | Japan -> EWJ | 9.97% | +0.02%p | 9.35% | 1.285 |
 
-Key observation:
-
-- Most individual replacements have limited effect on the baseline risk structure.
-- The largest individual increase in provided volatility comes from compressing China + India into EEM.
-- The larger gap between Full Core and Direct Proxy therefore appears to reflect **interaction among multiple proxy substitutions**, not one obviously broken sleeve.
+Because the Direct bond sleeve is now 267440 rather than TLT, the bond substitution question changes materially and should be reconsidered only if needed after the v2 bridge rerun.
 
 ---
 
@@ -230,10 +237,6 @@ Key observation:
 ### 10.1 All-USD FX bug
 
 The runner previously loaded USD/KRW only when KRW and USD assets were mixed. As a result, an all-USD portfolio such as KAW Core silently remained in USD terms even when `fx.usdkrw_symbol: USD/KRW` was configured.
-
-Impact:
-
-- Earlier Full Core volatility and frontier results were not comparable to KRW-based Direct Proxy results.
 
 Fix:
 
@@ -249,39 +252,36 @@ Real-data validation:
 
 The `us_3m_tbill` mode attempted to fetch FRED `TB3MS` through FinanceDataReader on every run and failed during this study.
 
-Temporary study convention:
-
-- Use fixed annual RF **3.8394827586206895%** for all KAW follow-up research.
+Repeated bridge-period KAW studies therefore use fixed annual RF **3.8394827586206895%** unless explicitly overridden.
 
 Longer-term solution is tracked in GitHub Issue #1.
 
 ---
 
-## 11. Interim conclusion
+## 11. Current interim conclusion
 
-Current evidence supports the following working interpretation:
-
-1. **Direct Proxy** is the preferred recent-period representation of the current KAW structure.
-2. **Core** should not be interpreted as an exact performance replica of Direct Proxy.
-3. Despite different CAGR, volatility, Sharpe, and optimized frontier results, Core shows strong movement similarity to Direct Proxy:
-   - monthly correlation 0.898
-   - direction agreement 89.7%
-   - drawdown correlation 0.944
-   - same maximum-drawdown trough month
-4. This level of movement fidelity is sufficient to justify testing Core as a **long-history behavior proxy** for trend, regime sensitivity, strengths, weaknesses, and structural robustness.
-5. Long-horizon Core results must continue to be interpreted as behavior evidence, not as a literal reconstruction of the current KAW account's historical absolute return.
+1. **Direct Proxy v2**, using 267440 for the US long-Treasury sleeve, is now the canonical recent-period KAW representation.
+2. **Direct Proxy v1** results remain valid only as historical TLT-based study evidence.
+3. **Core** remains the long-history behavior proxy using QQQ, SPY, EWY, EEM, EWJ, TLT, and GLD from 2006-01 onward.
+4. The v1 bridge showed strong movement similarity, but the current canonical bridge must be refreshed using Direct Proxy v2 before final recent-period TO-BE comparison.
+5. No stitched Direct/Core NAV is used.
 
 ---
 
 ## 12. Next experiments
 
-This report will be extended in place. Planned follow-up work includes:
+Immediate prerequisite before the user's TO-BE portfolio comparison:
 
-- 2006-01 onward long-horizon KAW Core optimization/backtest
-- long-horizon Max Sharpe and target-volatility frontier analysis
-- regime-based strength/weakness analysis
-- rolling-window robustness
-- start/end-period sensitivity where useful
-- additional proxy interaction tests only if long-horizon results indicate a material fidelity problem
+- rerun Direct Proxy v2 over 2021-11-01 to 2026-08-31 with 267440
+- recompute movement fidelity against KAW Core
+- update the Direct v2 result tables in this report
 
-Future results should be appended or used to update the relevant sections above rather than creating a parallel report.
+Then proceed to:
+
+- recent-period TO-BE vs KAW Direct Proxy v2
+- 2006-01 onward TO-BE Core-compatible vs KAW Core
+- rolling robustness and drawdown comparison
+- target-volatility / Max Sharpe comparison where appropriate
+- regime-based strengths and weaknesses if needed
+
+Future KAW findings should continue to update this living report rather than create a parallel KAW summary.
