@@ -1,1229 +1,565 @@
 # Session Handover
 
-created_at: 2026-09-03T06:33:35+09:00
+created_at: 2026-09-09
 project: `comus93/portfolio-optimizer-kr`
-branch: `bt-module`
-current_remote_head_at_handover: `2567fa31f5f6e7096523714896c5567c08e8ae0a`
+branch: `main`
 
-## 1. Purpose of This Handover
+## 1. Purpose of this handover
 
-이 handover는 새 ChatGPT/LLM 창이 `portfolio-optimizer-kr`의 Backtest module 작업을 바로 이어갈 수 있도록 현재 제품 결정, OpenSpec source of truth, 구현/검증 상태, Portfolio Visualizer(PV) reference 위치, MHTML 분할본, screenshot evidence, Agent handoff 상태를 한 번에 제공한다.
+이 문서는 다음 ChatGPT/LLM 창이 `portfolio-optimizer-kr`에서 진행한 KAW(Kim Seong-il K-All Weather) 재구성/검증 연구를 이어받아, **사용자가 새로 설계한 포트폴리오와 KAW의 우열을 비교하는 다음 study**를 바로 시작할 수 있도록 만든 handover다.
 
-과거 토론을 재현하는 문서가 아니다. 아래 내용과 GitHub remote의 최신 파일을 기준으로 다음 작업을 이어간다.
+과거 대화를 재현하려 하지 말고 GitHub remote의 최신 파일을 source of truth로 사용한다.
 
-가장 먼저 다음 파일을 읽는다.
+새 LLM은 먼저 다음을 읽는다.
 
 ```text
-ai-share/PROTOCOL.md
-ai-share/llm-to-llm.md        # 이 파일
-ai-share/agent-to-llm.md      # Agent 최신 결과가 있는지 반드시 확인
-ai-share/llm-to-agent.md      # 현재 Agent에게 어떤 검증을 요청했는지 확인
+studies/kaw-target-reconstruction/study.md
+studies/kaw-target-reconstruction/report.md
+ai-share/llm-to-llm.md
 ```
 
-`ai-share` inbound/outbound source of truth는 로컬이 아니라 GitHub remote다.
+KAW 상세 실험 결과와 해석은 `report.md`가 canonical living report다. 후속 KAW 검증은 새 병렬 보고서를 만들기보다 기존 report를 update/append하는 것이 원칙이다.
 
 ---
 
-## 2. Project Goal
+## 2. portfolio-optimizer-kr 개요
 
-현재 feature branch `bt-module`에는 세 가지 목표가 함께 진행 중이다.
-
-1. Portfolio Visualizer의 Backtest Portfolio를 외부 reference로 삼아 개인 연구용 Portfolio Backtest module 구현
-2. requirement/project-state 관리를 OpenSpec 방식으로 전환
-3. Agent verification framework 도입
-
-핵심 구조는 다음과 같다.
+Repository:
 
 ```text
-Optimization
-market-data
-  -> ex-ante estimation / constraints / objective / efficient frontier
-  -> optimized or provided target weights
-  -> portfolio-simulation
-  -> portfolio-analytics
-  -> run-artifacts / research-report
-
-Backtest
-market-data
-  -> user-defined target weights
-  -> portfolio-simulation
-  -> portfolio-analytics
-  -> run-artifacts / research-report
+https://github.com/comus93/portfolio-optimizer-kr
 ```
 
-중요 원칙:
+이 프로젝트는 한국 투자자 관점에서 포트폴리오 연구를 재현 가능하게 수행하기 위한 Python 기반 research framework다.
+
+큰 흐름은 다음과 같다.
+
+```text
+Market Data
+  ↓
+Portfolio definition / Optimization objective
+  ↓
+Portfolio simulation
+  ↓
+Portfolio analytics
+  ↓
+Canonical run artifacts
+  ↓
+HTML research report / GitHub Pages
+```
+
+주요 product mode:
+
+```text
+optimization
+backtest
+```
+
+Optimization은 주어진 자산 universe와 min/max constraints 안에서 Max Sharpe 또는 target volatility 등의 objective를 계산한다.
+
+Backtest는 사용자가 정의한 고정 target weights를 역사적으로 평가한다. Backtest 자체는 optimality를 주장하지 않는다.
+
+공유되는 핵심 원칙:
 
 ```text
 portfolio generation != portfolio evaluation
 ```
 
-Backtest는 optimizer가 아니다. Historical comparison을 수행하며 optimality, efficient frontier, optimal weight를 주장하지 않는다.
+### Research layer
+
+연구는 대체로 다음 구조를 사용한다.
+
+```text
+studies/<study-name>/study.md
+studies/<study-name>/experiments/*.yaml
+```
+
+실행 switch:
+
+```text
+control/execute.yaml
+```
+
+`run: true`와 experiment target을 push하면 GitHub Actions의 `run-optimization.yml`이 선택된 experiment를 실행하고 canonical run artifacts와 HTML report를 생성/커밋한다.
+
+사용자가 명시적으로 `돌리자`, `진행해`, `실행해` 등 실행을 승인했을 때만 run trigger를 넣는다.
+
+Run output은 보통 다음과 같은 파일을 포함한다.
+
+```text
+runs/<run-id>/
+  context.yaml
+  input.yaml
+  result.json
+  report.html
+  review/performance_summary.csv
+  review/optimization_results.csv
+  review/efficient_frontier.csv
+  review/risk_decomposition.csv
+  review/return_decomposition.csv
+  monthly_returns.csv
+  monthly_return_series.csv
+  drawdowns.csv
+  ...
+```
+
+GitHub Pages report 형식:
+
+```text
+https://comus93.github.io/portfolio-optimizer-kr/runs/<run-id>/report.html
+```
 
 ---
 
-## 3. Normative Sources and Governance
+## 3. Risk-free rate: 매우 중요
 
-### 3.1 Existing baseline docs
+Framework는 YAML에서 두 가지 risk-free 방식이 이미 지원된다. Optimization과 Backtest 모두 같은 config parser를 사용한다.
 
-기존 project-wide baseline/reference 문서:
+### Dynamic provider mode
 
-```text
-docs/specification.md
-docs/report-ui-specification.md
-docs/input-ui-contract.md
-docs/architecture.md
-docs/visual-acceptance-contract.md
-docs/research-operation-pipeline.md
-docs/llm-research-input-contract.md
-docs/llm-analysis-framework.md
+```yaml
+risk_free:
+  mode: us_3m_tbill
 ```
 
-역할:
+이 방식은 FDR/FRED에서 US 3M T-bill (`TB3MS`) 데이터를 조회한다.
 
-```text
-Finance / calculation semantics   docs/specification.md
-Report UI / interaction semantics docs/report-ui-specification.md
-Architecture / responsibility     docs/architecture.md
-Validation procedure              docs/visual-acceptance-contract.md
+### Fixed deterministic mode
+
+```yaml
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
 ```
 
-하지만 이번 Backtest 작업에서는 **기존 `docs/*.md`를 Backtest 때문에 수정하지 않는다.**
+`annual_rate_pct`는 percent 단위다. 즉 `3.839...`를 넣으며 `0.03839...`를 넣지 않는다.
 
-Backtest-specific 신규/변경 동작은 다음 OpenSpec change가 normative source다.
+Fixed mode에서는 경제지표 series를 조회하지 않는다. Backtest execution test에서도 fixed mode가 economic-series loader를 호출하지 않는 것이 보장되어 있다.
 
-```text
-openspec/changes/bt-module/
-```
+### KAW study-wide convention
 
-PV, screenshot, external service는 reference이며 자동 acceptance criterion이 아니다.
+현재 FDR/FRED `TB3MS` provider 의존 문제가 있어 **KAW 관련 연구에서는 별도 지시가 없는 한 아래 값을 고정 사용한다.**
 
 ```text
-internal specification > external reference
+Annual RF = 3.8394827586206895%
+Decimal   = 0.038394827586206895
 ```
 
-다만 현재 visual workflow에서는 PV와의 차이 중 단순 pixel 차이가 아니라 **information architecture, output data character, user-facing analytics semantics, interaction 기능 차이**를 defect discovery에 적극 사용한다.
+Source:
+
+```text
+runs/20260908-0002/result.json
+```
+
+Reason:
+- 동일 연구기간에서 이미 산출한 RF를 매 experiment마다 다시 provider에서 받을 필요가 없음
+- provider 일시 실패로 연구 run이 깨지는 문제 방지
+- 동일기간 실험의 determinism/reproducibility 강화
+
+Tracking issue:
+
+```text
+GitHub Issue #1
+FDR TB3MS 무위험수익률 조회 의존성 제거/캐시화
+https://github.com/comus93/portfolio-optimizer-kr/issues/1
+```
+
+Generic backtest example에도 두 모드가 주석으로 노출되어 있다.
+
+```text
+configs/backtest-example.yaml
+```
+
+이 값은 KAW research convention이지 framework 전체의 영구 경제가정은 아니다.
 
 ---
 
-## 4. OpenSpec Location and Read Order
+## 4. Currency / FX 주의사항
 
-### 4.1 Main Backtest change
+KAW bridge study 도중 중요한 bug가 발견되어 수정됐다.
 
-```text
-openspec/changes/bt-module/
-├─ .openspec.yaml
-├─ proposal.md
-├─ design.md
-├─ tasks.md
-└─ specs/
-   ├─ agent-verification/spec.md
-   ├─ market-data/spec.md
-   ├─ portfolio-backtest/spec.md
-   ├─ portfolio-simulation/spec.md
-   ├─ research-analysis/spec.md
-   ├─ research-execution/spec.md
-   ├─ research-input/spec.md
-   ├─ research-report/spec.md
-   └─ run-artifacts/spec.md
-```
+과거 runner는 KRW와 USD 자산이 섞인 경우에만 USD/KRW를 적용했다. 그래서 모든 자산이 USD인 KAW Core가 `fx.usdkrw_symbol: USD/KRW`를 명시해도 USD 기준으로 계산되는 문제가 있었다.
 
-새 LLM은 다음 순서로 읽는 것을 권장한다.
+현재 수정된 동작:
 
 ```text
-1. openspec/changes/bt-module/proposal.md
-2. openspec/changes/bt-module/design.md
-3. openspec/changes/bt-module/specs/portfolio-backtest/spec.md
-4. openspec/changes/bt-module/specs/portfolio-simulation/spec.md
-5. openspec/changes/bt-module/specs/market-data/spec.md
-6. openspec/changes/bt-module/specs/research-input/spec.md
-7. openspec/changes/bt-module/specs/research-execution/spec.md
-8. openspec/changes/bt-module/specs/research-analysis/spec.md
-9. openspec/changes/bt-module/specs/research-report/spec.md
-10. openspec/changes/bt-module/specs/run-artifacts/spec.md
-11. openspec/changes/bt-module/specs/agent-verification/spec.md
-12. openspec/changes/bt-module/tasks.md
+All USD + fx 설정 없음
+→ USD 기준 유지
+
+All USD + fx.usdkrw_symbol 명시
+→ KRW 기준으로 환산
+
+KRW + USD 혼합
+→ USD/KRW 환산 필요
 ```
 
-### 4.2 Optimizer OpenSpec migration dependency
+Regression tests가 추가됐고, real-data 검증에서 Core와 Direct의 SPY benchmark가 동일 기간에 사실상 동일한 성과로 일치해 수정이 확인됐다.
 
-별도 change가 존재한다.
+따라서 **FX 수정 이전의 Full Core 결과는 연구 결론에 사용하면 안 된다.**
 
-```text
-openspec/changes/migrate-optimizer-to-openspec/
-```
-
-이 change의 일부 기존 ADDED Requirement에는 RFC2119 `MUST/SHALL` 문제로 strict validation이 실패한 이력이 있다. **Backtest 작업을 위해 임의로 고치지 않는다.** 별도 migration issue로 분리한다.
-
-현재 Backtest 최신 head에 대해서는 새로운 Agent가 다시 strict validation하도록 요청된 상태다. 과거 head에서 PASS한 적이 있어도 최신 head PASS를 추정하지 않는다.
+Canonical corrected Core runs는 아래 0009/0010이다.
 
 ---
 
-## 5. Confirmed Backtest Product Decisions
+## 5. KAW 연구 목적
 
-D1-D11은 닫혀 있다.
+현재 김성일 K-All Weather를 두 개의 proxy로 재구성했다.
 
-### D1 Experiment identity
+목적은:
 
-Experiment identity = 비교 portfolio들의 **union ticker set**.
+1. 현재 KAW에 가까운 recent-period representation 확보
+2. 훨씬 긴 역사 검증이 가능한 long-history behavior proxy 확보
+3. 이후 사용자가 설계한 TO-BE portfolio와 동일한 framework에서 비교
 
-- union ticker set이 동일하면 portfolio 수, 이름, membership, weight, benchmark, initial amount, period, rebalance가 달라도 같은 Experiment의 새 Run
-- union ticker set이 달라지면 새 Experiment
-
-### D2 Benchmark
-
-Core Backtest benchmark는 optional.
-Research Frontend default는 `SPY`.
-사용자가 override하거나 명시적으로 none 선택 가능.
-
-### D3 Initial balance
-
-Research Frontend default = `10,000`.
-Backtest report는 실제 입력 initial balance를 사용한다.
-
-### D4 Period omitted
-
-필요 asset + applicable benchmark가 모두 가능한 **full common effective period** 사용.
-
-### D5 Time Period
-
-지원:
+두 proxy를 하나의 stitched NAV로 연결하지 않는다.
 
 ```text
-Month-to-Month
-Year-to-Year
+KAW Direct Proxy
+KAW Core
 ```
 
-Default = `Month-to-Month`.
+은 서로 별도 experiment다.
 
-Month-to-Month inputs:
+상세 내용은 반드시 아래를 우선 참조한다.
 
 ```text
-Start Year
-First Month
-End Year
-Last Month
+studies/kaw-target-reconstruction/study.md
+studies/kaw-target-reconstruction/report.md
 ```
-
-Year-to-Year:
-
-```text
-Start Year
-End Year
-```
-
-full calendar years 의미.
-
-### D6 Portfolio names
-
-Auto name:
-
-```text
-Portfolio 1
-Portfolio 2
-Portfolio 3
-```
-
-### D7 Analysis guide
-
-기존 optimizer 전용 `docs/llm-analysis-framework.md`는 변경하지 않는다.
-Backtest는 별도 `research-analysis` capability를 가진다.
-
-### D8 Browser / visual verification
-
-가능한 경우 browser semantic verification을 수행한다.
-Material layout/interaction change가 있을 때 human visual review를 둔다.
-
-현재 더 구체적인 workflow는 아래 Visual Acceptance 절 참고.
-
-### D9 Calendar Aligned
-
-Yes/No 모두 지원.
-
-Yes:
-
-```text
-Quarterly   Jan / Apr / Jul / Oct
-Semiannual  Jan / Jul
-Yearly      Jan
-```
-
-No:
-
-```text
-first active month를 anchor로 사용
-Quarterly   +3 months
-Semiannual  +6 months
-Yearly      +12 months
-```
-
-Monthly는 alignment-independent, every active month.
-None은 first target 후 drift, alignment-independent.
-
-Research Frontend default `Yes`는 기존 behavior 호환을 위해 LLM이 보완한 default다. D9에서 사용자가 직접 default를 선택한 것은 아니므로, default 자체가 다시 논점이 되면 이 점을 투명하게 설명한다.
-
-### D10 Rebalancing
-
-한 Run에서 모든 portfolio가 같은 run-level setting 사용.
-
-지원:
-
-```text
-none
-yearly
-semiannual
-quarterly
-monthly
-```
-
-Default = `Monthly`.
-
-Portfolio-specific rebalancing과 rebalance bands는 v1 제외.
-
-### D11 Display Income
-
-v1 제외.
-Canonical total return은 유지하되 distribution income 별도 series/report는 만들지 않는다.
-
-### Other v1 exclusions
-
-```text
-Cashflows
-Rebalance bands
-Leverage
-Style Analysis
-Factor Regression
-Regime Performance
-Display Income
-Provider-specific exposure
-Imported portfolio
-Imported benchmark
-Lazy preset
-Dividend-reinvestment toggle
-```
-
-Dividend reinvestment toggle가 없는 이유는 canonical return 자체가 total-return semantics이기 때문이다.
 
 ---
 
-## 6. Market Data / FDR Decision
+## 6. Current KAW target allocation
 
-### 6.1 Canonical principle
+현재 KAW target weights:
 
-Optimization과 Backtest historical asset return은 동일한 canonical total-return observations를 사용한다.
+| Sleeve | Weight |
+|---|---:|
+| Gold | 20.0% |
+| US long Treasury | 15.0% |
+| KR 30Y Treasury | 15.0% |
+| Nasdaq 100 | 10.0% |
+| China | 8.5% |
+| Korea | 8.0% |
+| US dividend | 10.0% |
+| India | 8.5% |
+| Japan | 5.0% |
+| Total | 100.0% |
 
-```text
-price-only return을 total return으로 silent fallback 금지
-```
-
-### 6.2 US assets
-
-FDR/Yahoo에서 `Adj Close`가 존재하면 `Adj Close`를 우선 사용한다.
-
-### 6.3 Korean FDR routing research result
-
-FinanceDataReader의 현재 구현을 GitHub에서 확인한 결과:
-
-- 6자리 한국 종목의 default route는 `NaverDailyReader`
-- Naver reader 반환 schema는:
-
-```text
-Open
-High
-Low
-Close
-Volume
-Change
-```
-
-- `Adj Close` column 자체가 없다. `Adj Close = null` 문제가 아니다.
-
-FDR issue evidence:
-
-- default/NAVER는 수정주가 성격
-- 명시적 `KRX:` source는 수정주가가 아닌 것으로 보고됨
-- 국내 ETF 중 분배금이 사전 공지되는 ETF는 default `Close`가 배당 고려 수정주가라는 FDR issue 설명이 존재
-
-### 6.4 Current product decision
-
-OpenSpec `market-data/spec.md`에 반영됨.
-
-```text
-Korean ETF + FDR default/NAVER:
-  FDR ETF listing으로 ETF임이 확인되고 source semantics가 맞으면
-  Close를 adjusted/distribution-aware canonical series로 허용
-
-Explicit KRX: source:
-  Close를 canonical total return으로 자동 승인하지 않음
-
-Korean common stock:
-  ETF 규칙을 자동 확장하지 않음
-```
-
-구현은 `FDRLoader`에서 source/instrument를 판정한 뒤 `select_total_return_price(..., close_is_total_return=True)` 같은 explicit path로만 Close 허용하도록 바뀐 상태다.
-
-새 Agent에게 실제 `069500` 조회, attrs, KRX source failure/behavior를 다시 검증하도록 요청했다.
+Strategic cash = 0%.
 
 ---
 
-## 7. Backtest Implementation State
+## 7. KAW Direct Proxy
 
-이미 구현된 큰 범위:
+목적:
+현재 KAW의 9개 sleeve를 가능한 직접적으로 보존한 recent-history proxy.
 
-```text
-Backtest request / model
-YAML parsing
-1~3 portfolio collection
-run-level rebalancing
-Calendar Aligned Yes/No
-Month-to-Month / Year-to-Year
-benchmark optional
-initial balance
-shared portfolio simulation
-shared analytics
-result/raw/review persistence
-Research execution
-Streamlit Backtest input
-Backtest-specific self-contained HTML report
-Playwright browser verification
-GitHub Pages report publishing workflow
-```
-
-최근 report presentation 수정은 **test-first**로 진행했다.
-
-추가/강화된 test:
+Universe / provided weights:
 
 ```text
-tests/test_backtest_report_presentation.py
-tests/test_fdr_total_return.py
-verification/browser/backtest-report.spec.mjs
+133690 TIGER 미국나스닥100             10.0%
+402970 ACE 미국배당다우존스            10.0%
+069500 KODEX 200                         8.0%
+168580 ACE 중국본토CSI300                8.5%
+200250 KIWOOM 인도Nifty50(합성)          8.5%
+101280 KODEX 일본TOPIX100                5.0%
+TLT iShares 20+ Year Treasury Bond ETF   15.0%
+385560 RISE KIS국고채30년Enhanced        15.0%
+132030 KODEX 골드선물(H)                 20.0%
 ```
 
-최근 구현 수정의 목표:
+Common valid period:
 
 ```text
-1. raw artifact schema를 user-facing report에 dump하지 않음
-2. Performance Summary의 unit storage column 제거
-3. Trailing Returns snake_case / _pct label 제거
-4. Metrics long-format portfolio/metric/value -> metric x portfolio matrix
-5. Active Returns raw monthly dump -> analysis presentation
-6. canonical portfolio input order 유지
-7. Growth x-axis actual-date coordinate + calendar-aware Jan/Jul cadence
-8. benchmark를 configured human-readable name으로 표시
-9. annual/monthly/drawdown/assets/rolling table도 user-facing label/unit으로 변환
+2021-11 onward
 ```
 
-이 최신 implementation은 Agent 최종 검증 결과를 아직 받기 전 상태다.
+Bridge/optimization period used so far:
+
+```text
+2021-11-01 ~ 2026-08-31
+```
+
+Common optimization constraints:
+
+```text
+monthly rebalancing
+0% <= each asset <= 60%
+KRW reporting
+SPY benchmark
+fixed RF 3.8394827586206895%
+```
+
+### Direct Proxy key optimization results
+
+| Objective | CAGR | Std Dev | Sharpe | MDD |
+|---|---:|---:|---:|---:|
+| Provided | 8.60% | 9.95% | 0.50 | -15.78% |
+| Max Sharpe | 16.66% | 9.37% | 1.29 | -8.23% |
+| Max Return @10.5% vol | 17.79% | 10.50% | 1.26 | -10.28% |
+| Max Return @11.0% vol | 18.20% | 11.00% | 1.24 | -10.86% |
+| Max Return @11.5% vol | 18.57% | 11.50% | 1.21 | -11.40% |
+| Max Return @13.0% vol | 19.53% | 13.00% | 1.15 | -12.83% |
+
+Main evidence links are maintained in `report.md`.
+
+13% is an aggressive reference. The 10.5% to 11.5% region was used as the main fair-risk comparison region because the actual direct-investment account reported 10.52% annual volatility over its shorter observed period.
 
 ---
 
-## 8. Visual Acceptance Philosophy and Workflow
+## 8. Real Kim Seong-il direct-account reference
 
-이 프로젝트에서 visual acceptance는 단순 screenshot pixel parity가 아니다.
-
-사용자 판단:
-
-> 사용자가 관능 평가를 하기 전에, output data의 성격과 기능이 PV reference와 너무 다르면 LLM이 먼저 찾아야 한다.
-
-따라서 현재 workflow:
+User supplied the actual direct-investment account summary:
 
 ```text
-LLM writes tests + implementation
-        ↓
-Agent tests / real run / Playwright
-        ↓
-Agent commits run + validation evidence
-        ↓
-GitHub Pages publish
-        ↓
-LLM 1st Visual Acceptance
-  - actual published page
-  - PV captured MHTML
-  - information architecture
-  - output data/function character
-  - section semantics
-  - chart axes/ticks/tooltip/identity
-        ↓
-문제 있으면 LLM이 spec 확인/필요시 spec update 후 구현 수정
-        ↓
-Agent reverify + republish
-        ↓
-User 2nd Visual Acceptance
-  - usability
-  - layout
-  - readability
-  - visual polish
-  - 실제 사용 관능 평가
+Operation period      2024-01-26 ~ 2026-07-31
+Total return          51.89%
+Annualized return     18.11%
+Annual volatility     10.52%
+Maximum drawdown      -9.14%
+Longest loss period   3 months
+Sharpe ratio          1.72
 ```
 
-Agent는 machine acceptance와 obvious defect evidence를 제공하지만 **LLM 1차 visual acceptance를 대신하지 않는다.**
+이 기간은 Proxy bridge period보다 짧기 때문에 엄격한 성과 winner/loser 비교에는 사용하지 않는다.
 
-사용자 2차 visual acceptance를 넘기기 전에는 LLM이 최소 P0/P1 성격 차이를 먼저 제거한다.
+주요 역할:
+
+```text
+risk-budget calibration
+plausibility reference
+```
 
 ---
 
-## 9. Portfolio Visualizer Backtest Reference
+## 9. KAW Core
 
-### 9.1 Live reference URL
+목적:
+현재 KAW의 경제적 return engine을 압축해 2006년부터 장기 behavior를 연구할 수 있도록 한 proxy.
 
-현재 Backtest reference URL:
-
-```text
-https://www.portfoliovisualizer.com/backtest-portfolio?s=y&sl=5NMHg7UEDbksVuZQFdAdFG
-```
-
-이 URL은 external non-normative reference다.
-
-### 9.2 Captured reference directory
+Universe / provided weights:
 
 ```text
-references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/
+QQQ  10%
+SPY  10%
+EWY   8%
+EEM  17%
+EWJ   5%
+TLT  30%
+GLD  20%
 ```
 
-구성:
+Mapping concept:
 
 ```text
-references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/
-├─ README.md
-├─ page.mhtml
-└─ source/
-   ├─ manifest.json
-   ├─ page.part-001.html
-   ├─ page.part-002.html
-   ├─ page.part-003.html
-   ├─ page.part-004.html
-   ├─ page.part-005.html
-   ├─ style-001.part-001.css
-   ├─ style-001.part-002.css
-   ├─ style-002.css
-   ├─ style-003.css
-   └─ style-004.css
+Nasdaq                 → QQQ
+US dividend predecessor→ SPY
+Korea                  → EWY
+China + India          → EEM
+Japan                  → EWJ
+US long bond + KR 30Y  → TLT
+Gold                   → GLD
 ```
 
-### 9.3 Capture metadata
-
-`README.md`에 기록된 capture metadata:
+Long-history valid period:
 
 ```text
-Captured at: 2026-09-02T09:33:31.404Z
-Artifact: page.mhtml
-SHA-256: 91b926501c5a8a1584c4426681ac2ecbca255d9fe5dabe40a07171975d510853
-Browser: chrome.exe
+2006-01 onward
 ```
 
-`page.mhtml`이 원본 archive다.
+All Core assets existed before 2006, so 2006-01 is the conservative study start.
 
-### 9.4 Split source files
+### Corrected bridge-period Core results
 
-MHTML을 LLM/GitHub에서 쉽게 inspection하기 위해 text MIME part를 기계적으로 분할했다.
+Same 2021-11 to 2026-08 KRW period:
 
-Manifest:
+| Objective | CAGR | Std Dev | Sharpe | MDD |
+|---|---:|---:|---:|---:|
+| Provided Core | 12.11% | 12.19% | 0.69 | -16.58% |
+| Max Sharpe | 21.69% | 11.10% | 1.49 | -11.12% |
+| Max Return @11.5% | 22.25% | 11.50% | 1.48 | -11.92% |
+
+Canonical corrected runs:
 
 ```text
-references/portfolio-visualizer/backtest-portfolio/20260902-5NMHg7UEDbksVuZQFdAdFG/source/manifest.json
-```
-
-HTML 본문은 다음 5개 chunk로 이어진다.
-
-```text
-source/page.part-001.html
-source/page.part-002.html
-source/page.part-003.html
-source/page.part-004.html
-source/page.part-005.html
-```
-
-CSS:
-
-```text
-source/style-001.part-001.css
-source/style-001.part-002.css
-source/style-002.css
-source/style-003.css
-source/style-004.css
-```
-
-Extraction은 mechanical MIME extraction only이며 semantic rewrite가 아니다.
-
-### 9.5 Capture/extraction utilities
-
-```text
-scripts/capture-reference.mjs
-scripts/extract-mhtml-source.mjs
-```
-
-Capture 당시 headless Chrome은 403이 있었고 headful Chrome capture가 성공했다.
-
----
-
-## 10. Current Backtest Report Evidence / Screenshots
-
-### 10.1 Existing representative run
-
-이전 Agent 검증 run:
-
-```text
-runs/20260902-backtest-qqq-gld-spy-renderer-v2/
-```
-
-Report:
-
-```text
-runs/20260902-backtest-qqq-gld-spy-renderer-v2/report.html
-```
-
-Input character:
-
-```text
-Assets: QQQ / GLD
-Benchmark: SPY
-Portfolios: Growth 70/30, Balanced 50/50
-Period: 2020-2025
-Mode: Month-to-Month
-Rebalancing: Monthly
-Calendar Aligned: Yes
-Initial balance: 10,000
-Observations: 72 months
-```
-
-Previous sanity values:
-
-```text
-Growth 70/30 end balance  ≈ $30,468.89
-Balanced 50/50 end balance ≈ $30,181.47
-```
-
-### 10.2 Screenshot evidence paths
-
-```text
-runs/20260902-backtest-qqq-gld-spy-renderer-v2/validation/desktop.png
-runs/20260902-backtest-qqq-gld-spy-renderer-v2/validation/mobile.png
-runs/20260902-backtest-qqq-gld-spy-renderer-v2/validation/README.md
-```
-
-중요:
-
-**이 screenshot은 latest presentation/FDR change 전 representative evidence다. 최종 visual acceptance용 최신 screenshot으로 간주하지 않는다.**
-
-현재 Agent 요청에서는 최신 HEAD로 fresh unique run을 만들고 새 screenshot evidence를 생성하도록 했다.
-
-### 10.3 Why prior machine PASS was not enough
-
-이전 report는 Playwright semantic/responsive checks를 통과했지만 LLM 1차 review에서 다음 P1 성격 문제를 발견했다.
-
-```text
-- Active Returns가 raw artifact dump에 가까움
-- Metrics가 long-format storage table
-- Trailing Returns에 3m_pct 등의 storage label 노출
-- Performance Summary unit column 노출
-- portfolio order 불일치
-- Growth x-axis가 row-index cadence라 calendar-aware하지 않음
-- benchmark identity가 generic benchmark로 노출
-```
-
-이 문제들은 현재 OpenSpec `research-report/spec.md`와 최신 implementation에 반영/수정된 상태이며, Agent 재검증 대기 중이다.
-
----
-
-## 11. Report Specification Changes from First Visual Review
-
-현재 `openspec/changes/bt-module/specs/research-report/spec.md`에는 최소 다음이 명시되어 있다.
-
-### Raw schema exposure prohibition
-
-```text
-raw/review CSV/JSON storage schema를 user-facing primary presentation으로 그대로 dump 금지
-snake_case, _pct, unit=pct|balance|ratio 같은 storage metadata는 human-facing label/unit으로 변환
-```
-
-### Stable portfolio display order
-
-```text
-canonical input portfolio order를 Allocation, Performance Summary, legends,
-Trailing/Annual/Monthly/Rolling comparison 전반에서 유지
-benchmark는 portfolio collection 뒤의 comparison reference
-```
-
-### Growth chart semantic axes
-
-```text
-X = time/calendar
-Y = Portfolio Balance + currency
-multiple intermediate x/y ticks
-horizontal reference grid
-calendar-aware cadence (e.g. Jan/Jul, year start, quarter start 등)
-row-index equal-spacing label 금지
-```
-
-### Growth interaction
-
-```text
-visible hover/focus tooltip
-Date + Portfolio identity + Balance
-ARIA label만 있고 visible feedback 없는 구현은 불충분
-```
-
-### Summary hierarchy
-
-```text
-Target Allocation
--> Performance Summary
--> Portfolio Growth
--> Trailing Returns
-```
-
-### Section grouping
-
-```text
-Summary
-Active Returns (benchmark 있을 때)
-Metrics
-Annual Returns
-Monthly Returns
-Drawdowns
-Assets
-Rolling Returns
-```
-
-PV-only unsupported 기능을 외형 맞춤을 위해 fabricate하지 않는다.
-
----
-
-## 12. Browser Verification
-
-Playwright repo-level browser verification이 들어가 있다.
-
-Main test:
-
-```text
-verification/browser/backtest-report.spec.mjs
-```
-
-Fixture generator:
-
-```text
-scripts/prepare_browser_fixture.py
-```
-
-Main verification entrypoint:
-
-```bash
-uv run python scripts/verify.py --openspec --full --browser
-```
-
-Real report:
-
-```bash
-uv run python scripts/verify.py --browser-report runs/<run-id>/report.html
-```
-
-Playwright Chromium을 canonical machine browser runner로 사용한다.
-Codex full CDP access는 사용자가 이미 활성화해 두었으며, 필요 시 DOM/console/network diagnosis에 사용할 수 있다. 하지만 formal acceptance runner는 Playwright다.
-
----
-
-## 13. GitHub Pages Publishing
-
-Workflow는 persisted research reports를 GitHub Pages에 올리도록 구성돼 있다.
-
-```text
-.github/workflows/publish-reports.yml
-```
-
-이전에는 `github-pages` environment가 `bt-module` branch deployment를 허용하지 않아 workflow가 실패했다.
-
-사용자는 **다음 Agent 실행 전에 GitHub Pages environment 설정에서 `bt-module` deployment를 허용할 예정**이라고 명시했다.
-
-따라서 다음 Agent는 과거 blocker를 재사용하지 말고 **새 final HEAD 기준 workflow를 실제 실행/확인**해야 한다.
-
-Agent가 반드시 반환해야 하는 것:
-
-```text
-GitHub Pages base URL
-US representative exact published report URL
-KRX report exact published URL (publish되면)
-workflow run URL/ID
-HTTP/browser로 실제 접근 성공 여부
-```
-
-URL을 추정해서 쓰면 안 된다.
-
-GitHub Pages에 올라온 **실제 published page**가 LLM 1차 visual acceptance의 대상이다.
-
----
-
-## 14. Current Agent Request Pending
-
-현재 Agent에게 보낸 최신 요청:
-
-```text
-ai-share/llm-to-agent.md
-id: 20260903T001800+0900-llm
-```
-
-이 요청은 current head의 presentation/FDR 변경을 검증하는 작업이다.
-
-Agent 요청 핵심:
-
-```text
-1. git pull --ff-only origin bt-module
-2. bt-module OpenSpec strict
-3. targeted tests
-4. full regression
-5. deterministic Playwright
-6. live FDR US Adj Close verification
-7. Korean ETF 069500 default/NAVER source-aware verification
-8. explicit KRX source가 total-return으로 오인되지 않는지 확인
-9. fresh US QQQ/GLD/SPY run
-10. fresh KRX 069500 smoke run
-11. real-report Playwright
-12. screenshot evidence persistence
-13. commit/push
-14. GitHub Pages publish
-15. exact published report URL 확인
-16. agent-to-llm.md 결과 commit/push
-```
-
-현재 이 handover 작성 시점에는 **이 최신 요청에 대한 Agent 결과를 아직 확인하지 않았다.**
-
-새 LLM은 먼저 GitHub remote의 최신:
-
-```text
-ai-share/agent-to-llm.md
-```
-
-를 읽어 결과가 올라왔는지 확인해야 한다.
-
-절대 background Agent가 자동 실행 중이라고 가정하지 않는다.
-
----
-
-## 15. Previous Agent Result, for Context Only
-
-현재 `agent-to-llm.md`에 남아 있는 이전 결과는 latest presentation/FDR 변경 이전 작업이다.
-
-그 이전 결과에는:
-
-```text
-bt-module OpenSpec strict PASS
-Backtest targeted 19 PASS
-full pytest 149 PASS
-deterministic Playwright PASS
-real-report Playwright PASS
-QQQ/GLD/SPY real run success
-069500/NAVER:069500 rows/null/gap/month coverage check
-Pages deployment failure due environment protection
-```
-
-가 기록돼 있다.
-
-하지만 current head는 그 뒤에 spec + tests + implementation이 더 변경되었으므로 이 결과를 최신 PASS로 재사용하지 않는다.
-
----
-
-## 16. New LLM First Action After Agent Result Arrives
-
-Agent result가 새로 올라와 있고 Pages exact URL까지 반환됐다면 다음 순서로 진행한다.
-
-### Step 1. Verify Agent evidence
-
-```text
-- start/final HEAD
-- OpenSpec strict
-- targeted/full pytest
-- deterministic Playwright
-- real-report Playwright
-- FDR US/KRX behavior
-- fresh run paths
-- screenshot paths
-- Pages deployment workflow
-- exact published URL
-```
-
-Agent의 PASS 문구만 믿지 말고 report/evidence를 직접 inspection한다.
-
-### Step 2. Open published GitHub Pages report
-
-Agent가 반환한 exact URL을 실제로 확인한다.
-
-### Step 3. LLM 1st Visual Acceptance
-
-비교 대상:
-
-```text
-A. Published GitHub Pages Backtest report
-B. PV live/reference URL
-C. Captured MHTML
-D. split source/page.part-001..005.html
-E. current screenshot evidence
-F. internal OpenSpec research-report + legacy report UI contract
-```
-
-판정 우선순위:
-
-```text
-1. internal spec violation인가?
-2. canonical output data 의미가 user-facing analytics로 적절히 표현됐는가?
-3. PV와 다른 점이 단순 polish인가, 기능/정보 성격 차이인가?
-4. P0/P1/P2 분류
-```
-
-특히 먼저 볼 것:
-
-```text
-- Summary 정보 흐름
-- portfolio identity/order
-- Performance Summary metric matrix
-- Trailing human labels/format
-- Growth x/y ticks and grid
-- Growth hover tooltip
-- benchmark name
-- Active Returns data character
-- Metrics가 storage dump가 아닌지
-- Annual/Monthly/Drawdown/Assets/Rolling 표현 성격
-- benchmark=None conditional behavior
-- mobile clipping/readability
-```
-
-### Step 4. If LLM finds P0/P1
-
-1. internal specification과 비교
-2. spec이 이미 요구하면 implementation defect로 수정
-3. spec이 부족하고 product 판단상 변경이 맞으면 OpenSpec 먼저 update
-4. test 작성/수정
-5. implementation 수정
-6. Agent 재검증 + Pages republish 요청
-
-### Step 5. User 2nd Visual Acceptance
-
-LLM 1차에서 P0/P1을 제거한 뒤에만 사용자에게 Pages URL을 넘겨 관능 평가를 요청한다.
-
----
-
-## 17. Relevant Code / Test Locations
-
-Backtest core:
-
-```text
-src/portfolio_optimizer_kr/models.py
-src/portfolio_optimizer_kr/backtest.py
-src/portfolio_optimizer_kr/config/yaml.py
-src/portfolio_optimizer_kr/runner.py
-src/portfolio_optimizer_kr/research.py
-```
-
-Market data:
-
-```text
-src/portfolio_optimizer_kr/data/fdr.py
-src/portfolio_optimizer_kr/data/transform.py
-src/portfolio_optimizer_kr/data/__init__.py
-```
-
-Report/persistence:
-
-```text
-src/portfolio_optimizer_kr/report/backtest.py
-src/portfolio_optimizer_kr/viewer/backtest_renderer.py
-```
-
-Tests:
-
-```text
-tests/test_backtest.py
-tests/test_backtest_execution.py
-tests/test_backtest_input_persistence.py
-tests/test_backtest_scope.py
-tests/test_backtest_report_presentation.py
-tests/test_data.py
-tests/test_fdr_total_return.py
-```
-
-Browser verification:
-
-```text
-verification/browser/backtest-report.spec.mjs
-scripts/prepare_browser_fixture.py
-scripts/verify.py
+Core Max Sharpe        runs/20260909-0009
+Core Max Return 11.5   runs/20260909-0010
 ```
 
 Pages:
 
 ```text
-.github/workflows/publish-reports.yml
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260909-0009/report.html
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260909-0010/report.html
 ```
+
+Core가 Direct의 absolute performance나 efficient frontier를 정확히 재현하지는 않는다.
 
 ---
 
-## 18. Research Execution / Agent Verification Rules
+## 10. Direct Proxy vs Core movement fidelity
 
-Research execution reuses:
+이 결과가 Core를 long-history proxy로 사용할 근거의 핵심이다.
 
-```text
-Study / Experiment / Run
-control/execute.yaml
-canonical YAML runner
-```
+Provided-weight portfolio끼리 같은 58개월을 비교한 결과:
 
-Rules:
+| Comparison | Result |
+|---|---:|
+| Monthly return correlation | **0.898** |
+| Up/down direction match | **52 / 58 months = 89.7%** |
+| Core beta vs Direct | **1.10** |
+| Annualized tracking error | **5.45%** |
+| Drawdown-series correlation | **0.944** |
+| Maximum-drawdown trough | **Both 2022-12** |
 
-- explicit product mode
-- experiment YAML 변경만으로 실행한 것으로 간주하지 않음
-- explicit execution intent 필요
-- provenance에 Study/Experiment/Run/product mode 유지
-- Agent/Codex는 canonical user research execution engine이 아님
+Interpretation:
 
-Verification flow:
+- Core와 Direct는 월별 방향성이 상당히 유사하다.
+- Drawdown timing은 특히 유사하다.
+- Core는 Direct보다 amplitude가 조금 큰 behavior를 보이며 beta가 약 1.10이다.
+- 따라서 Core는 **절대 성과 복제품이 아니라 장기 behavior proxy**로 취급한다.
+- 2006년 이후 장기 trend, regime response, structural strength/weakness 검증에는 유효할 가능성이 높다.
 
-```text
-Test
--> Real Run
--> Result Verification
--> Browser Verification
--> Fix
--> Re-verify
--> Publish
--> LLM 1st Visual Acceptance
--> User 2nd Visual Acceptance
-```
-
-Agent는 requirements/tests/acceptance를 pass시키기 위해 약화하면 안 된다.
-Shared code 변경 시 affected Optimization regression도 수행한다.
+이 interpretation rule을 무시하고 Core 장기 CAGR을 현재 KAW의 literal historical CAGR처럼 사용하면 안 된다.
 
 ---
 
-## 19. Report Analysis Semantics
+## 11. Sleeve decomposition result
 
-Backtest report/research analysis는 historical comparison이다.
+Direct에서 Core mapping을 한 sleeve씩 교체한 one-at-a-time experiment도 수행했다.
 
-권장 분석 순서:
+| Single replacement | Provided Std Dev | Change vs Direct | Max Sharpe Std Dev | Max Sharpe |
+|---|---:|---:|---:|---:|
+| Direct baseline | 9.95% | baseline | 9.37% | 1.291 |
+| Gold → GLD | 10.11% | +0.16%p | 10.80% | 1.485 |
+| Bond → TLT 30% | 9.95% | ~0.00%p | 9.37% | 1.291 |
+| China + India → EEM 17% | 11.01% | +1.06%p | 9.37% | 1.291 |
+| US dividend → SPY | 10.45% | +0.50%p | 9.89% | 1.287 |
+| Korea → EWY | 10.00% | +0.05%p | 9.37% | 1.291 |
+| Japan → EWJ | 9.97% | +0.02%p | 9.35% | 1.285 |
 
-```text
-coverage
--> return/risk
--> drawdown/recovery
--> rolling/period consistency
--> benchmark-relative (benchmark 있을 때만)
--> contribution/diversification supporting evidence
-```
+대부분 단일 교체 영향은 작았고, China + India를 EEM으로 압축할 때 provided volatility 증가가 가장 컸다.
 
-Facts와 interpretation을 분리한다.
-
-Backtest만으로 다음을 주장하지 않는다.
-
-```text
-optimal portfolio
-optimal weights
-efficient frontier optimality
-```
+Full Core와 Direct의 더 큰 차이는 단일 broken sleeve라기보다 여러 mapping interaction의 합으로 보는 것이 현재 working interpretation이다.
 
 ---
 
-## 20. Known Open Issues
+## 12. Canonical KAW report and study
 
-1. 최신 Agent request 결과 확인 필요
-2. current head의 OpenSpec strict PASS 여부 최신 검증 필요
-3. latest report presentation이 실제 fresh run/browser에서 spec을 만족하는지 확인 필요
-4. Korean ETF default/NAVER Close total-return policy의 live FDR validation 필요
-5. explicit KRX source는 여전히 canonical total-return으로 승인하지 않아야 함
-6. Korean common stocks total-return source는 별도 해결되지 않음
-7. GitHub Pages `bt-module` publish가 새 environment 설정 후 실제 성공하는지 확인 필요
-8. exact Pages URL 확보 필요
-9. LLM 1차 Visual Acceptance pending
-10. User 2차 Visual Acceptance pending
-11. `migrate-optimizer-to-openspec` strict RFC2119 issue는 Backtest와 별도 migration cleanup 필요
+반드시 최신 내용은 아래 두 파일을 읽는다.
+
+```text
+studies/kaw-target-reconstruction/study.md
+studies/kaw-target-reconstruction/report.md
+```
+
+`report.md`에는:
+
+```text
+proxy definitions
+experiment conditions
+actual-account reference
+Direct optimization results
+Core corrected results
+movement fidelity
+sleeve decomposition
+FX bug correction
+TB3MS issue
+HTML evidence links
+interim conclusion
+next experiments
+```
+
+가 정리돼 있다.
+
+후속 KAW 연구 결과는 이 report에 append/update한다.
 
 ---
 
-## 21. Do Not Regress These Rules
+## 13. Next study: user's portfolio vs KAW
+
+다음 창의 주 연구 주제는 **사용자가 설계한 포트폴리오와 KAW의 우열 비교**다.
+
+새 LLM은 사용자가 새 포트 구성/비중/후보를 주면 먼저 비교 질문을 명확한 실험 구조로 번역해야 한다.
+
+우선 비교 benchmark는 목적에 따라 다음 두 KAW 표현을 구분한다.
 
 ```text
-- PV가 다르다는 이유만으로 spec을 자동 변경하지 않는다.
-- 반대로 machine test가 PASS했다는 이유만으로 visual/product output이 충분하다고 간주하지 않는다.
-- Backtest 때문에 기존 docs/*.md를 수정하지 않는다.
-- Backtest-specific change는 openspec/changes/bt-module/에 둔다.
-- price-only를 total-return으로 silent fallback하지 않는다.
-- raw artifact/debug schema를 user-facing report의 primary UI로 노출하지 않는다.
-- portfolio identity를 color만으로 전달하지 않는다.
-- browser에서 finance 계산을 다시 수행하지 않는다.
-- Agent가 LLM 1차 visual acceptance를 대신하지 않는다.
-- User에게 2차 관능 평가를 넘기기 전에 LLM이 output/function character를 먼저 검토한다.
+Recent-period fidelity comparison
+→ KAW Direct Proxy
+
+Long-horizon structural / regime comparison
+→ KAW Core
 ```
+
+둘을 섞어서 하나의 KAW history로 stitch하지 않는다.
+
+사용자 포트가 2021-11 이후 데이터가 모두 있으면 먼저 Direct Proxy와 같은 common period에서 공정 비교할 수 있다.
+
+더 긴 역사 검증이 가능하면 Core와 2006-01 이후 long-horizon comparison을 추가한다.
+
+### Recommended comparison layers
+
+단순 CAGR 승패 하나로 판단하지 않는다. 최소 다음을 본다.
+
+```text
+CAGR / annualized return
+Std Dev
+Sharpe / Sortino
+MDD
+rolling returns
+start/end sensitivity
+correlation / behavior differences
+risk and return decomposition
+regime strength / weakness when useful
+```
+
+Optimization comparison에서는 동일 자산 constraints와 동일 RF/FX/period를 맞춘다.
+
+Backtest comparison에서는 동일 기간, 동일 rebalancing convention, 동일 reporting currency를 사용한다.
+
+사용자의 연구 철학상 핵심 질문은 단순히 가장 높은 CAGR이 아니라:
+
+```text
+새 포트가 KAW 대비 독립적인 경제적 수익 엔진을 제공하는가?
+위험예산 대비 효율이 실제로 개선되는가?
+특정 최근 regime에만 유리한 hindsight allocation은 아닌가?
+장기적으로 strength/weakness profile이 어떻게 달라지는가?
+```
+
+이다.
 
 ---
 
-## 22. Immediate Next
+## 14. Important cautions for next LLM
 
-새 LLM 창에서 바로 다음과 같이 진행한다.
-
-```text
-1. GitHub remote의 ai-share/PROTOCOL.md 확인
-2. 이 llm-to-llm.md 확인
-3. 최신 ai-share/agent-to-llm.md 확인
-4. 현재 branch/head 확인
-5. Agent 최신 결과가 있으면 검증 evidence와 exact Pages URL 확인
-6. Published Pages report vs PV captured MHTML로 LLM 1차 Visual Acceptance 수행
-7. P0/P1이면 spec 확인 -> 필요시 OpenSpec update -> test-first 수정
-8. Agent reverify/republish
-9. LLM PASS 후 User 2차 Visual Acceptance
-```
-
-새 창에서 사용자는 간단히 다음처럼 시작하면 된다.
-
-```text
-portfolio-optimizer-kr의 ai-share/llm-to-llm.md를 읽고 현재 Backtest 작업을 이어서 진행하자.
-```
+1. **KAW Core old FX-bug runs를 사용하지 않는다.** Corrected runs 0009/0010과 current report만 사용한다.
+2. KAW 관련 후속 실험은 특별한 이유가 없으면 `risk_free.mode: fixed`, `annual_rate_pct: 3.8394827586206895`를 사용한다.
+3. `annual_rate_pct`는 percent 단위다.
+4. Core는 absolute-performance replica가 아니라 behavior proxy다.
+5. Direct와 Core를 하나의 stitched NAV로 연결하지 않는다.
+6. 실제 김성일 계좌의 18.11% annual return / 10.52% vol은 기간이 짧으므로 장기 proxy와 직접 winner/loser 판정하지 않는다.
+7. 사용자가 실행을 승인하기 전에는 `control/execute.yaml`의 `run: true`를 넣지 않는다.
+8. 새 결과가 KAW 연구에 직접 관련되면 `studies/kaw-target-reconstruction/report.md`를 갱신한다.
+9. 사용자가 만든 포트 자체가 별도 장기 연구 주제가 되면 별도 study를 만들되, KAW comparison evidence는 canonical KAW report를 참조한다.
 
 ---
 
-## 23. Latest Update — Presentation Fix and LLM-only Handover
+## 15. Current stopping point
 
-updated_at: 2026-09-03T07:30:00+09:00
-current_remote_head: `7a7de302a8ee4612103df24de38234147b18ead4`
+KAW Direct Proxy와 Core 사이의 bridge validation은 완료됐다.
 
-이 절은 기존 handover 내용을 삭제하지 않고 이후 진행 상황을 추가한 최신 부록이다. 앞 절의 `Current State`, `Known Open Issues`, `Immediate Next`와 충돌하는 내용은 이 절을 우선한다.
-
-### 23.1 Work completed after the previous handover
-
-Agent는 `2567fa3` 기준 요청을 검증하고 다음 결과를 GitHub에 반영했다.
+현재 working conclusion:
 
 ```text
-implementation/run commit: 74a38b1a04c3b0291c587cdb70012bef4006a915
-handover commit:           4d728bd
-bt-module OpenSpec strict: PASS
-targeted tests:            27 passed
-full pytest:               157 passed
-deterministic Playwright:  2 passed, 1 skipped
-real US report Playwright: 1 passed, 2 skipped
-real KRX report Playwright: 1 passed, 2 skipped
+Direct Proxy
+= 현재 KAW의 recent-period 비교 기준
+
+Core
+= 2006년 이후 long-history behavior proxy
 ```
 
-Agent live-data findings:
+Core의 absolute optimized performance는 Direct와 다르지만 movement fidelity는 충분히 높다.
 
-- US `QQQ`, `GLD`, `SPY`는 FDR/Yahoo `Adj Close`를 사용했다.
-- KRX ETF `069500`은 default/NAVER route에서 Close-only로 조회됐고, 현재 source policy에 따라 canonical total return으로 처리됐다.
-- explicit `KRX:069500` route는 unsupported이며 total return으로 승인하지 않았다.
-- US/KRX 실데이터 run과 desktop/mobile screenshot evidence를 각 run의 `validation/`에 생성했다.
-
-LLM이 실제 published Pages와 screenshot을 다시 검토한 결과, machine/browser PASS가 놓친 다음 P1 presentation defect를 발견했다.
-
-- `month_to_month`, `canonical_total_return` 같은 storage identifier 노출
-- Annual Asset Returns의 raw fraction/full precision 노출
-- correlation full precision, ticker title-casing, generic `benchmark` identity
-- Return Decomposition의 `contribution_*` row와 미포맷 balance
-- KRX ticker `069500`의 숫자 coercion 위험
-- KRX balance/growth/decomposition에 USD 기호 사용
-
-기존 `research-report` OpenSpec이 user-facing label/unit과 currency-identifiable balance를 이미 요구하므로 spec delta는 만들지 않았다. 다음 파일을 test-first로 수정했다.
-
-```text
-src/portfolio_optimizer_kr/viewer/backtest_renderer.py
-tests/test_backtest_report_presentation.py
-verification/browser/backtest-report.spec.mjs
-runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
-runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
-ai-share/llm-to-agent.md
-```
-
-최종 구현 commit:
-
-```text
-7a7de302a8ee4612103df24de38234147b18ead4
-fix: format backtest report values for users
-```
-
-LLM-side verification evidence:
-
-```text
-presentation tests:              8 passed
-targeted affected suite:         31 passed
-full pytest:                     161 passed
-generated HTML semantic checks:  passed
-git diff --check:                passed
-```
-
-현재 환경에서는 Playwright Chromium 설치가 CDN timeout/allowlist로 실패했다. 따라서 `7a7de30`에 대한 독립 browser/Playwright 재검증은 Agent에게 요청한 상태다. 현재 요청은 다음 파일에 있다.
-
-```text
-ai-share/llm-to-agent.md
-id: 20260903T070800+0900-llm
-reply_to: 20260903T064500+0900-agent
-```
-
-### 23.2 Published Pages and LLM visual review
-
-`7a7de30` Pages workflow는 성공했다.
-
-```text
-workflow:
-https://github.com/comus93/portfolio-optimizer-kr/actions/runs/33689038845
-
-base:
-https://comus93.github.io/portfolio-optimizer-kr/
-
-US report:
-https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2/report.html
-
-KRX report:
-https://comus93.github.io/portfolio-optimizer-kr/runs/20260903-backtest-069500-krx-etf-smoke-v2/report.html
-```
-
-LLM은 수정 후 실제 published US/KRX Pages를 열어 다음 사항을 확인했다.
-
-US:
-
-- meta가 `Month-to-Month`, `Monthly`, `Total Return`으로 표시됨
-- Annual Asset Returns가 `%`로 표시됨
-- correlation이 소수 둘째 자리이며 `QQQ`/`GLD` ticker casing을 보존함
-- configured SPY benchmark 이름이 row/column identity에 표시됨
-- Return Decomposition이 ticker와 USD balance/percentage로 표시됨
-
-KRX:
-
-- initial amount가 `₩10,000`으로 표시됨
-- growth axis/point label이 KRW를 사용함
-- ticker `069500`을 보존함
-- Annual Asset Returns가 `%`로 표시됨
-- Return Decomposition balance가 KRW로 표시됨
-
-따라서 수정된 presentation semantics에 대한 **LLM 1차 visual re-review는 PASS**다. 다만 Agent의 최신 HEAD 독립 재검증과 사용자의 2차 관능 평가는 아직 남아 있다.
-
-### 23.3 Current workflow mode
-
-사용자는 현재 ChatGPT 창을 **LLM 전용 역할**로 전환했다.
-
-```text
-LLM = 요구사항 판단 + OpenSpec/결과 리뷰 + acceptance 판정 + Agent 지시 작성
-Agent = 구현 + 실제 checkout test/CLI/browser 검증 + commit/push
-```
-
-다음 LLM 창은 사용자가 명시적으로 다시 구현을 요청하지 않는 한 직접 코드 수정/실행보다 Agent 결과 검토와 다음 지시 작성에 집중한다.
-
-AI Share는 자동 양방향 실행 채널이 아니다. GitHub의 `llm-to-agent.md`와 `agent-to-llm.md`가 메시지 bridge이며, 각 상대 세션 실행은 사용자가 호출해야 한다.
-
-### 23.4 Remaining work
-
-1. 사용자가 별도 Agent/Codex 창에 `LLM 전달사항 확인하고 검증해`라고 요청한다.
-2. Agent가 `7a7de30` 이후 최신 remote를 pull하고 `20260903T070800+0900-llm` 요청을 수행한다.
-3. Agent가 targeted/full pytest, deterministic/real-report Playwright, screenshot, Pages URL을 최신 HEAD 기준으로 재검증한다.
-4. Agent가 `ai-share/agent-to-llm.md`를 최신 result로 교체하고 commit/push한다.
-5. 다음 LLM 창이 해당 result, screenshot, published Pages를 확인해 P0/P1/P2 및 deviation을 판정한다.
-6. P0/P1이 없으면 사용자 2차 visual acceptance로 진행한다.
-
-현재 별도 이슈:
-
-- `migrate-optimizer-to-openspec` strict RFC2119 cleanup은 Backtest 범위와 분리한다.
-- Korean common stock total-return source 문제는 아직 해결되지 않았다.
-- explicit KRX route를 canonical total return으로 silent 승인하지 않는다.
-
-### 23.5 New-window starting point
-
-새 LLM 창에서는 다음 순서로 시작한다.
-
-```text
-1. GitHub remote의 bt-module 최신 HEAD 확인
-2. ai-share/PROTOCOL.md와 이 handover 확인
-3. ai-share/llm-to-agent.md의 request id 확인
-4. ai-share/agent-to-llm.md에 20260903T070800+0900-llm 이후 결과가 있는지 확인
-5. 최신 Agent 결과가 없으면 사용자에게 Agent 실행이 필요하다고 알림
-6. 최신 Agent 결과가 있으면 evidence와 published Pages를 LLM 관점에서 리뷰
-```
+다음 창에서는 사용자가 설계한 portfolio를 입력받아 **동일 조건에서 KAW와 비교하는 실험 계획을 수립하고 실행**하는 단계부터 이어가면 된다.
