@@ -1,0 +1,50 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: '267440'
+  name: RISE 미국장기국채선물(H)
+  currency: KRW
+- symbol: '385560'
+  name: RISE KIS국고채30년Enhanced
+  currency: KRW
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+- symbol: EDV
+  name: Vanguard Extended Duration Treasury ETF
+  currency: USD
+- symbol: ZROZ
+  name: PIMCO 25+ Year Zero Coupon U.S. Treasury Index ETF
+  currency: USD
+portfolios:
+- name: Native Bond 50/50
+  weights_pct:
+    '267440': 50
+    '385560': 50
+- name: TLT Proxy
+  weights_pct:
+    TLT: 100
+- name: EDV Proxy
+  weights_pct:
+    EDV: 100
+- name: ZROZ Proxy
+  weights_pct:
+    ZROZ: 100
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
+fx:
+  usdkrw_symbol: USD/KRW
