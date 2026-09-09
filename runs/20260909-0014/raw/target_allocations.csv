@@ -1,0 +1,21 @@
+portfolio,ticker,name,target_weight,target_weight_pct
+Native Bond 50/50,267440,RISE 미국장기국채선물(H),0.5,50.0
+Native Bond 50/50,385560,RISE KIS국고채30년Enhanced,0.5,50.0
+Native Bond 50/50,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
+Native Bond 50/50,EDV,Vanguard Extended Duration Treasury ETF,0.0,0.0
+Native Bond 50/50,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,0.0,0.0
+TLT Proxy,267440,RISE 미국장기국채선물(H),0.0,0.0
+TLT Proxy,385560,RISE KIS국고채30년Enhanced,0.0,0.0
+TLT Proxy,TLT,iShares 20+ Year Treasury Bond ETF,1.0,100.0
+TLT Proxy,EDV,Vanguard Extended Duration Treasury ETF,0.0,0.0
+TLT Proxy,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,0.0,0.0
+EDV Proxy,267440,RISE 미국장기국채선물(H),0.0,0.0
+EDV Proxy,385560,RISE KIS국고채30년Enhanced,0.0,0.0
+EDV Proxy,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
+EDV Proxy,EDV,Vanguard Extended Duration Treasury ETF,1.0,100.0
+EDV Proxy,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,0.0,0.0
+ZROZ Proxy,267440,RISE 미국장기국채선물(H),0.0,0.0
+ZROZ Proxy,385560,RISE KIS국고채30년Enhanced,0.0,0.0
+ZROZ Proxy,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
+ZROZ Proxy,EDV,Vanguard Extended Duration Treasury ETF,0.0,0.0
+ZROZ Proxy,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,1.0,100.0
