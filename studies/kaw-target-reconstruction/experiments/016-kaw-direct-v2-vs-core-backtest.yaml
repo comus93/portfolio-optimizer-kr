@@ -1,0 +1,90 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+  - symbol: '133690'
+    name: TIGER 미국나스닥100
+    currency: KRW
+  - symbol: '402970'
+    name: ACE 미국배당다우존스
+    currency: KRW
+  - symbol: '069500'
+    name: KODEX 200
+    currency: KRW
+  - symbol: '168580'
+    name: ACE 중국본토CSI300
+    currency: KRW
+  - symbol: '200250'
+    name: KIWOOM 인도Nifty50(합성)
+    currency: KRW
+  - symbol: '101280'
+    name: KODEX 일본TOPIX100
+    currency: KRW
+  - symbol: '267440'
+    name: RISE 미국장기국채선물(H)
+    currency: KRW
+  - symbol: '385560'
+    name: RISE KIS국고채30년Enhanced
+    currency: KRW
+  - symbol: '132030'
+    name: KODEX 골드선물(H)
+    currency: KRW
+  - symbol: QQQ
+    name: Invesco QQQ Trust
+    currency: USD
+  - symbol: SPY
+    name: State Street SPDR S&P 500 ETF Trust
+    currency: USD
+  - symbol: EWY
+    name: iShares MSCI South Korea ETF
+    currency: USD
+  - symbol: EEM
+    name: iShares MSCI Emerging Markets ETF
+    currency: USD
+  - symbol: EWJ
+    name: iShares MSCI Japan ETF
+    currency: USD
+  - symbol: TLT
+    name: iShares 20+ Year Treasury Bond ETF
+    currency: USD
+  - symbol: GLD
+    name: SPDR Gold Shares
+    currency: USD
+portfolios:
+  - name: KAW Direct Proxy v2
+    weights_pct:
+      '133690': 10
+      '402970': 10
+      '069500': 8
+      '168580': 8.5
+      '200250': 8.5
+      '101280': 5
+      '267440': 15
+      '385560': 15
+      '132030': 20
+  - name: KAW Core
+    weights_pct:
+      QQQ: 10
+      SPY: 10
+      EWY: 8
+      EEM: 17
+      EWJ: 5
+      TLT: 30
+      GLD: 20
+benchmark:
+  symbol: SPY
+  name: State Street SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
+fx:
+  usdkrw_symbol: USD/KRW
