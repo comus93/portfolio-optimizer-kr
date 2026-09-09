@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/014-decomp-japan-to-core-max-sharpe.yaml
+target: studies/kaw-target-reconstruction/experiments/010-decomp-bond-to-core-max-sharpe.yaml
 run: true
