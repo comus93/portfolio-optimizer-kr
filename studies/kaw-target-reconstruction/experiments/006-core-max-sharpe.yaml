@@ -55,6 +55,7 @@ optimization:
 portfolio:
   rebalancing_period: monthly
 risk_free:
-  mode: us_3m_tbill
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
 fx:
   usdkrw_symbol: USD/KRW
