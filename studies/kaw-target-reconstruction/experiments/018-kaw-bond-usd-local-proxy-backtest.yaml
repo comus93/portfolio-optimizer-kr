@@ -1,0 +1,38 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+- symbol: EDV
+  name: Vanguard Extended Duration Treasury ETF
+  currency: USD
+- symbol: ZROZ
+  name: PIMCO 25+ Year Zero Coupon U.S. Treasury Index ETF
+  currency: USD
+portfolios:
+- name: TLT Local USD
+  weights_pct:
+    TLT: 100
+- name: EDV Local USD
+  weights_pct:
+    EDV: 100
+- name: ZROZ Local USD
+  weights_pct:
+    ZROZ: 100
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
