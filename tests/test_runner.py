@@ -90,7 +90,7 @@ risk_free:
     assert (output / "input.yaml").read_text(encoding="utf-8") == config.read_text(encoding="utf-8")
 
 
-def test_default_risk_free_uses_cached_us3m_without_provider_fetch(tmp_path):
+def test_default_risk_free_loads_tb3ms_for_effective_return_months(tmp_path):
     config = tmp_path / "run.yaml"
     config.write_text(
         """
@@ -129,16 +129,20 @@ assets:
     )
 
     assert str(seen["mode"]) == "us_3m_tbill"
-    assert seen["annual_rf"] == pytest.approx(0.038394827586206895)
-    assert loader.economic_call is None
+    assert seen["annual_rf"] == pytest.approx(0.02)
+    assert loader.economic_call == (
+        "FRED:TB3MS",
+        "2020-01-01",
+        "2020-03-31",
+    )
 
 
-def test_explicit_us_3m_tbill_uses_same_cached_rate(tmp_path):
+def test_us_3m_tbill_requires_every_effective_return_month(tmp_path):
     config = tmp_path / "run.yaml"
     config.write_text(
         """
 product_mode: optimization
-run_id: tbill-explicit
+run_id: tbill-gap
 analysis_period:
   start: 2020-01-01
   end: 2020-03-31
@@ -156,25 +160,15 @@ risk_free:
     )
     loader = FakeLoader()
     loader.economic_values = [1.0, 2.0]
-    seen = {}
 
-    def analyze(request, prices, usdkrw=None, annual_rf=None):
-        seen["annual_rf"] = annual_rf
-        return {"ok": True}
-
-    def writer(result, output_dir):
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    run_yaml(
-        config,
-        tmp_path / "runs",
-        loader=loader,
-        analyze_fn=analyze,
-        writer=writer,
-    )
-
-    assert seen["annual_rf"] == pytest.approx(0.038394827586206895)
-    assert loader.economic_call is None
+    with pytest.raises(DataValidationError, match="missing required months"):
+        run_yaml(
+            config,
+            tmp_path / "runs",
+            loader=loader,
+            analyze_fn=lambda *a, **k: {},
+            writer=lambda *a, **k: None,
+        )
 
 
 def test_mixed_currency_run_requires_explicit_fx_symbol(tmp_path):

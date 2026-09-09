@@ -10,14 +10,15 @@ import yaml
 from portfolio_optimizer_kr.backtest_pv import analyze_backtest_prices
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
+from portfolio_optimizer_kr.data.preparation import prepare_monthly_returns
 from portfolio_optimizer_kr.errors import DataValidationError
 from portfolio_optimizer_kr.models import AssetSpec, ProductMode, RiskFreeMode
 from portfolio_optimizer_kr.pipeline import analyze_prices
 from portfolio_optimizer_kr.report import write_analysis_run
 
 
+US_3M_TBILL_SERIES = "FRED:TB3MS"
 US_CPI_SERIES = "FRED:CPIAUCSL"
-PINNED_US_3M_TBILL_ANNUAL_RATE = 0.038394827586206895
 
 
 def _warmup_start(start: str | pd.Timestamp | None) -> str | None:
@@ -50,6 +51,28 @@ def _requires_usdkrw(spec: RunConfig) -> bool:
     return mixed_krw_usd or explicit_krw_basis
 
 
+def _tbill_effective_annual_rate(
+    series: pd.Series, observation_index: pd.Index
+) -> float:
+    """Arithmetic mean of monthly FRED TB3MS percentage-point observations."""
+    values = pd.to_numeric(series, errors="coerce").dropna().astype(float)
+    if values.empty:
+        raise DataValidationError("U.S. 3-Month T-Bill series has no numeric observations")
+
+    values.index = pd.DatetimeIndex(values.index)
+    by_month = values.groupby(values.index.to_period("M")).mean()
+    required_months = pd.DatetimeIndex(observation_index).to_period("M").unique().sort_values()
+    missing = required_months.difference(by_month.index)
+    if len(missing):
+        preview = ", ".join(str(month) for month in missing[:6])
+        suffix = "..." if len(missing) > 6 else ""
+        raise DataValidationError(
+            f"U.S. 3-Month T-Bill coverage is missing required months: {preview}{suffix}"
+        )
+
+    return float(by_month.reindex(required_months).mean() / 100.0)
+
+
 def _resolve_annual_rf(
     spec: RunConfig,
     loader: FDRLoader,
@@ -64,10 +87,12 @@ def _resolve_annual_rf(
     if supplied_annual_rf is not None:
         return float(supplied_annual_rf)
 
-    # The default U.S. 3-Month T-Bill rate is a pinned effective value resolved
-    # by runs/20260908-0002/result.json. Reusing it keeps normal research runs
-    # deterministic and removes the per-run FDR/FRED TB3MS dependency.
-    return PINNED_US_3M_TBILL_ANNUAL_RATE
+    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
+    observation_index = monthly_returns.index
+    start = observation_index.min().to_period("M").start_time.date().isoformat()
+    end = observation_index.max().to_period("M").end_time.date().isoformat()
+    tbill = loader.load_economic_series(US_3M_TBILL_SERIES, start=start, end=end)
+    return _tbill_effective_annual_rate(tbill, observation_index)
 
 
 def _load_inflation_series(spec: RunConfig, loader: FDRLoader) -> pd.Series | None:
