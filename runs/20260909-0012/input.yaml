@@ -1,0 +1,82 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2022
+  first_month: Jun
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: SPMO
+  name: Invesco S&P 500 Momentum ETF
+  currency: USD
+- symbol: '426030'
+  name: TIME 미국나스닥100액티브
+  currency: KRW
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+- symbol: QLD
+  name: ProShares Ultra QQQ
+  currency: USD
+- symbol: PTF
+  name: Invesco Dorsey Wright Technology Momentum ETF
+  currency: USD
+- symbol: '277540'
+  name: ACE 아시아TOP50
+  currency: KRW
+- symbol: '132030'
+  name: KODEX 골드선물(H)
+  currency: KRW
+- symbol: '144600'
+  name: KODEX 은선물(H)
+  currency: KRW
+- symbol: XLE
+  name: State Street Energy Select Sector SPDR ETF
+  currency: USD
+portfolios:
+- name: TO-BE TIME Nasdaq Active
+  weights_pct:
+    SPMO: 20
+    '426030': 30
+    '277540': 15
+    '132030': 15
+    '144600': 5
+    XLE: 15
+- name: TO-BE QQQ Proxy
+  weights_pct:
+    SPMO: 20
+    QQQ: 30
+    '277540': 15
+    '132030': 15
+    '144600': 5
+    XLE: 15
+- name: TO-BE QLD Proxy
+  weights_pct:
+    SPMO: 20
+    QLD: 30
+    '277540': 15
+    '132030': 15
+    '144600': 5
+    XLE: 15
+- name: TO-BE PTF Proxy
+  weights_pct:
+    SPMO: 20
+    PTF: 30
+    '277540': 15
+    '132030': 15
+    '144600': 5
+    XLE: 15
+benchmark:
+  symbol: SPY
+  name: State Street SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+fx:
+  usdkrw_symbol: USD/KRW
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+run_id: 20260909-0012

@@ -1,0 +1,37 @@
+portfolio,ticker,name,target_weight_pct
+TO-BE TIME Nasdaq Active,SPMO,Invesco S&P 500 Momentum ETF,20.0
+TO-BE TIME Nasdaq Active,426030,TIME 미국나스닥100액티브,30.0
+TO-BE TIME Nasdaq Active,QQQ,Invesco QQQ Trust,0.0
+TO-BE TIME Nasdaq Active,QLD,ProShares Ultra QQQ,0.0
+TO-BE TIME Nasdaq Active,PTF,Invesco Dorsey Wright Technology Momentum ETF,0.0
+TO-BE TIME Nasdaq Active,277540,ACE 아시아TOP50,15.0
+TO-BE TIME Nasdaq Active,132030,KODEX 골드선물(H),15.0
+TO-BE TIME Nasdaq Active,144600,KODEX 은선물(H),5.0
+TO-BE TIME Nasdaq Active,XLE,State Street Energy Select Sector SPDR ETF,15.0
+TO-BE QQQ Proxy,SPMO,Invesco S&P 500 Momentum ETF,20.0
+TO-BE QQQ Proxy,426030,TIME 미국나스닥100액티브,0.0
+TO-BE QQQ Proxy,QQQ,Invesco QQQ Trust,30.0
+TO-BE QQQ Proxy,QLD,ProShares Ultra QQQ,0.0
+TO-BE QQQ Proxy,PTF,Invesco Dorsey Wright Technology Momentum ETF,0.0
+TO-BE QQQ Proxy,277540,ACE 아시아TOP50,15.0
+TO-BE QQQ Proxy,132030,KODEX 골드선물(H),15.0
+TO-BE QQQ Proxy,144600,KODEX 은선물(H),5.0
+TO-BE QQQ Proxy,XLE,State Street Energy Select Sector SPDR ETF,15.0
+TO-BE QLD Proxy,SPMO,Invesco S&P 500 Momentum ETF,20.0
+TO-BE QLD Proxy,426030,TIME 미국나스닥100액티브,0.0
+TO-BE QLD Proxy,QQQ,Invesco QQQ Trust,0.0
+TO-BE QLD Proxy,QLD,ProShares Ultra QQQ,30.0
+TO-BE QLD Proxy,PTF,Invesco Dorsey Wright Technology Momentum ETF,0.0
+TO-BE QLD Proxy,277540,ACE 아시아TOP50,15.0
+TO-BE QLD Proxy,132030,KODEX 골드선물(H),15.0
+TO-BE QLD Proxy,144600,KODEX 은선물(H),5.0
+TO-BE QLD Proxy,XLE,State Street Energy Select Sector SPDR ETF,15.0
+TO-BE PTF Proxy,SPMO,Invesco S&P 500 Momentum ETF,20.0
+TO-BE PTF Proxy,426030,TIME 미국나스닥100액티브,0.0
+TO-BE PTF Proxy,QQQ,Invesco QQQ Trust,0.0
+TO-BE PTF Proxy,QLD,ProShares Ultra QQQ,0.0
+TO-BE PTF Proxy,PTF,Invesco Dorsey Wright Technology Momentum ETF,30.0
+TO-BE PTF Proxy,277540,ACE 아시아TOP50,15.0
+TO-BE PTF Proxy,132030,KODEX 골드선물(H),15.0
+TO-BE PTF Proxy,144600,KODEX 은선물(H),5.0
+TO-BE PTF Proxy,XLE,State Street Energy Select Sector SPDR ETF,15.0

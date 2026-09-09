@@ -1,0 +1,4 @@
+run_id: 20260909-0012
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/015-tobe-nasdaq-proxy-comparison.yaml
+product_mode: backtest
