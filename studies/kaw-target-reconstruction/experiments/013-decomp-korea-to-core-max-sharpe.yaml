@@ -1,0 +1,62 @@
+product_mode: optimization
+analysis_period:
+  start: 2021-11-01
+  end: 2026-08-31
+assets:
+- symbol: '133690'
+  currency: KRW
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '402970'
+  currency: KRW
+  provided_weight_pct: 10
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: EWY
+  currency: USD
+  provided_weight_pct: 8
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '168580'
+  currency: KRW
+  provided_weight_pct: 8.5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '200250'
+  currency: KRW
+  provided_weight_pct: 8.5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '101280'
+  currency: KRW
+  provided_weight_pct: 5
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: TLT
+  currency: USD
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '385560'
+  currency: KRW
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 60
+- symbol: '132030'
+  currency: KRW
+  provided_weight_pct: 20
+  min_weight_pct: 0
+  max_weight_pct: 60
+benchmark:
+  symbol: SPY
+  currency: USD
+optimization:
+  objective: max_sharpe
+  frontier_points: 100
+portfolio:
+  rebalancing_period: monthly
+risk_free:
+  mode: us_3m_tbill
+fx:
+  usdkrw_symbol: USD/KRW
