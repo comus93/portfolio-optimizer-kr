@@ -6,5 +6,5 @@
 - [x] Preserve explicit custom `fixed` and explicit `us_3m_tbill` inputs.
 - [x] Add Optimization and Backtest research-default regression tests.
 - [x] Update examples and LLM handover to the final pinned-default semantics.
-- [ ] Verify affected regression scope.
+- [x] Verify affected regression scope: 23 targeted tests passed in GitHub Actions.
 - [ ] Update/close GitHub Issue #1 and archive this change after verification.
