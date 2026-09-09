@@ -24,6 +24,11 @@ DEFAULT_RESEARCH_BENCHMARK: dict[str, str] = {
     "currency": "USD",
 }
 
+DEFAULT_RESEARCH_RISK_FREE: dict[str, object] = {
+    "mode": "fixed",
+    "annual_rate_pct": 3.8394827586206895,
+}
+
 
 @dataclass(frozen=True)
 class ResearchTarget:
@@ -58,6 +63,12 @@ def _apply_research_defaults(config: Mapping[str, Any]) -> dict[str, Any]:
     """Materialize Research Frontend defaults while preserving product semantics."""
     effective = dict(config)
     backtest = _is_backtest(effective)
+
+    if "risk_free" not in effective or effective.get("risk_free") in (None, {}):
+        # This is the effective U.S. 3-Month T-Bill rate previously resolved by
+        # runs/20260908-0002/result.json. Research runs reuse the pinned value
+        # instead of refetching FRED/FDR TB3MS every time.
+        effective["risk_free"] = dict(DEFAULT_RESEARCH_RISK_FREE)
 
     if backtest:
         # Backtest permits an explicit no-benchmark choice. Only a missing key
