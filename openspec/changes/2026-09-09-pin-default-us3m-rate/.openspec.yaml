@@ -1,9 +1,9 @@
 schema: spec-driven
 created: 2026-09-09
-goal: Resolve the default U.S. 3-Month T-Bill RF from the previously calculated cached effective rate instead of refetching FRED/FDR on every run.
+goal: Materialize the previously resolved U.S. 3-Month T-Bill effective rate as the default Research Frontend RF for Optimization and Backtest.
 affected_areas:
-  - market-data
+  - research-input
+  - research-execution
   - portfolio-optimization
   - portfolio-backtest
-  - runner
   - verification
