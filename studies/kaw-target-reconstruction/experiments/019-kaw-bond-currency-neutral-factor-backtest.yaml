@@ -1,0 +1,52 @@
+# Diagnostic only: US-listed bond ETFs are intentionally tagged KRW so the engine
+# preserves their local USD total-return path without applying USD/KRW conversion.
+# This does NOT represent an investable KRW position. It tests whether their
+# duration-factor movement can proxy the combined native KAW bond sleeve.
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: '267440'
+  name: RISE 미국장기국채선물(H)
+  currency: KRW
+- symbol: '385560'
+  name: RISE KIS국고채30년Enhanced
+  currency: KRW
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF local-return factor
+  currency: KRW
+- symbol: EDV
+  name: Vanguard Extended Duration Treasury ETF local-return factor
+  currency: KRW
+- symbol: ZROZ
+  name: PIMCO 25+ Year Zero Coupon US Treasury Index ETF local-return factor
+  currency: KRW
+portfolios:
+- name: Native Bond 50/50
+  weights_pct:
+    '267440': 50
+    '385560': 50
+- name: TLT Local Factor
+  weights_pct:
+    TLT: 100
+- name: EDV Local Factor
+  weights_pct:
+    EDV: 100
+- name: ZROZ Local Factor
+  weights_pct:
+    ZROZ: 100
+benchmark:
+  symbol: '069500'
+  name: KODEX 200 diagnostic benchmark
+  currency: KRW
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
