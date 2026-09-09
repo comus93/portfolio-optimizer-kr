@@ -1,0 +1,8 @@
+schema: spec-driven
+created: 2026-09-09
+goal: Use the previously resolved U.S. 3-Month T-Bill effective annual rate as the default RF without refetching FRED/FDR on every run.
+affected_areas:
+  - market-data
+  - research-input
+  - portfolio-optimization
+  - portfolio-backtest
