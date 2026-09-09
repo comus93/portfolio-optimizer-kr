@@ -1,0 +1,10 @@
+portfolio,ticker,name,target_weight_pct
+TLT Local USD,TLT,iShares 20+ Year Treasury Bond ETF,100.0
+TLT Local USD,EDV,Vanguard Extended Duration Treasury ETF,0.0
+TLT Local USD,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,0.0
+EDV Local USD,TLT,iShares 20+ Year Treasury Bond ETF,0.0
+EDV Local USD,EDV,Vanguard Extended Duration Treasury ETF,100.0
+EDV Local USD,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,0.0
+ZROZ Local USD,TLT,iShares 20+ Year Treasury Bond ETF,0.0
+ZROZ Local USD,EDV,Vanguard Extended Duration Treasury ETF,0.0
+ZROZ Local USD,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index ETF,100.0

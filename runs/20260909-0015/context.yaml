@@ -1,0 +1,4 @@
+run_id: 20260909-0015
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/018-kaw-bond-usd-local-proxy-backtest.yaml
+product_mode: backtest
