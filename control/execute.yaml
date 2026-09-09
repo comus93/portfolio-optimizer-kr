@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/016-kaw-direct-v2-vs-core-backtest.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/017-kaw-bond-sleeve-proxy-backtest.yaml
+run: true
