@@ -1,0 +1,88 @@
+product_mode: backtest
+
+time_period:
+  mode: month_to_month
+  start_year: 2022
+  first_month: Jun
+  end_year: 2026
+  last_month: Aug
+
+assets:
+  - symbol: SPMO
+    name: Invesco S&P 500 Momentum ETF
+    currency: USD
+  - symbol: '426030'
+    name: TIME 미국나스닥100액티브
+    currency: KRW
+  - symbol: '277540'
+    name: ACE 아시아TOP50
+    currency: KRW
+  - symbol: '132030'
+    name: KODEX 골드선물(H)
+    currency: KRW
+  - symbol: '144600'
+    name: KODEX 은선물(H)
+    currency: KRW
+  - symbol: XLE
+    name: Energy Select Sector SPDR Fund
+    currency: USD
+  - symbol: '133690'
+    name: TIGER 미국나스닥100
+    currency: KRW
+  - symbol: '402970'
+    name: ACE 미국배당다우존스
+    currency: KRW
+  - symbol: '069500'
+    name: KODEX 200
+    currency: KRW
+  - symbol: '168580'
+    name: ACE 중국본토CSI300
+    currency: KRW
+  - symbol: '200250'
+    name: KIWOOM 인도Nifty50(합성)
+    currency: KRW
+  - symbol: '101280'
+    name: KODEX 일본TOPIX100
+    currency: KRW
+  - symbol: TLT
+    name: iShares 20+ Year Treasury Bond ETF
+    currency: USD
+  - symbol: '385560'
+    name: RISE KIS국고채30년Enhanced
+    currency: KRW
+
+portfolios:
+  - name: TO-BE Direct
+    weights_pct:
+      SPMO: 20
+      '426030': 30
+      '277540': 15
+      '132030': 15
+      '144600': 5
+      XLE: 15
+
+  - name: KAW Direct Proxy
+    weights_pct:
+      '133690': 10
+      '402970': 10
+      '069500': 8
+      '168580': 8.5
+      '200250': 8.5
+      '101280': 5
+      TLT: 15
+      '385560': 15
+      '132030': 20
+
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+
+initial_balance: 10000
+
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+
+fx:
+  usdkrw_symbol: USD/KRW
