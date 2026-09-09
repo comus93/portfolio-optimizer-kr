@@ -1,8 +1,10 @@
 # Tasks
 
-- [x] Define pinned U.S. 3-Month T-Bill default provenance and value.
-- [ ] Update Research Frontend default contract for Optimization and Backtest.
-- [ ] Update project examples/handover so omitted user RF is materialized as fixed 3.8394827586206895%.
-- [ ] Add regression coverage that default research input does not require FDR/FRED TB3MS resolution.
-- [ ] Verify explicit `us_3m_tbill` and explicit custom fixed RF remain available.
-- [ ] After verification, update/resolve Issue #1 as appropriate and archive this change.
+- [x] Confirm source run and pinned US3M effective annual rate.
+- [x] Define cached `us_3m_tbill` default semantics and provenance.
+- [ ] Update runner default US3M resolution to use 0.038394827586206895 without FDR/FRED fetch.
+- [ ] Update runner regression tests for default and explicit `us_3m_tbill` cached behavior.
+- [ ] Preserve explicit custom `fixed` behavior and runtime annual-RF override.
+- [ ] Update examples and LLM handover to describe cached US3M semantics.
+- [ ] Verify affected Optimization and Backtest regression scope.
+- [ ] Update/close GitHub Issue #1 and archive this change after verification.
