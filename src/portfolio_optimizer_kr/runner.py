@@ -46,7 +46,9 @@ def _requires_usdkrw(spec: RunConfig) -> bool:
     currencies = {asset.currency.upper() for asset in spec.request.assets}
     if spec.request.benchmark is not None:
         currencies.add(spec.request.benchmark.currency.upper())
-    return "KRW" in currencies and "USD" in currencies
+    mixed_krw_usd = "KRW" in currencies and "USD" in currencies
+    explicit_krw_basis = bool(spec.usdkrw_symbol) and "USD" in currencies
+    return mixed_krw_usd or explicit_krw_basis
 
 
 def _tbill_effective_annual_rate(
