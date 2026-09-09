@@ -1,0 +1,33 @@
+portfolio,ticker,name,target_weight,target_weight_pct
+KAW Direct Proxy v2,133690,TIGER 미국나스닥100,0.1,10.0
+KAW Direct Proxy v2,402970,ACE 미국배당다우존스,0.1,10.0
+KAW Direct Proxy v2,069500,KODEX 200,0.08,8.0
+KAW Direct Proxy v2,168580,ACE 중국본토CSI300,0.085,8.5
+KAW Direct Proxy v2,200250,KIWOOM 인도Nifty50(합성),0.085,8.5
+KAW Direct Proxy v2,101280,KODEX 일본TOPIX100,0.05,5.0
+KAW Direct Proxy v2,267440,RISE 미국장기국채선물(H),0.15,15.0
+KAW Direct Proxy v2,385560,RISE KIS국고채30년Enhanced,0.15,15.0
+KAW Direct Proxy v2,132030,KODEX 골드선물(H),0.2,20.0
+KAW Direct Proxy v2,QQQ,Invesco QQQ Trust  Series 1,0.0,0.0
+KAW Direct Proxy v2,SPY,State Street SPDR S&P 500 ETF Trust,0.0,0.0
+KAW Direct Proxy v2,EWY,Ishares Msci South Korea ETF,0.0,0.0
+KAW Direct Proxy v2,EEM,iShares MSCI Emerging Markets ETF,0.0,0.0
+KAW Direct Proxy v2,EWJ,iShares MSCI Japan ETF,0.0,0.0
+KAW Direct Proxy v2,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
+KAW Direct Proxy v2,GLD,SPDR Gold Shares,0.0,0.0
+KAW Core,133690,TIGER 미국나스닥100,0.0,0.0
+KAW Core,402970,ACE 미국배당다우존스,0.0,0.0
+KAW Core,069500,KODEX 200,0.0,0.0
+KAW Core,168580,ACE 중국본토CSI300,0.0,0.0
+KAW Core,200250,KIWOOM 인도Nifty50(합성),0.0,0.0
+KAW Core,101280,KODEX 일본TOPIX100,0.0,0.0
+KAW Core,267440,RISE 미국장기국채선물(H),0.0,0.0
+KAW Core,385560,RISE KIS국고채30년Enhanced,0.0,0.0
+KAW Core,132030,KODEX 골드선물(H),0.0,0.0
+KAW Core,QQQ,Invesco QQQ Trust  Series 1,0.1,10.0
+KAW Core,SPY,State Street SPDR S&P 500 ETF Trust,0.1,10.0
+KAW Core,EWY,Ishares Msci South Korea ETF,0.08,8.0
+KAW Core,EEM,iShares MSCI Emerging Markets ETF,0.17,17.0
+KAW Core,EWJ,iShares MSCI Japan ETF,0.05,5.0
+KAW Core,TLT,iShares 20+ Year Treasury Bond ETF,0.3,30.0
+KAW Core,GLD,SPDR Gold Shares,0.2,20.0

@@ -1,0 +1,4 @@
+portfolio,active_return,tracking_error,information_ratio,start,end,observations
+KAW Direct Proxy v2,-0.08143906867039963,0.11760552291543364,-0.6924765661639875,,,
+KAW Core,-0.04379599591289162,0.10675988918648303,-0.41022893754030487,,,
+coverage,,,,2021-11-30,2026-08-31,58
