@@ -1,0 +1,8 @@
+ticker,provided_contribution,optimized_contribution,unit
+QQQ,0.0755147947561458,0.0,monetary_initial_value_1
+SPY,0.0643340522875156,0.333339533246876,monetary_initial_value_1
+EWY,0.1233631028500457,0.0,monetary_initial_value_1
+EEM,0.0914958117506704,0.0,monetary_initial_value_1
+EWJ,0.026888433900901714,0.0,monetary_initial_value_1
+TLT,-0.10668705205174567,-0.06868323339453139,monetary_initial_value_1
+GLD,0.1947317912422419,0.46841034142571397,monetary_initial_value_1
