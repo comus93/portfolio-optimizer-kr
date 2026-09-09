@@ -30,6 +30,13 @@ initial_balance: 10000
 rebalancing:
   period: monthly
   calendar_aligned: true
+
+# Risk-free rate is selectable per run.
+# Dynamic provider mode:
+# risk_free:
+#   mode: us_3m_tbill
+#
+# Deterministic fixed mode (does not fetch FRED/FDR economic data):
 risk_free:
   mode: fixed
   annual_rate_pct: 0
