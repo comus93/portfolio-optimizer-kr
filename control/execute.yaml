@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/012-decomp-dividend-to-core-max-sharpe.yaml
+target: studies/kaw-target-reconstruction/experiments/013-decomp-korea-to-core-max-sharpe.yaml
 run: true
