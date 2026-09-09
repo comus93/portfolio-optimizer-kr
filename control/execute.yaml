@@ -1,2 +1,2 @@
 target: studies/kaw-target-reconstruction/experiments/016-kaw-direct-v2-vs-core-backtest.yaml
-run: true
+run: false
