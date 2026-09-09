@@ -54,13 +54,15 @@ def _asset_price(
     usdkrw: pd.Series | None,
 ) -> pd.Series:
     asset_currencies = {asset.currency.upper() for asset in request.assets}
-    if currency.upper() == "USD" and "KRW" in asset_currencies:
-        if usdkrw is None:
+    normalized_currency = currency.upper()
+    if normalized_currency == "USD":
+        if "KRW" in asset_currencies and usdkrw is None:
             raise DataValidationError(
                 "mixed KRW/USD universe requires USD/KRW series"
             )
-        return convert_usd_price_to_krw(price, usdkrw)
-    if currency.upper() not in {"KRW", "USD"}:
+        if usdkrw is not None:
+            return convert_usd_price_to_krw(price, usdkrw)
+    if normalized_currency not in {"KRW", "USD"}:
         raise DataValidationError(f"unsupported currency: {currency}")
     return price
 
