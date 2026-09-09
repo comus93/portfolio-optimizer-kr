@@ -58,6 +58,14 @@ portfolios:
       '132030': 15
       '144600': 5
       XLE: 15
+  - name: TO-BE PTF Proxy
+    weights_pct:
+      SPMO: 20
+      PTF: 30
+      '277540': 15
+      '132030': 15
+      '144600': 5
+      XLE: 15
 benchmark:
   symbol: SPY
   name: State Street SPDR S&P 500 ETF Trust
