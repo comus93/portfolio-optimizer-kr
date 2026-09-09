@@ -1,0 +1,4 @@
+portfolio,active_return,tracking_error,information_ratio,start,end,observations
+TO-BE Direct,0.09060693843152204,0.10251100147842432,0.8838752633842158,,,
+KAW Direct Proxy,-0.07930273578297026,0.11503627398100222,-0.6893715611483278,,,
+coverage,,,,2022-06-30,2026-08-31,51
