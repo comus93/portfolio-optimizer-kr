@@ -20,14 +20,17 @@
 - [x] 클릭/터치한 metric chart의 selected point tooltip을 pointer leave 이후에도 고정 표시
 - [x] canonical drawdown matrix를 interactive JSON에 저장하고 browser-side finance 재계산 제거
 - [x] Selected Point Drawdown chart에 기간/낙폭 축 scale과 title 추가
-- [x] `max_sharpe`와 `target_volatility`가 동일 Frontier Risk Trade-off dashboard를 공유하도록 objective-aware selection/label 적용
+- [x] dashboard 표시명을 `리스크·성과 균형 분석`으로 변경
+- [x] Selected Frontier Point 자산 표를 `Ticker | Name | Allocation`으로 변경하고 input의 snapshotted asset name 사용
+- [x] `max_sharpe`와 `target_volatility`가 동일 dashboard를 공유하도록 objective-aware selection/label 적용
 - [x] `target_volatility`에서 목표 변동성 이하 persisted frontier 중 기대수익 최대 point를 초기 선택하고 `Maximum Return · Target Vol X%`로 표기
 - [x] Maximum Return objective marker targeted test 통과
-- [x] 실제 `target_volatility` 11.5% 100-point run에서 default Point 56 및 Maximum Return label 생성 확인
+- [x] Experiment 005와 동일한 7개 자산/2017-09~2026-08 조건에서 target volatility 11.5% experiment 006 생성
+- [x] 동일 조건 Maximum Return 11.5% real run `20260910-0017`에서 default Point 41 및 Maximum Return label 생성 확인
 - [x] targeted unit regression 및 JSON safety 검증
 - [x] GitHub Actions validation 통과
 - [x] 새 100-point research run으로 analyzer time / JSON size / report size 재확인
 - [x] GitHub Pages publish 성공 및 실제 정적 report artifact 확인
-- [ ] 새 axis/설명/edge interaction/persistent tooltip 및 Maximum Return objective marker에 대한 사용자 visual acceptance 확인
+- [ ] 새 axis/설명/edge interaction/persistent tooltip/Maximum Return objective marker/Ticker-Name-Allocation 표에 대한 사용자 visual acceptance 확인
 - [ ] 기존 Efficient Frontier numerical regression을 baseline tag와 frozen-input 기준으로 별도 비교 검증
 - [x] Sweet spot 자동 판정은 이번 change에 포함하지 않고 실제 curve 검토 이후 별도 결정
