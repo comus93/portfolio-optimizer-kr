@@ -10,6 +10,7 @@ KAW Native Proxy와 KAW Core Revised Internal이 검증된 baseline이 되었으
 - `portfolio-backtest`: 기존 단일 asset benchmark 외에 고정 target-weight portfolio benchmark를 지원한다.
 - 기존 benchmark-relative analytics 계산식은 변경하지 않고 기존 `portfolio-analytics`를 재사용한다.
 - 기본 benchmark는 계속 SPY다. KAW는 explicit override일 때만 사용한다.
+- KAW preset은 benchmark 정의만 materialize하며 period, RF, target volatility 등 다른 연구 설정을 자동 변경하지 않는다.
 
 ## 비범위
 
@@ -17,10 +18,11 @@ KAW Native Proxy와 KAW Core Revised Internal이 검증된 baseline이 되었으
 - Native/Core NAV stitching
 - 기간에 따라 benchmark를 자동 선택하는 hidden routing
 - KAW 종목/비중의 재설계
+- KAW 연구의 `10.0% annualized standard deviation` 권장 risk budget을 product-level 자동 default로 주입하는 기능. 해당 값은 `studies/kaw-target-reconstruction/study.md`가 소유하는 연구 convention이다.
 
 ## 영향
 
 - changed capability: `research-input`, `portfolio-backtest`
 - affected shared behavior: market-data universe materialization 및 existing benchmark-relative analytics input path
 - affected product: `portfolio-backtest`
-- required regression: 기존 SPY benchmark, no-benchmark, KAW Native preset, KAW Core preset, persisted effective input
+- required regression: 기존 SPY benchmark, no-benchmark, KAW Native preset, KAW Core preset, persisted effective input, configured fixed-RF analytics/report propagation
