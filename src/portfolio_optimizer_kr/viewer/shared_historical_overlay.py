@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
+from . import asset_display as ad
 from . import historical_active_components as active
 from . import historical_components as hc
 from . import pv_visual as pv
@@ -63,6 +65,18 @@ def _artifact(root: Path, name: str, *, raw_first: bool = False) -> pd.DataFrame
     second = root / ("review" if raw_first else "raw") / name
     frame = _read_csv(first)
     return frame if not frame.empty else _read_csv(second)
+
+
+def _asset_names(root: Path) -> dict[str, str]:
+    path = root / "input.yaml"
+    if not path.is_file():
+        return {}
+    try:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        return {}
+    configuration = loaded if isinstance(loaded, dict) else {}
+    return ad.asset_names_from_configuration(configuration)
 
 
 def _rename_identities(frame: pd.DataFrame, labels: dict[str, str]) -> pd.DataFrame:
@@ -128,6 +142,7 @@ def build_optimizer_shared_sections(
     root = Path(run_dir)
     labels = {"provided":"Provided Portfolio", "optimized":objective_name or "Optimized Portfolio"}
     portfolio_order = [labels["provided"], labels["optimized"]]
+    asset_names = _asset_names(root)
 
     performance = _scale_performance_balance(_rename_identities(_artifact(root, "performance_summary.csv"), labels))
     benchmark = _rename_identities(_artifact(root, "benchmark_summary.csv"), labels)
@@ -157,19 +172,19 @@ def build_optimizer_shared_sections(
     add("#portfolio-growth .chart", not growth.empty, _growth_svg(growth, portfolio_order, {"benchmark": benchmark_label or "Benchmark"}, "USD"))
     add("#annual-returns .chart", not annual.empty, _annual_returns_chart(annual, portfolio_order, benchmark_label))
     add("#trailing-returns .table-slot", not trailing.empty, _trailing_returns_table(trailing, portfolio_order, benchmark_label))
-    add("#asset-correlations .table-slot", not correlations.empty, _correlations_table(correlations, benchmark_label))
+    add("#asset-correlations .table-slot", not correlations.empty, _correlations_table(correlations, benchmark_label, asset_names))
     add("#portfolio-metrics .table-slot", not metrics.empty, hc.metrics_matrix(metrics, portfolio_order, benchmark_label, performance, "USD"))
     add("#monthly-returns .table-slot", not monthly.empty, hc.friendly_table(monthly, portfolio_order=portfolio_order, benchmark_label=benchmark_label))
     add("#drawdown-chart .chart", not drawdown_series.empty, _drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label))
     add("#asset-performance .table-slot", not asset_performance.empty, hc.asset_performance_table(asset_performance))
-    add("#portfolio-asset-correlations .table-slot", not correlations.empty, _correlations_table(correlations, benchmark_label))
-    add("#annual-asset-returns .chart", not annual_assets.empty, _annual_asset_returns_chart(annual_assets) + hc.annual_asset_returns_table(annual_assets))
+    add("#portfolio-asset-correlations .table-slot", not correlations.empty, _correlations_table(correlations, benchmark_label, asset_names))
+    add("#annual-asset-returns .chart", not annual_assets.empty, _annual_asset_returns_chart(annual_assets, asset_names) + hc.annual_asset_returns_table(annual_assets, asset_names))
     add("#rolling-returns-3y .chart", not rolling3.empty, _rolling_returns_chart(rolling3, portfolio_order, benchmark_label, 3))
     add("#rolling-returns-5y .chart", not rolling5.empty, _rolling_returns_chart(rolling5, portfolio_order, benchmark_label, 5))
 
     if not benchmark.empty:
         add("#annualized-active-return .chart", not active_returns.empty, active.annual_active_return(active_returns, portfolio_order))
-        add("#active-return-contribution .chart", not active_contribution.empty, active.active_contribution(active_contribution, portfolio_order))
+        add("#active-return-contribution .chart", not active_contribution.empty, active.active_contribution(active_contribution, portfolio_order, asset_names))
         if not active_contribution.empty:
             sections["#active-return-contribution .table-slot"] = ""
         add(

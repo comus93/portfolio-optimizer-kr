@@ -3,7 +3,7 @@
 This catalog is generated from persisted run artifacts for repository navigation. Canonical values remain inside each run directory.
 
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
 | [20260910-0006](20260910-0006/) | Optimization | provided-portfolio-v1-optimization / 001-max-sharpe | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0006/report.html) | Provided Portfolio v1 - Maximum Sharpe |
 | [20260910-0005](20260910-0005/) | Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | 2014-07 ~ 2026-08 | KAW Core Revised Internal | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0005/report.html) | 022-kaw-long-benchmark-smoke |

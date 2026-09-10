@@ -93,7 +93,7 @@ def _split_row(line: str) -> list[str]:
     stripped = line.strip()
     if not stripped.startswith("|") or not stripped.endswith("|"):
         return []
-    return [cell.strip() for cell in stripped[1:-1].split(" | ")]
+    return [cell.strip() for cell in stripped[1:-1].split("|")]
 
 
 def _join_row(cells: list[str]) -> str:

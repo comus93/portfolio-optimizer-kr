@@ -717,8 +717,33 @@ def annual_returns_chart(
     return grouped_bar_chart(categories, series, chart_id="annual-returns-chart", y_title="Annual Return %", tooltip_rows=tooltips)
 
 
-def annual_asset_returns_table(frame: pd.DataFrame) -> str:
-    return friendly_table(frame, fraction_columns={"return"}, table_id="annual-asset-returns-table")
+def annual_asset_returns_table(
+    frame: pd.DataFrame,
+    asset_names: dict[str, str] | None = None,
+) -> str:
+    if frame.empty:
+        return '<p class="muted">N/A</p>'
+    rendered = frame.copy()
+    if "ticker" in rendered:
+        rendered["ticker"] = rendered["ticker"].astype(str)
+        names = asset_names or {}
+        if "name" not in rendered:
+            ticker_index = list(rendered.columns).index("ticker")
+            rendered.insert(
+                ticker_index + 1,
+                "name",
+                rendered["ticker"].map(lambda ticker: names.get(str(ticker), "")),
+            )
+        elif names:
+            rendered["name"] = rendered.apply(
+                lambda row: str(row.get("name") or names.get(str(row.get("ticker")), "")),
+                axis=1,
+            )
+    return friendly_table(
+        rendered,
+        fraction_columns={"return"},
+        table_id="annual-asset-returns-table",
+    )
 
 
 def annual_asset_returns_chart(
