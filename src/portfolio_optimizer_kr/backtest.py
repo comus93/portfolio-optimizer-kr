@@ -61,7 +61,17 @@ def analyze_backtest_prices(
             calendar_aligned=request.calendar_aligned,
         )
 
-    benchmark_returns = _benchmark_returns(request, prices, usdkrw)
+    if request.benchmark_portfolio is not None:
+        benchmark_path = build_portfolio_path(
+            monthly_returns,
+            request.benchmark_portfolio.target_weights,
+            request.rebalancing,
+            calendar_aligned=request.calendar_aligned,
+        )
+        benchmark_returns = benchmark_path.returns.rename(request.benchmark_portfolio.name)
+    else:
+        benchmark_returns = _benchmark_returns(request, prices, usdkrw)
+
     if benchmark_returns is not None:
         benchmark_returns = benchmark_returns.loc[
             monthly_returns.index.min() : monthly_returns.index.max()
@@ -226,6 +236,22 @@ def analyze_backtest_prices(
         ]
     )
 
+    if request.benchmark_portfolio is not None:
+        benchmark_config: dict[str, object] | None = {
+            "type": "portfolio",
+            "name": request.benchmark_portfolio.name,
+            "target_weights": dict(request.benchmark_portfolio.target_weights),
+        }
+    elif request.benchmark is not None:
+        benchmark_config = {
+            "type": "asset",
+            "symbol": request.benchmark.symbol,
+            "name": request.benchmark.name,
+            "currency": request.benchmark.currency,
+        }
+    else:
+        benchmark_config = None
+
     result: dict[str, object] = {
         "configuration": {
             "product_mode": "backtest",
@@ -245,15 +271,7 @@ def analyze_backtest_prices(
                 }
                 for asset in request.assets
             ],
-            "benchmark": (
-                {
-                    "symbol": request.benchmark.symbol,
-                    "name": request.benchmark.name,
-                    "currency": request.benchmark.currency,
-                }
-                if request.benchmark
-                else None
-            ),
+            "benchmark": benchmark_config,
             "initial_balance": request.initial_balance,
             "rebalancing_period": str(request.rebalancing),
             "calendar_aligned": request.calendar_aligned,
