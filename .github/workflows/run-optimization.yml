@@ -172,7 +172,7 @@ jobs:
           fi
 
           git pull --rebase origin "$TARGET_BRANCH"
-          CURRENT_FINGERPRINT="$(sha256sum control/execute.yaml | sha256sum | awk '{print $1}')"
+          CURRENT_FINGERPRINT="$(sha256sum control/execute.yaml | awk '{print $1}')"
           if [[ "$CURRENT_FINGERPRINT" != "$SOURCE_FINGERPRINT" ]]; then
             echo "Execution request changed while synchronizing; leaving it untouched."
             exit 0
