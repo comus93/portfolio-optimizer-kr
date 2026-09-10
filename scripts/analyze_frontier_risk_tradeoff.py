@@ -53,6 +53,9 @@ def analyze_run(run_path: Path) -> Path:
     )
     risk_free = config.get("risk_free") or {}
     annual_rf = float(risk_free.get("annual_rate_pct") or 0.0) / 100.0
+    optimization = config.get("optimization") or {}
+    objective = str(optimization.get("objective") or "max_sharpe")
+    target_volatility_pct = optimization.get("target_volatility_pct")
 
     overlay, portfolio_returns = frontier_risk_dataset(
         frontier,
@@ -69,6 +72,12 @@ def analyze_run(run_path: Path) -> Path:
         overlay,
         portfolio_returns,
         list(asset_returns.columns),
+        objective=objective,
+        target_volatility_pct=(
+            float(target_volatility_pct)
+            if target_volatility_pct is not None
+            else None
+        ),
     )
     payload_path = review / "frontier_interactive.json"
     write_frontier_interactive_payload(payload_path, payload)
@@ -91,6 +100,11 @@ def analyze_run(run_path: Path) -> Path:
         f"pain={max_row['pain_index_pct']:.4f}% "
         f"pain_ratio={max_row['pain_ratio']:.4f} "
         f"max_underwater_months={int(max_row['max_underwater_months'])}"
+    )
+    print(
+        "frontier-risk: dashboard_objective "
+        f"objective={payload['objective']} default_point={payload['default_point']} "
+        f"label={payload['objective_label']}"
     )
     print(output_path)
     print(payload_path)
