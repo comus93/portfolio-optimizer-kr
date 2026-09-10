@@ -8,4 +8,14 @@
 - [x] Update examples and LLM handover to the final pinned-default semantics.
 - [x] Verify affected regression scope: 23 targeted tests passed in GitHub Actions.
 - [x] Update GitHub Issue #1 with the resolved default path and remaining explicit-dynamic scope.
-- [ ] Archive this change after its requirement is folded into the canonical `research-input` baseline.
+- [x] Strengthen the contract so materialized fixed RF must propagate into runtime analytics rather than persistence only.
+- [x] Fix `runner._resolve_annual_rf()` so configured fixed RF is used when no explicit caller override is supplied.
+- [x] Verify populated Backtest Risk and Return Metrics after the fix using KAW smoke runs `20260910-0004` and `20260910-0005`.
+- [ ] Archive this change after its requirements are folded into the canonical `research-input` baseline.
+
+Additional validation evidence:
+
+- Pre-fix KAW smoke runs `20260910-0002` / `20260910-0003` persisted fixed RF but exposed missing PV-style Risk and Return Metrics.
+- Root cause: normal research execution passed no external `annual_rf`, and the runner returned `None` instead of the parsed fixed rate.
+- Corrected CI workflow run `34425892590` succeeded with fixed-RF propagation and PV metrics regression coverage.
+- Corrected runs `20260910-0004` / `20260910-0005` generated `raw/review/risk_and_return_metrics.csv` and populated HTML metric sections.
