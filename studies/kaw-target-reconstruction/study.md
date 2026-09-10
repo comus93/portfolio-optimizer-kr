@@ -10,26 +10,40 @@ Reconstruct the current Kim Seong-il K-All Weather portfolio as a reproducible b
 
 The design goal is to preserve the current economic sleeves as directly as practical while using a common dataset that can be executed reproducibly in the internal engine.
 
-| Sleeve | Native Proxy | Weight |
-|---|---|---:|
-| Nasdaq 100 | 133690 TIGER 미국나스닥100 | 10.0% |
-| US dividend | 402970 ACE 미국배당다우존스 | 10.0% |
-| Korea | 069500 KODEX 200 | 8.0% |
-| China / CSI 300 | **192090 TIGER 차이나CSI300** | **8.5%** |
-| India / Nifty 50 | **200250 KIWOOM 인도Nifty50(합성)** | **8.5%** |
-| Japan | 101280 KODEX 일본TOPIX100 | 5.0% |
-| US long Treasury | 267440 RISE 미국장기국채선물(H) | 15.0% |
-| KR 30Y Treasury | 385560 RISE KIS국고채30년Enhanced | 15.0% |
-| Gold | **GLD** | **20.0%** |
-| **Total** |  | **100.0%** |
+For Korean-listed ETFs, the date below is the KRX **listing date**. For US-listed ETFs, the date is the issuer-reported **fund inception / listing date** used as the practical history-start marker.
 
-Current common recent-period baseline remains **2021-11 onward** unless a later experiment explicitly changes the period.
+| Sleeve | Code / Ticker | Native Proxy | Weight | Listing / Inception date |
+|---|---|---|---:|---|
+| Nasdaq 100 | `133690` | TIGER 미국나스닥100 | 10.0% | 2010-10-18 |
+| US dividend | `402970` | ACE 미국배당다우존스 | 10.0% | **2021-10-21** |
+| Korea | `069500` | KODEX 200 | 8.0% | 2002-10-14 |
+| China / CSI 300 | `192090` | TIGER 차이나CSI300 | 8.5% | 2014-02-17 |
+| India / Nifty 50 | `200250` | KIWOOM 인도Nifty50(합성) | 8.5% | 2014-06-26 |
+| Japan | `101280` | KODEX 일본TOPIX100 | 5.0% | 2008-02-20 |
+| US long Treasury | `267440` | RISE 미국장기국채선물(H) | 15.0% | 2017-04-20 |
+| KR 30Y Treasury | `385560` | RISE KIS국고채30년Enhanced | 15.0% | 2021-05-26 |
+| Gold | `GLD` | SPDR Gold Shares | 20.0% | 2004-11-18 |
+| **Total** |  |  | **100.0%** |  |
+
+#### 1.1 Native Proxy usable period
+
+The latest-listed constituent is **402970 ACE 미국배당다우존스**, listed on **2021-10-21**.
+
+Therefore:
+
+- earliest date on which every Native Proxy constituent exists: **2021-10-21**
+- earliest **complete calendar month** for Month-to-Month research: **2021-11**
+- canonical Native Proxy usable period: **2021-11 onward**
+- standard completed bridge/recent test window currently used by this study: **2021-11-01 through 2026-08-31**
+- first monthly observation in that convention: **2021-11-30**
+
+This period is derived from constituent availability, not chosen to improve backtest performance.
 
 Important revisions:
 
 - China Native Proxy changed from `168580 ACE 중국본토CSI300` to **`192090 TIGER 차이나CSI300`** because recent common-period return-path fidelity against the intended CSI 300 exposure was materially better than the US-listed ASHR proxy.
 - India Native Proxy remains **`200250 KIWOOM 인도Nifty50(합성)`**. The US-listed `INDY` is useful for Portfolio Visualizer validation but showed material return-path divergence from the native Korean proxy in recent comparison.
-- Gold is now **GLD in both Native Proxy and Core**. This intentionally removes the prior mismatch between `132030 KODEX 골드선물(H)` and unhedged physical-gold GLD when the purpose is Native-vs-Core reconstruction fidelity.
+- Gold is now **GLD in both Native Proxy and Core**. This intentionally removes the prior mismatch between `132030 KODEX 골드선물(H)` and GLD when the purpose is Native-vs-Core reconstruction fidelity.
 - The US long-Treasury native sleeve remains `267440` and the KR long-bond native sleeve remains `385560`.
 
 ### 2. KAW Core — revised long-history / compressed benchmark
@@ -42,43 +56,37 @@ The revised Core preserves the same economic sleeves more faithfully while still
 
 Use US-listed ETFs when validating in Portfolio Visualizer:
 
-| Sleeve | Core PV Proxy | Weight |
-|---|---|---:|
-| Nasdaq 100 | QQQ | 10.0% |
-| US dividend | **SCHD** | **10.0%** |
-| Korea | EWY | 8.0% |
-| China / CSI 300 | **ASHR** | **8.5%** |
-| India / Nifty 50 | **INDY** | **8.5%** |
-| Japan | EWJ | 5.0% |
-| Combined US + KR long-duration bond sleeve | **TLT** | **30.0%** |
-| Gold | **GLD** | **20.0%** |
-| **Total** |  | **100.0%** |
+| Sleeve | Ticker | Core PV Proxy | Weight | Inception date |
+|---|---|---|---:|---|
+| Nasdaq 100 | `QQQ` | Invesco QQQ | 10.0% | 1999-03-10 |
+| US dividend | `SCHD` | Schwab U.S. Dividend Equity ETF | 10.0% | 2011-10-20 |
+| Korea | `EWY` | iShares MSCI South Korea ETF | 8.0% | 2000-05-09 |
+| China / CSI 300 | `ASHR` | Xtrackers Harvest CSI 300 China A-Shares ETF | 8.5% | 2013-11-06 |
+| India / Nifty 50 | `INDY` | iShares India 50 ETF | 8.5% | 2009-11-18 |
+| Japan | `EWJ` | iShares MSCI Japan ETF | 5.0% | 1996-03-12 |
+| Combined US + KR long-duration bond sleeve | `TLT` | iShares 20+ Year Treasury Bond ETF | 30.0% | 2002-07-22 |
+| Gold | `GLD` | SPDR Gold Shares | 20.0% | 2004-11-18 |
+| **Total** |  |  | **100.0%** |  |
 
-Key listing constraints:
-
-- SCHD inception: 2011-10-20.
-- ASHR inception: 2013-11.
-- INDY inception: 2009-11.
-
-For a clean complete-month PV study, use **2014-01 onward** as the conservative revised Core-PV start unless a specific experiment documents another start convention.
+ASHR is the history bottleneck for the PV implementation. The first complete month after its 2013-11-06 inception is 2013-12. For consistency with the previously adopted conservative convention, the default revised Core-PV study start remains **2014-01** unless an experiment explicitly documents a different start.
 
 #### 2.2 Internal-engine definition
 
 For internal-engine research, preserve the same Core roles but use the higher-fidelity Korean-listed China and India proxies instead of forcing the US-listed PV proxies:
 
-| Sleeve | Core Internal Proxy | Weight |
-|---|---|---:|
-| Nasdaq 100 | QQQ | 10.0% |
-| US dividend | **SCHD** | **10.0%** |
-| Korea | EWY | 8.0% |
-| China / CSI 300 | **192090 TIGER 차이나CSI300** | **8.5%** |
-| India / Nifty 50 | **200250 KIWOOM 인도Nifty50(합성)** | **8.5%** |
-| Japan | EWJ | 5.0% |
-| Combined US + KR long-duration bond sleeve | **TLT** | **30.0%** |
-| Gold | **GLD** | **20.0%** |
-| **Total** |  | **100.0%** |
+| Sleeve | Code / Ticker | Core Internal Proxy | Weight | Listing / Inception date |
+|---|---|---|---:|---|
+| Nasdaq 100 | `QQQ` | Invesco QQQ | 10.0% | 1999-03-10 |
+| US dividend | `SCHD` | Schwab U.S. Dividend Equity ETF | 10.0% | 2011-10-20 |
+| Korea | `EWY` | iShares MSCI South Korea ETF | 8.0% | 2000-05-09 |
+| China / CSI 300 | `192090` | TIGER 차이나CSI300 | 8.5% | 2014-02-17 |
+| India / Nifty 50 | `200250` | KIWOOM 인도Nifty50(합성) | 8.5% | **2014-06-26** |
+| Japan | `EWJ` | iShares MSCI Japan ETF | 5.0% | 1996-03-12 |
+| Combined US + KR long-duration bond sleeve | `TLT` | iShares 20+ Year Treasury Bond ETF | 30.0% | 2002-07-22 |
+| Gold | `GLD` | SPDR Gold Shares | 20.0% | 2004-11-18 |
+| **Total** |  |  | **100.0%** |  |
 
-Because 200250 was listed in 2014-06, a conservative complete-month internal-Core start is **2014-07 onward**.
+The latest-listed Internal-Core constituent is **200250**, listed on 2014-06-26. Therefore the first complete Month-to-Month calendar month is **2014-07**, and the canonical Internal-Core usable period is **2014-07 onward**.
 
 This split is intentional:
 
@@ -118,59 +126,5 @@ Earlier runs remain immutable historical evidence:
 
 - Direct Proxy v1 used TLT 15% for the US long-Treasury native sleeve.
 - Direct Proxy v2 used 267440 but still used the older China and Gold definitions.
-- Old Core used SPY 10% and EEM 17% and supported a 2006-01 start.
-
-Those historical results must not be cited as performance for the revised current Native Proxy or revised current Core.
-
-The revised Core intentionally gives up part of the old 2006-2013 history in exchange for materially better sleeve fidelity. No stitched Native/Core NAV is used.
-
-## Canonical report
-
-Research results, interpretation, corrections, evidence links, and follow-up findings are maintained in:
-
-- `studies/kaw-target-reconstruction/report.md`
-
-When historical tables in that report refer to SPY/EEM/132030 or an older Direct/Core version, treat them as explicitly versioned historical evidence. The portfolio definitions in this `study.md` are the current authoritative definitions until the corresponding report sections are refreshed.
-
-## Study-wide risk-free-rate convention
-
-The framework supports two YAML-selectable risk-free-rate modes for both optimization and backtest execution:
-
-```yaml
-# Dynamic provider mode: fetch the US 3M T-bill series for the run.
-risk_free:
-  mode: us_3m_tbill
-```
-
-or:
-
-```yaml
-# Deterministic fixed mode: do not fetch FRED/FDR economic-series data.
-risk_free:
-  mode: fixed
-  annual_rate_pct: 3.8394827586206895
-```
-
-Until the FinanceDataReader/FRED `TB3MS` dependency issue is fixed, KAW-related follow-up experiments should use the fixed mode above unless explicitly overridden.
-
-- **Annual RF: 3.8394827586206895%**
-- Decimal: `0.038394827586206895`
-- Source: successful historical run `runs/20260908-0002/result.json`
-- Tracking issue: GitHub Issue #1
-
-## Current phase
-
-The next canonical bridge run must use the **revised Native Proxy** and the **revised Core Internal definition** above over their common period. It should measure whole-portfolio behavior before any scalar calibration is reconsidered.
-
-Primary bridge diagnostics:
-
-- monthly return correlation
-- direction agreement
-- beta
-- annualized tracking error
-- volatility ratio
-- drawdown-series correlation
-- MDD timing and depth
-- CAGR / realized-return gap as a secondary, not forced, acceptance metric
-
-Do not tune individual proxy rules after seeing the bridge result merely to maximize the recent-period correlation. If a proxy mismatch is accepted, document it and evaluate whether its impact is tolerable at the whole-portfolio level.
+- The current `KAW Native Proxy` definition in this document supersedes those earlier portfolio definitions for new research.
+- Historical run artifacts must retain the definitions under which they were actually generated.
