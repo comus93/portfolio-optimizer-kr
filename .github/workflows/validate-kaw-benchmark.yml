@@ -8,12 +8,15 @@ on:
       - "src/portfolio_optimizer_kr/config/**"
       - "src/portfolio_optimizer_kr/models.py"
       - "src/portfolio_optimizer_kr/backtest.py"
+      - "src/portfolio_optimizer_kr/backtest_pv.py"
       - "src/portfolio_optimizer_kr/research.py"
       - "src/portfolio_optimizer_kr/runner.py"
       - "tests/test_kaw_benchmark_presets.py"
       - "tests/test_backtest.py"
       - "tests/test_backtest_execution.py"
       - "tests/test_backtest_input_persistence.py"
+      - "tests/test_backtest_pv_round1.py"
+      - "tests/test_research_risk_free_default.py"
       - ".github/workflows/validate-kaw-benchmark.yml"
   workflow_dispatch:
 
@@ -47,4 +50,5 @@ jobs:
             tests/test_backtest.py \
             tests/test_backtest_execution.py \
             tests/test_backtest_input_persistence.py \
+            tests/test_backtest_pv_round1.py \
             tests/test_research_risk_free_default.py
