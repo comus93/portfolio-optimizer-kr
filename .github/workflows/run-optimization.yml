@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   actions: write
+  pages: read
 
 concurrency:
   group: research-execution-${{ github.ref_name }}
@@ -105,6 +106,22 @@ jobs:
           test -f "$RUN_PATH/report.html"
           test -d "$RUN_PATH/review"
 
+      - name: Register public report URL
+        if: steps.gate.outputs.should_run == 'true'
+        id: public_report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          PAGE_BASE_URL="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url')"
+          REPORT_RELATIVE_PATH="${RUN_PATH#./}/report.html"
+          PUBLIC_REPORT_URL="${PAGE_BASE_URL%/}/${REPORT_RELATIVE_PATH}"
+
+          python scripts/register_public_report_url.py "$RUN_PATH" "$PUBLIC_REPORT_URL"
+          echo "url=$PUBLIC_REPORT_URL" >> "$GITHUB_OUTPUT"
+
       - name: Commit canonical input and generated run artifacts
         if: steps.gate.outputs.should_run == 'true'
         shell: bash
@@ -117,7 +134,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$RUN_PATH" "$TARGET_EXPERIMENT"
+          git add "$RUN_PATH" runs/README.md "$TARGET_EXPERIMENT"
 
           if git diff --cached --quiet; then
             echo "No generated run artifacts to commit" >&2
@@ -193,14 +210,13 @@ jobs:
         shell: bash
         run: |
           RUN_ID="${{ steps.execute.outputs.run_id }}"
-          REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          PAGE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/runs/${RUN_ID}/report.html"
+          PAGE_URL="${{ steps.public_report.outputs.url }}"
           {
             echo "## Research run created"
             echo
             echo "- Run ID: \`$RUN_ID\`"
             echo "- Artifact path: \`runs/$RUN_ID/\`"
-            echo "- Expected Pages URL: $PAGE_URL"
+            echo "- Pages URL: $PAGE_URL"
             echo
             echo "Pages deployment is dispatched after the run commit."
           } >> "$GITHUB_STEP_SUMMARY"
