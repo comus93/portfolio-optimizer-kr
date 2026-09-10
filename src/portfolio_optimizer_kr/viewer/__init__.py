@@ -2,7 +2,7 @@ from functools import wraps
 from pathlib import Path
 
 from portfolio_optimizer_kr.report.navigation import try_refresh_run_navigation
-from portfolio_optimizer_kr.report.public_links import apply_public_report_links
+from portfolio_optimizer_kr.report.public_links import try_apply_public_report_links
 
 from .builder import build_report_model, build_report_model_from_artifacts
 from .final_renderer import generate_report as _generate_report, render_report
@@ -24,7 +24,7 @@ def generate_report(*args, **kwargs):
             run_dir,
             update_index=update_index,
         )
-        apply_public_report_links(run_dir, update_index=update_index)
+        try_apply_public_report_links(run_dir, update_index=update_index)
     return rendered
 
 
