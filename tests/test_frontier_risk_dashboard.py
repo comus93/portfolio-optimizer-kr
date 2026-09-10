@@ -88,6 +88,8 @@ def test_frontier_interactive_payload_is_columnar_and_json_safe(tmp_path) -> Non
     assert payload["points"] == [1, 2]
     assert payload["symbols"] == ["A", "B"]
     assert payload["weights_pct"] == [[40.0, 60.0], [70.0, 30.0]]
+    assert payload["objective"] == "max_sharpe"
+    assert payload["objective_label"] == "Maximum Sharpe"
     assert payload["default_point"] == 2
     assert len(payload["monthly_returns_pct"]) == 2
     assert len(payload["monthly_returns_pct"][0]) == 3
@@ -102,6 +104,36 @@ def test_frontier_interactive_payload_is_columnar_and_json_safe(tmp_path) -> Non
     assert decoded["definitions"]["cagr_pct"] == "연복리 수익률 (%)"
     assert "총 손실 1단위당" in decoded["definitions"]["monthly_gain_to_pain_ratio"]
     assert "연환산 초과수익" in decoded["definitions"]["pain_ratio"]
+
+
+def test_target_volatility_dashboard_selects_highest_return_feasible_point() -> None:
+    frontier, overlay, returns = _sample_inputs()
+    payload = build_frontier_interactive_payload(
+        frontier,
+        overlay,
+        returns,
+        ["A", "B"],
+        objective="target_volatility",
+        target_volatility_pct=6.5,
+    )
+
+    assert payload["objective"] == "target_volatility"
+    assert payload["target_volatility_pct"] == pytest.approx(6.5)
+    assert payload["default_point"] == 1
+    assert payload["objective_label"] == "Maximum Return · Target Vol 6.50%"
+
+
+def test_target_volatility_dashboard_requires_feasible_target() -> None:
+    frontier, overlay, returns = _sample_inputs()
+    with pytest.raises(ValueError, match="no feasible point"):
+        build_frontier_interactive_payload(
+            frontier,
+            overlay,
+            returns,
+            ["A", "B"],
+            objective="target_volatility",
+            target_volatility_pct=5.0,
+        )
 
 
 def test_dashboard_injection_is_idempotent_and_near_frontier(tmp_path) -> None:
@@ -135,3 +167,4 @@ def test_dashboard_injection_is_idempotent_and_near_frontier(tmp_path) -> None:
     assert "drawdown_pct" in html
     assert "drawdownSeries" not in html
     assert "nearestIndexByVol" in html
+    assert "objective_label" in html
