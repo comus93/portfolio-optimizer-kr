@@ -1,0 +1,69 @@
+# Run Index
+
+This catalog is generated from persisted run artifacts for repository navigation. Canonical values remain inside each run directory.
+
+| Run | Product | Study / Experiment | Period | Benchmark | Summary |
+|---|---|---|---|---|---|
+| [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260910-0005](20260910-0005/) | Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | 2014-07 ~ 2026-08 | KAW Core Revised Internal | 022-kaw-long-benchmark-smoke |
+| [20260910-0004](20260910-0004/) | Backtest | kaw-target-reconstruction / 021-kaw-short-benchmark-smoke | 2021-11 ~ 2026-08 | KAW Native Proxy | 021-kaw-short-benchmark-smoke |
+| [20260910-0003](20260910-0003/) | Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | 2014-07 ~ 2026-08 | KAW Core Revised Internal | 022-kaw-long-benchmark-smoke |
+| [20260910-0002](20260910-0002/) | Backtest | kaw-target-reconstruction / 021-kaw-short-benchmark-smoke | 2021-11 ~ 2026-08 | KAW Native Proxy | 021-kaw-short-benchmark-smoke |
+| [20260910-0001](20260910-0001/) | Backtest | kaw-target-reconstruction / 020-kaw-native-vs-revised-core-backtest | 2021-11 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 020-kaw-native-vs-revised-core-backtest |
+| [20260909-0015](20260909-0015/) | Backtest | kaw-target-reconstruction / 018-kaw-bond-usd-local-proxy-backtest | 2021-11 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 018-kaw-bond-usd-local-proxy-backtest |
+| [20260909-0014](20260909-0014/) | Backtest | kaw-target-reconstruction / 017-kaw-bond-sleeve-proxy-backtest | 2021-11 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 017-kaw-bond-sleeve-proxy-backtest |
+| [20260909-0013](20260909-0013/) | Backtest | kaw-target-reconstruction / 016-kaw-direct-v2-vs-core-backtest | 2021-11 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 016-kaw-direct-v2-vs-core-backtest |
+| [20260909-0012](20260909-0012/) | Backtest | kaw-target-reconstruction / 015-tobe-nasdaq-proxy-comparison | 2022-06 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 015-tobe-nasdaq-proxy-comparison |
+| [20260909-0011](20260909-0011/) | Backtest | kaw-target-reconstruction / 015-tobe-vs-kaw-direct-backtest | 2022-06 ~ 2026-08 | State Street SPDR S&P 500 ETF Trust (SPY) | 015-tobe-vs-kaw-direct-backtest |
+| [20260909-0010](20260909-0010/) | Optimization | kaw-target-reconstruction / 007-core-max-return-vol11_5 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 007-core-max-return-vol11_5 |
+| [20260909-0009](20260909-0009/) | Optimization | kaw-target-reconstruction / 006-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 006-core-max-sharpe |
+| [20260909-0008](20260909-0008/) | Optimization | kaw-target-reconstruction / 014-decomp-japan-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 014-decomp-japan-to-core-max-sharpe |
+| [20260909-0007](20260909-0007/) | Optimization | kaw-target-reconstruction / 013-decomp-korea-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 013-decomp-korea-to-core-max-sharpe |
+| [20260909-0006](20260909-0006/) | Optimization | kaw-target-reconstruction / 012-decomp-dividend-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 012-decomp-dividend-to-core-max-sharpe |
+| [20260909-0005](20260909-0005/) | Optimization | kaw-target-reconstruction / 011-decomp-em-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 011-decomp-em-to-core-max-sharpe |
+| [20260909-0004](20260909-0004/) | Optimization | kaw-target-reconstruction / 010-decomp-bond-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 010-decomp-bond-to-core-max-sharpe |
+| [20260909-0003](20260909-0003/) | Optimization | kaw-target-reconstruction / 009-decomp-gold-to-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 009-decomp-gold-to-core-max-sharpe |
+| [20260909-0002](20260909-0002/) | Optimization | kaw-target-reconstruction / 009-direct-proxy-max-return-vol11_5 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 009-direct-proxy-max-return-vol11_5 |
+| [20260909-0001](20260909-0001/) | Optimization | kaw-target-reconstruction / 008-core-max-return-vol12 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 008-core-max-return-vol12 |
+| [20260908-0006](20260908-0006/) | Optimization | kaw-target-reconstruction / 006-core-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 006-core-max-sharpe |
+| [20260908-0005](20260908-0005/) | Optimization | kaw-target-reconstruction / 005-direct-proxy-max-return-vol11 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 005-direct-proxy-max-return-vol11 |
+| [20260908-0004](20260908-0004/) | Optimization | kaw-target-reconstruction / 004-direct-proxy-max-return-vol10_5 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 004-direct-proxy-max-return-vol10_5 |
+| [20260908-0003](20260908-0003/) | Optimization | kaw-target-reconstruction / 003-direct-proxy-max-return-vol13 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 003-direct-proxy-max-return-vol13 |
+| [20260908-0002](20260908-0002/) | Optimization | kaw-target-reconstruction / 002-direct-proxy-max-sharpe | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | 002-direct-proxy-max-sharpe |
+| [20260908-0001](20260908-0001/) | Backtest | kaw-target-reconstruction / 001-native-fdr-coverage | N/A | None | 001-native-fdr-coverage |
+| [20260904-0006](20260904-0006/) | Optimization | global-multi-asset-allocation / 001-spy-qqq-tlt-gld-cper-mchi-ewy | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-spy-qqq-tlt-gld-cper-mchi-ewy |
+| [20260904-0005](20260904-0005/) | Backtest | qqq-spy-gld-ief-backtest / 001-qqq-spy-gld-ief | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-qqq-spy-gld-ief |
+| [20260904-0004](20260904-0004/) | Optimization | global-multi-asset-allocation / 001-spy-qqq-tlt-gld-cper-mchi-ewy | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-spy-qqq-tlt-gld-cper-mchi-ewy |
+| [20260904-0003](20260904-0003/) | Backtest | qqq-spy-gld-ief-backtest / 001-qqq-spy-gld-ief | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-qqq-spy-gld-ief |
+| [20260904-0002](20260904-0002/) | Backtest | qqq-spy-gld-ief-backtest / 001-qqq-spy-gld-ief | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-qqq-spy-gld-ief |
+| [20260904-0001](20260904-0001/) | Backtest | qqq-spy-gld-ief-backtest / 001-qqq-spy-gld-ief | N/A | State Street SPDR S&P 500 ETF Trust (SPY) | 001-qqq-spy-gld-ief |
+| [20260903-backtest-qqq-gld-spy-presentation-validation-v2](20260903-backtest-qqq-gld-spy-presentation-validation-v2/) | Backtest | N/A | 2020-01 ~ 2025-12 | SPDR S&P 500 ETF Trust (SPY) | Backtest run: Growth 70/30 vs Balanced 50/50 |
+| [20260903-backtest-pv-reference-parity-yty-v7](20260903-backtest-pv-reference-parity-yty-v7/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF Trust (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v6](20260903-backtest-pv-reference-parity-yty-v6/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v5](20260903-backtest-pv-reference-parity-yty-v5/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v4](20260903-backtest-pv-reference-parity-yty-v4/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v3](20260903-backtest-pv-reference-parity-yty-v3/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v2](20260903-backtest-pv-reference-parity-yty-v2/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-yty-v1](20260903-backtest-pv-reference-parity-yty-v1/) | Backtest | N/A | 2020 ~ 2026 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-pv-reference-parity-v1](20260903-backtest-pv-reference-parity-v1/) | Backtest | N/A | 2020-01 ~ 2026-07 | State Street SPDR S&P 500 ETF (SPY) | Backtest run: Sample Portfolio vs Portfolio 2 vs Portfolio 3 |
+| [20260903-backtest-069500-krx-etf-smoke-v2](20260903-backtest-069500-krx-etf-smoke-v2/) | Backtest | N/A | 2020-01 ~ 2025-12 | None | Backtest run: KODEX 200 100% |
+| [20260902-backtest-three-portfolio-no-benchmark-validation](20260902-backtest-three-portfolio-no-benchmark-validation/) | Backtest | N/A | 2020 ~ 2025 | None | Backtest run: Growth 70/30 vs Balanced 50/50 vs Defensive 30/70 |
+| [20260902-backtest-qqq-gld-spy-validation](20260902-backtest-qqq-gld-spy-validation/) | Backtest | N/A | 2020-01 ~ 2025-12 | SPDR S&P 500 ETF Trust (SPY) | Backtest run: Growth 70/30 vs Balanced 50/50 |
+| [20260902-backtest-qqq-gld-spy-renderer-v2](20260902-backtest-qqq-gld-spy-renderer-v2/) | Backtest | N/A | 2020-01 ~ 2025-12 | SPDR S&P 500 ETF Trust (SPY) | Backtest run: Growth 70/30 vs Balanced 50/50 |
+| [20260829-user-feedback-v2-validation](20260829-user-feedback-v2-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-us3m-tbill-validation](20260829-us3m-tbill-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | State Street SPDR S&P 500 ETF (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-report-review-v4-validation](20260829-report-review-v4-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | State Street SPDR S&P 500 ETF (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-report-review-v3-validation-r2](20260829-report-review-v3-validation-r2/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-p1-polish-validation](20260829-p1-polish-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-p0-final-validation](20260829-p0-final-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-p0-browser-validation](20260829-p0-browser-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-golden-fidelity-validation](20260829-golden-fidelity-validation/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPDR S&P 500 ETF Trust (SPY) | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260829-0005](20260829-0005/) | Optimization | global-multi-asset-allocation / 001-spy-qqq-tlt-gld-cper-mchi-ewy | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-spy-qqq-tlt-gld-cper-mchi-ewy |
+| [20260829-0004](20260829-0004/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-base-r02 |
+| [20260829-0003](20260829-0003/) | Optimization | global-multi-asset-allocation / 001-spy-qqq-tlt-gld-cper-mchi-ewy | N/A | None | 001-spy-qqq-tlt-gld-cper-mchi-ewy |
+| [20260829-0002](20260829-0002/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-base-r02 |
+| [20260829-0001](20260829-0001/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-base-r02 |
+| [20260828-pv-maxsharpe](20260828-pv-maxsharpe/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPY | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260828-pv-maxretvol15](20260828-pv-maxretvol15/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPY | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260828-0002](20260828-0002/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-base-r02 |
+| [20260828-0001](20260828-0001/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | 001-base-r02 |
