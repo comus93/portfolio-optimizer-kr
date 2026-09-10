@@ -5,7 +5,10 @@ import math
 import pandas as pd
 
 from portfolio_optimizer_kr.analytics.frontier_risk import (
+    frontier_risk_dataset,
     frontier_risk_overlay,
+    monthly_gain_to_pain_ratio,
+    pain_ratio,
     underwater_metrics,
 )
 
@@ -52,6 +55,20 @@ def test_pain_index_is_normalized_by_full_sample_length() -> None:
     )
 
 
+def test_monthly_gain_to_pain_uses_net_return_over_losing_months() -> None:
+    returns = pd.Series([0.05, -0.03, 0.02, -0.01, 0.04])
+
+    result = monthly_gain_to_pain_ratio(returns)
+
+    assert math.isclose(result, 1.75, abs_tol=1e-12)
+
+
+def test_pain_ratio_uses_excess_cagr_over_pain_index() -> None:
+    result = pain_ratio(cagr=0.20, annual_rf=0.04, pain_index_pct=2.0)
+
+    assert math.isclose(result, 8.0, abs_tol=1e-12)
+
+
 def test_frontier_overlay_preserves_frontier_identity_and_adds_deltas() -> None:
     dates = pd.date_range("2024-01-31", periods=6, freq="ME")
     assets = pd.DataFrame(
@@ -88,5 +105,49 @@ def test_frontier_overlay_preserves_frontier_identity_and_adds_deltas() -> None:
     assert result["ex_ante_sharpe"].tolist() == [0.5, 0.7]
     assert math.isnan(result.loc[0, "delta_sharpe"])
     assert math.isfinite(result.loc[1, "delta_sharpe"])
+    assert "cagr_pct" in result.columns
+    assert "monthly_gain_to_pain_ratio" in result.columns
+    assert "pain_ratio" in result.columns
+    assert "delta_cagr_pct" in result.columns
+    assert "delta_monthly_gain_to_pain_ratio" in result.columns
+    assert "delta_pain_ratio" in result.columns
     assert "tuw_cost_per_0_10_sharpe" in result.columns
     assert "pain_cost_per_0_10_sharpe" in result.columns
+
+
+def test_frontier_dataset_returns_one_monthly_path_per_point() -> None:
+    dates = pd.date_range("2024-01-31", periods=4, freq="ME")
+    assets = pd.DataFrame(
+        {
+            "A": [0.02, -0.01, 0.03, 0.01],
+            "B": [0.00, 0.01, -0.01, 0.02],
+        },
+        index=dates,
+    )
+    frontier = pd.DataFrame(
+        [
+            {
+                "point": 1,
+                "sharpe": 0.5,
+                "expected_return_pct": 5.0,
+                "volatility_pct": 6.0,
+                "weight_A_pct": 25.0,
+                "weight_B_pct": 75.0,
+            },
+            {
+                "point": 2,
+                "sharpe": 0.6,
+                "expected_return_pct": 6.0,
+                "volatility_pct": 7.0,
+                "weight_A_pct": 75.0,
+                "weight_B_pct": 25.0,
+            },
+        ]
+    )
+
+    overlay, paths = frontier_risk_dataset(frontier, assets)
+
+    assert overlay["point"].tolist() == [1, 2]
+    assert paths.index.tolist() == dates.tolist()
+    assert paths.columns.tolist() == [1, 2]
+    assert paths.shape == (4, 2)

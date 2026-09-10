@@ -53,8 +53,58 @@ def underwater_metrics(
     }
 
 
-def _ex_post_sharpe(monthly_returns: pd.Series, annual_rf: float) -> float:
+def _clean_monthly_returns(monthly_returns: pd.Series) -> pd.Series:
     clean = monthly_returns.dropna().astype(float)
+    if clean.empty:
+        raise ValueError("monthly returns are empty")
+    return clean
+
+
+def _cagr(monthly_returns: pd.Series) -> float:
+    clean = _clean_monthly_returns(monthly_returns)
+    total_growth = float((1.0 + clean).prod())
+    if total_growth <= 0.0:
+        return float("nan")
+    years = len(clean) / 12.0
+    return float(total_growth ** (1.0 / years) - 1.0)
+
+
+def monthly_gain_to_pain_ratio(
+    monthly_returns: pd.Series,
+    *,
+    epsilon: float = UNDERWATER_EPSILON,
+) -> float:
+    """Return Schwager-style monthly Gain-to-Pain Ratio.
+
+    Numerator is the arithmetic sum of all monthly returns. Denominator is the
+    absolute arithmetic sum of losing-month returns. This is intentionally a
+    monthly-frequency statistic and must not be compared directly with a daily
+    Gain-to-Pain Ratio.
+    """
+    clean = _clean_monthly_returns(monthly_returns)
+    loss_sum = float(clean[clean < 0.0].sum())
+    denominator = abs(loss_sum)
+    if denominator <= float(epsilon):
+        return float("nan")
+    return float(clean.sum() / denominator)
+
+
+def pain_ratio(
+    cagr: float,
+    annual_rf: float,
+    pain_index_pct: float,
+    *,
+    epsilon: float = UNDERWATER_EPSILON,
+) -> float:
+    """Return excess CAGR per unit of Pain Index."""
+    pain_decimal = float(pain_index_pct) / 100.0
+    if not np.isfinite(cagr) or pain_decimal <= float(epsilon):
+        return float("nan")
+    return float((float(cagr) - float(annual_rf)) / pain_decimal)
+
+
+def _ex_post_sharpe(monthly_returns: pd.Series, annual_rf: float) -> float:
+    clean = _clean_monthly_returns(monthly_returns)
     annualized_return = float(clean.mean() * 12.0)
     annualized_volatility = float(clean.std(ddof=1) * np.sqrt(12.0))
     if annualized_volatility <= 0.0:
@@ -62,18 +112,19 @@ def _ex_post_sharpe(monthly_returns: pd.Series, annual_rf: float) -> float:
     return float((annualized_return - float(annual_rf)) / annualized_volatility)
 
 
-def frontier_risk_overlay(
+def frontier_risk_dataset(
     frontier: pd.DataFrame,
     monthly_asset_returns: pd.DataFrame,
     *,
     rebalancing: str = "monthly",
     annual_rf: float = 0.0,
     epsilon: float = UNDERWATER_EPSILON,
-) -> pd.DataFrame:
-    """Overlay realized drawdown-duration risk on persisted frontier points.
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return frontier risk metrics and realized monthly return paths.
 
-    `frontier` weights and ex-ante statistics are treated as immutable inputs.
-    The function only appends realized-path analytics and descriptive deltas.
+    Persisted frontier weights remain immutable inputs. No solver is called.
+    Each frontier point is replayed with the canonical portfolio-path semantics
+    so the metrics and interactive report data share exactly the same path.
     """
     if frontier.empty:
         raise ValueError("frontier is empty")
@@ -87,7 +138,10 @@ def frontier_risk_overlay(
         raise ValueError(f"frontier is missing weight columns: {missing}")
 
     rows: list[dict[str, float | int]] = []
+    path_columns: dict[int, pd.Series] = {}
+
     for _, source in frontier.sort_values("point").iterrows():
+        point = int(source["point"])
         weights: Mapping[str, float] = {
             symbol: float(source[column]) / 100.0
             for symbol, column in weight_columns.items()
@@ -97,12 +151,26 @@ def frontier_risk_overlay(
             weights,
             rebalancing,
         )
+        path_columns[point] = path.returns
+
         risk = underwater_metrics(path.returns, epsilon=epsilon)
+        realized_cagr = _cagr(path.returns)
         rows.append(
             {
-                "point": int(source["point"]),
+                "point": point,
                 "ex_ante_sharpe": float(source["sharpe"]),
                 "ex_post_sharpe": _ex_post_sharpe(path.returns, annual_rf),
+                "cagr_pct": realized_cagr * 100.0,
+                "monthly_gain_to_pain_ratio": monthly_gain_to_pain_ratio(
+                    path.returns,
+                    epsilon=epsilon,
+                ),
+                "pain_ratio": pain_ratio(
+                    realized_cagr,
+                    annual_rf,
+                    float(risk["pain_index_pct"]),
+                    epsilon=epsilon,
+                ),
                 "expected_return_pct": float(source["expected_return_pct"]),
                 "volatility_pct": float(source["volatility_pct"]),
                 **risk,
@@ -110,7 +178,14 @@ def frontier_risk_overlay(
         )
 
     result = pd.DataFrame(rows).sort_values("point").reset_index(drop=True)
+    portfolio_returns = pd.DataFrame(path_columns).sort_index(axis=1)
+
+    result["delta_cagr_pct"] = result["cagr_pct"].diff()
     result["delta_sharpe"] = result["ex_post_sharpe"].diff()
+    result["delta_monthly_gain_to_pain_ratio"] = result[
+        "monthly_gain_to_pain_ratio"
+    ].diff()
+    result["delta_pain_ratio"] = result["pain_ratio"].diff()
     result["delta_mdd_depth_pct"] = result["mdd_depth_pct"].diff()
     result["delta_tuw_pct"] = result["tuw_pct"].diff()
     result["delta_pain_index_pct"] = result["pain_index_pct"].diff()
@@ -127,5 +202,24 @@ def frontier_risk_overlay(
         result["point"] <= max_sharpe_point,
         "gmv_to_max_sharpe",
         "post_max_sharpe",
+    )
+    return result, portfolio_returns
+
+
+def frontier_risk_overlay(
+    frontier: pd.DataFrame,
+    monthly_asset_returns: pd.DataFrame,
+    *,
+    rebalancing: str = "monthly",
+    annual_rf: float = 0.0,
+    epsilon: float = UNDERWATER_EPSILON,
+) -> pd.DataFrame:
+    """Overlay realized drawdown-duration risk on persisted frontier points."""
+    result, _ = frontier_risk_dataset(
+        frontier,
+        monthly_asset_returns,
+        rebalancing=rebalancing,
+        annual_rf=annual_rf,
+        epsilon=epsilon,
     )
     return result

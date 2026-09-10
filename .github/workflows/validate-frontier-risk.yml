@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - "src/portfolio_optimizer_kr/analytics/frontier_risk.py"
+      - "src/portfolio_optimizer_kr/viewer/frontier_risk_dashboard.py"
       - "scripts/analyze_frontier_risk_tradeoff.py"
       - "tests/test_frontier_risk.py"
+      - "tests/test_frontier_risk_dashboard.py"
       - ".github/workflows/run-optimization.yml"
       - ".github/workflows/validate-frontier-risk.yml"
       - "openspec/changes/2026-09-10-frontier-risk-tradeoff/**"
@@ -28,4 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
       - name: Run frontier risk tests
-        run: python -m pytest -q tests/test_frontier_risk.py
+        run: |
+          python -m pytest -q \
+            tests/test_frontier_risk.py \
+            tests/test_frontier_risk_dashboard.py

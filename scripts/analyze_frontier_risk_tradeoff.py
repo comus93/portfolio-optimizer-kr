@@ -7,7 +7,12 @@ from time import perf_counter
 import pandas as pd
 import yaml
 
-from portfolio_optimizer_kr.analytics.frontier_risk import frontier_risk_overlay
+from portfolio_optimizer_kr.analytics.frontier_risk import frontier_risk_dataset
+from portfolio_optimizer_kr.viewer.frontier_risk_dashboard import (
+    build_frontier_interactive_payload,
+    inject_frontier_risk_dashboard,
+    write_frontier_interactive_payload,
+)
 
 
 def _asset_returns_from_review(monthly: pd.DataFrame) -> pd.DataFrame:
@@ -32,8 +37,9 @@ def analyze_run(run_path: Path) -> Path:
     frontier_path = review / "efficient_frontier.csv"
     monthly_path = review / "monthly_return_series.csv"
     input_path = run_path / "input.yaml"
+    report_path = run_path / "report.html"
 
-    for required in (frontier_path, monthly_path, input_path):
+    for required in (frontier_path, monthly_path, input_path, report_path):
         if not required.exists():
             raise FileNotFoundError(required)
 
@@ -48,7 +54,7 @@ def analyze_run(run_path: Path) -> Path:
     risk_free = config.get("risk_free") or {}
     annual_rf = float(risk_free.get("annual_rate_pct") or 0.0) / 100.0
 
-    overlay = frontier_risk_overlay(
+    overlay, portfolio_returns = frontier_risk_dataset(
         frontier,
         asset_returns,
         rebalancing=rebalancing,
@@ -57,6 +63,16 @@ def analyze_run(run_path: Path) -> Path:
 
     output_path = review / "frontier_risk_tradeoff.csv"
     overlay.to_csv(output_path, index=False)
+
+    payload = build_frontier_interactive_payload(
+        frontier,
+        overlay,
+        portfolio_returns,
+        list(asset_returns.columns),
+    )
+    payload_path = review / "frontier_interactive.json"
+    write_frontier_interactive_payload(payload_path, payload)
+    inject_frontier_risk_dashboard(report_path, payload)
 
     elapsed = perf_counter() - started
     max_row = overlay.loc[overlay["ex_post_sharpe"].idxmax()]
@@ -68,12 +84,17 @@ def analyze_run(run_path: Path) -> Path:
     print(
         "frontier-risk: max_ex_post_sharpe "
         f"point={int(max_row['point'])} sharpe={max_row['ex_post_sharpe']:.6f} "
+        f"cagr={max_row['cagr_pct']:.4f}% "
+        f"monthly_gpr={max_row['monthly_gain_to_pain_ratio']:.4f} "
         f"mdd={max_row['maximum_drawdown_pct']:.4f}% "
         f"tuw={max_row['tuw_pct']:.4f}% "
         f"pain={max_row['pain_index_pct']:.4f}% "
+        f"pain_ratio={max_row['pain_ratio']:.4f} "
         f"max_underwater_months={int(max_row['max_underwater_months'])}"
     )
     print(output_path)
+    print(payload_path)
+    print(report_path)
     return output_path
 
 
