@@ -107,15 +107,17 @@ def test_generic_portfolio_benchmark_uses_shared_portfolio_path():
     request = request_from_config(config).request
     index = pd.to_datetime(["2025-01-31", "2025-02-28", "2025-03-31"])
     prices = {
-        "AAA": pd.Series([100.0, 110.0, 121.0], index=index),
-        "BBB": pd.Series([100.0, 100.0, 100.0], index=index),
+        "AAA": pd.Series([100.0, 110.0, 104.5], index=index),
+        "BBB": pd.Series([100.0, 102.0, 101.0], index=index),
     }
 
     result = analyze_backtest_prices(request, prices, annual_rf=0.0)
     monthly = result["_tables"]["monthly_return_series"]
 
-    assert list(monthly["Candidate"]) == pytest.approx([0.10, 0.10])
-    assert list(monthly["benchmark"]) == pytest.approx([0.05, 0.05])
+    assert list(monthly["Candidate"]) == pytest.approx([0.10, -0.05])
+    assert list(monthly["benchmark"]) == pytest.approx(
+        [0.06, (-0.05 + (101.0 / 102.0 - 1.0)) / 2.0]
+    )
     assert result["configuration"]["benchmark"]["type"] == "portfolio"
     assert result["configuration"]["benchmark"]["name"] == "50/50 Baseline"
 
