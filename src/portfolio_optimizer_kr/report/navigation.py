@@ -86,8 +86,7 @@ def _fmt_number(value: Any, unit: str | None = None) -> str:
 def _month_number(value: Any) -> int | None:
     if isinstance(value, int) and 1 <= value <= 12:
         return value
-    text = str(value or "").strip().lower()[:3]
-    return _MONTHS.get(text)
+    return _MONTHS.get(str(value or "").strip().lower()[:3])
 
 
 def _period(input_data: Mapping[str, Any], configuration: Mapping[str, Any]) -> str:
@@ -140,9 +139,7 @@ def _benchmark(input_data: Mapping[str, Any], configuration: Mapping[str, Any]) 
             return str(preset)
         if symbol:
             return str(symbol)
-    if raw not in (None, ""):
-        return str(raw)
-    return "None"
+    return str(raw) if raw not in (None, "") else "None"
 
 
 def _rebalancing(input_data: Mapping[str, Any], configuration: Mapping[str, Any]) -> str:
@@ -195,9 +192,7 @@ def _context_name(path_value: Any, *, kind: str) -> str:
 
 def _created(run_id: str) -> str:
     match = re.match(r"^(\d{4})(\d{2})(\d{2})", run_id)
-    if not match:
-        return "N/A"
-    return "-".join(match.groups())
+    return "-".join(match.groups()) if match else "N/A"
 
 
 def _weights_pct(raw: Mapping[str, Any], *, already_pct: bool) -> str:
@@ -294,8 +289,7 @@ def _performance_rows(run_dir: Path, product_mode: str) -> tuple[list[str], list
         return [], []
     portfolios = [key for key in rows[0] if key not in {"metric", "unit"}]
     wanted = _BACKTEST_METRICS if product_mode == "backtest" else _OPTIMIZATION_METRICS
-    selected = [row for row in rows if row.get("metric") in wanted]
-    return portfolios, selected
+    return portfolios, [row for row in rows if row.get("metric") in wanted]
 
 
 def _title_and_purpose(
@@ -308,6 +302,7 @@ def _title_and_purpose(
     explicit_title = input_data.get("title") or input_data.get("run_title")
     explicit_purpose = input_data.get("purpose") or input_data.get("description")
     experiment = _context_name(context.get("experiment"), kind="experiment")
+    product_label = product_mode.title()
 
     if explicit_title:
         title = str(explicit_title)
@@ -315,9 +310,9 @@ def _title_and_purpose(
         title = experiment
     elif portfolios:
         names = " vs ".join(name for name, _ in portfolios[:3])
-        title = f"{names} {product_mode}" if names else f"{product_mode} run"
+        title = f"{product_label} run: {names}"
     else:
-        title = f"{product_mode} run"
+        title = f"{product_label} run"
 
     if explicit_purpose:
         purpose = str(explicit_purpose)
@@ -344,8 +339,7 @@ def _artifact_lines(run_dir: Path) -> list[str]:
     ]
     lines: list[str] = []
     for label, relative in candidates:
-        target = run_dir / relative.rstrip("/")
-        if target.exists():
+        if (run_dir / relative.rstrip("/")).exists():
             lines.append(f"- [{label}]({relative})")
     return lines or ["- No linked artifacts available."]
 
@@ -572,6 +566,10 @@ def try_refresh_run_navigation(
             update_index=update_index,
         )
     except (OSError, UnicodeError, ValueError, TypeError) as exc:
-        warnings.warn(f"run navigation refresh failed: {exc}", RuntimeWarning, stacklevel=2)
+        warnings.warn(
+            f"run navigation refresh failed: {exc}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
         return False
     return True
