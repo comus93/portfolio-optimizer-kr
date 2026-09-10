@@ -10,6 +10,8 @@
 - [x] Run affected Backtest tests and real research smoke runs using both KAW Native and KAW Core presets.
 - [x] Fix configured fixed-RF propagation so normal research execution generates PV `Risk and Return Metrics`.
 - [x] Re-run both KAW benchmark smoke experiments and verify populated metrics artifacts and HTML sections.
+- [x] Clarify that KAW presets modify benchmark identity only and must not implicitly change target volatility or other research settings.
+- [x] Record the current 10.0% KAW-equivalent volatility budget as a study-level convention, not a product-level preset default.
 
 Validation evidence:
 
@@ -19,3 +21,9 @@ Validation evidence:
 - Corrected short preset smoke: `runs/20260910-0004` using `benchmark: kaw_short`; `raw/review/risk_and_return_metrics.csv` and populated HTML metrics verified.
 - Corrected long preset smoke: `runs/20260910-0005` using `benchmark: kaw_long`; `raw/review/risk_and_return_metrics.csv` and populated HTML metrics verified.
 - Historical runs `20260910-0002` and `20260910-0003` remain immutable evidence of the pre-fix behavior.
+- Current KAW study evidence supporting the study-level 10.0% volatility budget: Native Proxy realized annualized Std ≈ 9.70%; Core Revised Internal long-run realized annualized Std ≈ 9.32%.
+
+OpenSpec boundary:
+
+- `benchmark: kaw_short|kaw_long` remains Backtest benchmark materialization only.
+- The 10.0% Maximum Return risk budget is owned by `studies/kaw-target-reconstruction/study.md` and must be explicitly written into an Experiment when used.
