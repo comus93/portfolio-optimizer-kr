@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .backtest import write_backtest_analysis_run
-from .navigation import refresh_run_navigation
+from .navigation import try_refresh_run_navigation
 from .result import write_analysis_run as write_optimization_analysis_run
 
 
@@ -20,7 +20,7 @@ def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
     # derived projections and may be regenerated after input/context/report are
     # available. Only the canonical `runs/` root receives an aggregate index.
     directory = Path(output_dir)
-    refresh_run_navigation(
+    try_refresh_run_navigation(
         directory,
         result=result,
         update_index=directory.parent.name == "runs",
