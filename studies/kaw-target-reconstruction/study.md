@@ -94,7 +94,28 @@ This split is intentional:
 - **Internal-engine validation** prioritizes return-path fidelity to the native portfolio and therefore uses `192090` / `200250`.
 - These are two implementations of the same economic Core definition, not two different investment theses.
 
-### 3. Bond-sleeve interpretation
+### 3. Canonical research usage rule
+
+Use the KAW representations by research purpose, not interchangeably.
+
+| Research purpose | Canonical KAW representation | Default usable period | Reason |
+|---|---|---|---|
+| **Recent / short-period comparison in the internal engine** | **KAW Native Proxy** | **2021-11 onward** | Highest fidelity to the current KAW sleeves; use whenever both portfolios have sufficient recent common history. |
+| **Long-history comparison in the internal engine** | **KAW Core Revised Internal** | **2014-07 onward** | Extends history while preserving higher-fidelity China/India paths with `192090` / `200250`. |
+| **Portfolio Visualizer validation / optimization** | **KAW Core PV** | **2014-01 onward** | Uses US-listed ETFs required for practical PV compatibility, with `ASHR` / `INDY` for China/India. |
+
+Operational interpretation:
+
+1. If the research question is about **recent behavior, current portfolio comparison, or the period after every Native constituent exists**, use **KAW Native Proxy**.
+2. If the research question is about **longer historical behavior inside `portfolio-optimizer-kr`**, use **KAW Core Revised Internal**, not the PV implementation.
+3. If the research is being run **inside Portfolio Visualizer**, use **KAW Core PV**.
+4. Do not use Core merely because it is available when Native covers the intended recent comparison window.
+5. Do not force Native backward before 2021-11 through stitching or synthetic substitution.
+6. Do not use the PV implementation as the default internal-engine Core merely for consistency with PV. The PV and Internal Core implementations have different tool constraints and are intentionally distinct.
+
+This routing rule is part of the canonical study definition. Future KAW experiments should state which of these three representations is being used and why.
+
+### 4. Bond-sleeve interpretation
 
 The Core keeps **TLT 30%** as a compressed proxy for the combined native bond sleeve:
 
@@ -109,7 +130,7 @@ Recent bridge diagnostics showed that TLT does not provide a high-fidelity month
 
 No asset-specific FX exception is allowed merely to improve recent-period correlation.
 
-### 4. FX / reporting-currency rule
+### 5. FX / reporting-currency rule
 
 For internal-engine comparisons:
 
@@ -120,7 +141,7 @@ For internal-engine comparisons:
 
 Reason: introducing an asset-specific FX exception after observing a better recent-period fit is a form of ex-post model tuning and increases overfitting risk. The research design therefore favors one simple portfolio-wide currency rule.
 
-### 5. Versioning / historical evidence
+### 6. Versioning / historical evidence
 
 Earlier runs remain immutable historical evidence:
 
