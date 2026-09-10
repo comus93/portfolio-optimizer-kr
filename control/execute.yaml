@@ -1,2 +1,2 @@
 target: studies/provided-portfolio-v1-optimization/experiments/006-aia-schd-max-return-vol11_5-same-period.yaml
-run: false
+run: true
