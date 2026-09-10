@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from portfolio_optimizer_kr.report.navigation import write_run_readme, write_runs_index
+from portfolio_optimizer_kr.report.public_links import refresh_all_public_report_links
 
 
 def main() -> None:
@@ -23,6 +24,7 @@ def main() -> None:
                 write_run_readme(run_dir)
 
     target = write_runs_index(root)
+    refresh_all_public_report_links(root)
     print(target)
 
 
