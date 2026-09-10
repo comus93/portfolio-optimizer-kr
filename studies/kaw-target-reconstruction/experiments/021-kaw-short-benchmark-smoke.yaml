@@ -20,6 +20,6 @@ rebalancing:
   calendar_aligned: true
 risk_free:
   mode: fixed
-  annual_rate_pct: 3.8394827586206895
+  annual_rate_pct: 3.8394827586206897
 fx:
   usdkrw_symbol: USD/KRW
