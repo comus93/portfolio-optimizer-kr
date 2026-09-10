@@ -20,6 +20,7 @@
 - Initial navigation validation run: `34436533186`
 - Initial result: `19 passed in 2.94s`
 - Public-link regression run: `34438584972` — success.
+- Final affected regression run: `34438773514` — `21 passed in 2.87s`.
 - Public-link backfill workflow run: `34438638949` — success.
 - Coverage includes exact arbitrary URL pass-through, per-run `Public Report`, aggregate `Report` column, rebuild persistence, run-navigation renderer/index, report writer/viewer, Backtest execution and shared end-to-end regression.
 - Canonical immutability regression verifies `result.json` bytes are unchanged by navigation refresh.
