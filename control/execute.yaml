@@ -1,2 +1,2 @@
-target: studies/provided-portfolio-v1-optimization/experiments/004-aia-schd-max-sharpe.yaml
-run: false
+target: studies/provided-portfolio-v1-optimization/experiments/005-aia-schd-max-sharpe-same-period.yaml
+run: true
