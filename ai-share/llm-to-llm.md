@@ -15,7 +15,7 @@ studies/kaw-target-reconstruction/study.md
 studies/kaw-target-reconstruction/report.md
 ```
 
-`study.md` owns current portfolio definitions and listing/inception-derived usable periods. `report.md` owns current interpretation and bridge evidence. Historical runs remain immutable under their original definitions.
+`study.md` owns current portfolio definitions, listing/inception-derived usable periods, and the canonical routing rule for which KAW representation to use by research purpose. `report.md` owns current interpretation and bridge evidence. Historical runs remain immutable under their original definitions.
 
 ## Decisions
 
@@ -67,6 +67,33 @@ Core   = TLT 30%
 ```
 
 TLT is a coarse aggregate bond-sleeve proxy. Do not create asset-specific FX exceptions to improve recent fit.
+
+### Canonical KAW representation routing — IMPORTANT
+
+Use the representation by research purpose:
+
+```text
+Recent / short-period internal-engine comparison
+→ KAW Native Proxy
+→ usable 2021-11 onward
+
+Long-history internal-engine comparison
+→ KAW Core Revised Internal
+→ usable 2014-07 onward
+
+Portfolio Visualizer research
+→ KAW Core PV
+→ conservative start 2014-01
+```
+
+Rules:
+
+- For recent comparisons, use Native whenever the compared portfolio has a common period within Native availability.
+- For long-history work inside `portfolio-optimizer-kr`, use the Internal Core, not the PV Core.
+- Use the PV Core only when running or reproducing work in Portfolio Visualizer.
+- Do not stitch Native backward before 2021-11.
+- Do not use the PV Core as the default internal Core merely to make PV and internal inputs look identical.
+- Every new KAW experiment should identify which representation it uses and why.
 
 ### FX / RF / risk target
 
@@ -143,4 +170,10 @@ Interpretation: proxy redesign materially fixed the earlier bridge distortion. C
 
 ## Next
 
-Resume portfolio-level research using the revised canonical definitions. For risk-matched comparisons use 11.5% annual volatility. If comparing against the user's TO-BE portfolio, use Native for the recent common-period comparison and Core-compatible definitions for the longer-history comparison.
+Resume portfolio-level research using the routing rule above:
+
+- recent comparison → KAW Native Proxy
+- long-history internal comparison → KAW Core Revised Internal
+- Portfolio Visualizer work → KAW Core PV
+
+For risk-matched comparisons use 11.5% annual volatility.
