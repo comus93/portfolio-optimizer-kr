@@ -59,7 +59,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
-      - name: Snapshot source-backed asset names
+      - name: Validate snapshotted asset names
         if: steps.gate.outputs.should_run == 'true'
         id: prepare
         shell: bash
@@ -76,7 +76,30 @@ jobs:
           print(target)
           PY
           )"
-          python scripts/hydrate_asset_names.py "$TARGET_EXPERIMENT"
+          python - "$TARGET_EXPERIMENT" <<'PY'
+          from pathlib import Path
+          import sys
+          import yaml
+
+          path = Path(sys.argv[1])
+          payload = yaml.safe_load(path.read_text(encoding='utf-8')) or {}
+          missing = []
+          for index, asset in enumerate(payload.get('assets') or []):
+              if not isinstance(asset, dict):
+                  continue
+              symbol = str(asset.get('symbol') or f'assets[{index}]')
+              if not str(asset.get('name') or '').strip():
+                  missing.append(symbol)
+          benchmark = payload.get('benchmark')
+          if isinstance(benchmark, dict) and str(benchmark.get('symbol') or '').strip():
+              if not str(benchmark.get('name') or '').strip():
+                  missing.append(f"benchmark:{benchmark['symbol']}")
+          if missing:
+              raise SystemExit(
+                  'canonical input requires snapshotted asset names before execution: '
+                  + ', '.join(missing)
+              )
+          PY
           echo "target_experiment=$TARGET_EXPERIMENT" >> "$GITHUB_OUTPUT"
 
       - name: Execute selected research experiment
