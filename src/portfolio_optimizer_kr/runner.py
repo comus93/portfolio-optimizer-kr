@@ -8,6 +8,7 @@ import pandas as pd
 import yaml
 
 from portfolio_optimizer_kr.backtest_pv import analyze_backtest_prices
+from portfolio_optimizer_kr.benchmark_presets import materialize_benchmark_preset
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.data.preparation import prepare_monthly_returns
@@ -113,7 +114,7 @@ def _load_inflation_series(spec: RunConfig, loader: FDRLoader) -> pd.Series | No
 
 def _effective_backtest_input(source: Mapping[str, Any], spec: RunConfig) -> dict[str, Any]:
     """Materialize parser defaults so persisted Backtest input is reproducible."""
-    effective = dict(source)
+    effective = materialize_benchmark_preset(source)
     request = spec.request
     effective["product_mode"] = ProductMode.BACKTEST.value
     effective.setdefault("initial_balance", request.initial_balance)
