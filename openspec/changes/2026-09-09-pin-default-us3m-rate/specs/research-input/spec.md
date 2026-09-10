@@ -40,3 +40,16 @@ Research Frontend가 pinned RF default를 적용한 경우 completed research ru
 - GIVEN 사용자가 RF를 지정하지 않은 research run이 완료됐다
 - WHEN `runs/<run_id>/input.yaml`을 확인한다
 - THEN `mode: fixed`와 `annual_rate_pct: 3.8394827586206895`를 확인할 수 있다
+
+### Requirement: Materialized fixed RF is effective at runtime
+Research Frontend가 materialize한 fixed RF는 persistence metadata에만 남는 값이 아니라 해당 run의 shared analytics에 전달되는 effective annual RF여야 한다(MUST). 별도 caller override가 없다는 이유로 configured fixed RF를 `None` 또는 unavailable로 떨어뜨려서는 안 된다(MUST NOT).
+
+#### Scenario: Backtest fixed RF analytics propagation
+- GIVEN effective Backtest input에 `risk_free.mode: fixed`와 유효한 `annual_rate_pct`가 존재하고 별도 runtime RF override는 없다
+- WHEN canonical runner가 historical analytics와 report artifacts를 생성한다
+- THEN configured fixed annual RF를 ex-post Sharpe, Sortino 및 기타 applicable risk-adjusted analytics에 전달하고 RF 부재를 이유로 applicable Risk and Return Metrics 생성을 생략하지 않는다
+
+#### Scenario: explicit runtime override priority
+- GIVEN effective input에 fixed RF가 있고 canonical execution caller가 명시적인 supported RF override를 제공한다
+- WHEN runner가 effective annual RF를 resolve한다
+- THEN 명시적 override를 우선하되 input의 fixed RF가 존재하지 않는 것처럼 처리하지 않는다
