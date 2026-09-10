@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -167,6 +168,24 @@ def apply_public_report_links(
     _apply_run_readme(directory)
     if update_index:
         _apply_runs_index(directory.parent)
+
+
+def try_apply_public_report_links(
+    run_dir: str | Path,
+    *,
+    update_index: bool = True,
+) -> bool:
+    """Best-effort navigation enrichment that cannot invalidate a completed run."""
+    try:
+        apply_public_report_links(run_dir, update_index=update_index)
+    except (OSError, UnicodeError, ValueError, TypeError) as exc:
+        warnings.warn(
+            f"public report link refresh failed: {exc}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return False
+    return True
 
 
 def refresh_all_public_report_links(runs_root: str | Path) -> None:
