@@ -129,6 +129,15 @@ jobs:
           test -f "$RUN_PATH/report.html"
           test -d "$RUN_PATH/review"
 
+      - name: Analyze frontier risk trade-off
+        if: steps.gate.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          python scripts/analyze_frontier_risk_tradeoff.py "$RUN_PATH"
+          test -f "$RUN_PATH/review/frontier_risk_tradeoff.csv"
+
       - name: Register public report URL
         if: steps.gate.outputs.should_run == 'true'
         id: public_report
