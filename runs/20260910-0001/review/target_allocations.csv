@@ -1,0 +1,29 @@
+portfolio,ticker,name,target_weight_pct
+KAW Native Proxy Canonical,133690,TIGER 미국나스닥100,10.0
+KAW Native Proxy Canonical,402970,ACE 미국배당다우존스,10.0
+KAW Native Proxy Canonical,069500,KODEX 200,8.0
+KAW Native Proxy Canonical,192090,TIGER 차이나CSI300,8.5
+KAW Native Proxy Canonical,200250,KIWOOM 인도Nifty50(합성),8.5
+KAW Native Proxy Canonical,101280,KODEX 일본TOPIX100,5.0
+KAW Native Proxy Canonical,267440,RISE 미국장기국채선물(H),15.0
+KAW Native Proxy Canonical,385560,RISE KIS국고채30년Enhanced,15.0
+KAW Native Proxy Canonical,GLD,SPDR Gold Shares,20.0
+KAW Native Proxy Canonical,QQQ,Invesco QQQ Trust  Series 1,0.0
+KAW Native Proxy Canonical,SCHD,Schwab US Dividend Equity ETF,0.0
+KAW Native Proxy Canonical,EWY,Ishares Msci South Korea ETF,0.0
+KAW Native Proxy Canonical,EWJ,iShares MSCI Japan ETF,0.0
+KAW Native Proxy Canonical,TLT,iShares 20+ Year Treasury Bond ETF,0.0
+KAW Core Revised Internal,133690,TIGER 미국나스닥100,0.0
+KAW Core Revised Internal,402970,ACE 미국배당다우존스,0.0
+KAW Core Revised Internal,069500,KODEX 200,0.0
+KAW Core Revised Internal,192090,TIGER 차이나CSI300,8.5
+KAW Core Revised Internal,200250,KIWOOM 인도Nifty50(합성),8.5
+KAW Core Revised Internal,101280,KODEX 일본TOPIX100,0.0
+KAW Core Revised Internal,267440,RISE 미국장기국채선물(H),0.0
+KAW Core Revised Internal,385560,RISE KIS국고채30년Enhanced,0.0
+KAW Core Revised Internal,GLD,SPDR Gold Shares,20.0
+KAW Core Revised Internal,QQQ,Invesco QQQ Trust  Series 1,10.0
+KAW Core Revised Internal,SCHD,Schwab US Dividend Equity ETF,10.0
+KAW Core Revised Internal,EWY,Ishares Msci South Korea ETF,8.0
+KAW Core Revised Internal,EWJ,iShares MSCI Japan ETF,5.0
+KAW Core Revised Internal,TLT,iShares 20+ Year Treasury Bond ETF,30.0

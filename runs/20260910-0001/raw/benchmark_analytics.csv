@@ -1,0 +1,4 @@
+portfolio,active_return,tracking_error,information_ratio,start,end,observations
+KAW Native Proxy Canonical,-0.06914250577133971,0.1091662809042943,-0.6333687032166709,,,
+KAW Core Revised Internal,-0.06175886371759076,0.10895193938457963,-0.5668450150262467,,,
+coverage,,,,2021-11-30,2026-08-31,58

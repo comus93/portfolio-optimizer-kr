@@ -1,0 +1,4 @@
+run_id: 20260910-0001
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/020-kaw-native-vs-revised-core-backtest.yaml
+product_mode: backtest
