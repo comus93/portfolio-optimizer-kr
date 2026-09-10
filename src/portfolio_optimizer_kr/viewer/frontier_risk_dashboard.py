@@ -32,11 +32,63 @@ def _drawdown_pct(series: pd.Series) -> list[float | int | None]:
     return [_json_number(value) for value in drawdown.tolist()]
 
 
+def _objective_selection(
+    ordered_frontier: pd.DataFrame,
+    ordered_overlay: pd.DataFrame,
+    objective: str,
+    target_volatility_pct: float | None,
+) -> tuple[int, str, float | None]:
+    objective_name = str(objective or "max_sharpe").strip()
+    if objective_name == "max_sharpe":
+        max_index = pd.to_numeric(
+            ordered_overlay["ex_post_sharpe"], errors="coerce"
+        ).idxmax()
+        return int(ordered_overlay.loc[max_index, "point"]), "Maximum Sharpe", None
+
+    if objective_name == "target_volatility":
+        if target_volatility_pct is None:
+            raise ValueError(
+                "target_volatility objective requires target_volatility_pct"
+            )
+        target = float(target_volatility_pct)
+        if not math.isfinite(target):
+            raise ValueError("target_volatility_pct must be finite")
+
+        volatility = pd.to_numeric(
+            ordered_frontier["volatility_pct"], errors="coerce"
+        )
+        expected_return = pd.to_numeric(
+            ordered_frontier["expected_return_pct"], errors="coerce"
+        )
+        feasible = ordered_frontier.loc[
+            volatility.notna() & expected_return.notna() & (volatility <= target + 1e-9)
+        ]
+        if feasible.empty:
+            raise ValueError(
+                "target_volatility has no feasible point on the persisted frontier"
+            )
+        feasible_returns = pd.to_numeric(
+            feasible["expected_return_pct"], errors="coerce"
+        )
+        best_index = feasible_returns.idxmax()
+        default_point = int(ordered_frontier.loc[best_index, "point"])
+        return (
+            default_point,
+            f"Maximum Return · Target Vol {target:.2f}%",
+            target,
+        )
+
+    raise ValueError(f"unsupported optimization objective: {objective_name}")
+
+
 def build_frontier_interactive_payload(
     frontier: pd.DataFrame,
     overlay: pd.DataFrame,
     portfolio_returns: pd.DataFrame,
     symbols: list[str],
+    *,
+    objective: str = "max_sharpe",
+    target_volatility_pct: float | None = None,
 ) -> dict[str, Any]:
     """Build a compact columnar payload for the static interactive report."""
     ordered_frontier = frontier.sort_values("point").reset_index(drop=True)
@@ -81,8 +133,12 @@ def build_frontier_interactive_payload(
         )
         drawdown_pct.append(_drawdown_pct(series))
 
-    max_index = ordered_overlay["ex_post_sharpe"].idxmax()
-    default_point = int(ordered_overlay.loc[max_index, "point"])
+    default_point, objective_label, target = _objective_selection(
+        ordered_frontier,
+        ordered_overlay,
+        objective,
+        target_volatility_pct,
+    )
 
     return {
         "schema_version": 2,
@@ -95,6 +151,9 @@ def build_frontier_interactive_payload(
         "drawdown_pct": drawdown_pct,
         "metrics": metrics,
         "segments": ordered_overlay["segment"].astype(str).tolist(),
+        "objective": str(objective or "max_sharpe"),
+        "objective_label": objective_label,
+        "target_volatility_pct": _json_number(target),
         "default_point": default_point,
         "definitions": {
             "cagr_pct": "연복리 수익률 (%)",
@@ -449,7 +508,8 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     grid.innerHTML=''; configs.forEach(config=>grid.appendChild(renderMetricCard(config,selected)));
     const point=points[selected];
     const title=document.getElementById('fr-selected-title');
-    if(title) title.textContent=`Frontier Point ${point}${point===Number(data.default_point)?' · Maximum Sharpe':''}`;
+    const objectiveLabel=data.objective_label || 'Maximum Sharpe';
+    if(title) title.textContent=`Frontier Point ${point}${point===Number(data.default_point)?` · ${objectiveLabel}`:''}`;
     const meta=document.getElementById('fr-selected-meta');
     if(meta) meta.textContent=`기대수익률 ${fmt(metrics.expected_return_pct[selected],'pct')} · 연환산 변동성 ${fmt(metrics.volatility_pct[selected],'pct')} · ${data.segments[selected]||''}`;
     renderWeights(selected); renderDrawdown(selected);
