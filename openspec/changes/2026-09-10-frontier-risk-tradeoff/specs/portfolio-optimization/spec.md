@@ -29,6 +29,7 @@ JSON은 최소 다음 데이터를 포함해야 한다.
 
 - ordered frontier point identity
 - monthly observation dates
+- asset ticker와 snapshotted asset name
 - point별 asset weights
 - point별 realized monthly portfolio return path
 - point별 canonical realized drawdown path
@@ -41,8 +42,8 @@ Browser presentation layer는 monthly return path에서 drawdown 같은 canonica
 - WHEN 사용자가 frontier dashboard에서 한 point를 선택한다
 - THEN 서버 호출 없이 browser-side JavaScript가 persisted canonical metrics, weights와 drawdown path를 선택하여 화면을 함께 갱신해야 한다
 
-### Requirement: Frontier Risk Trade-off primary reporting metrics
-Frontier Risk Trade-off dashboard는 다음 8개 realized metric을 같은 primary reporting level에서 제공해야 한다(MUST).
+### Requirement: 리스크·성과 균형 분석 primary reporting metrics
+리스크·성과 균형 분석 dashboard는 다음 8개 realized metric을 같은 primary reporting level에서 제공해야 한다(MUST).
 
 - CAGR
 - Sharpe Ratio
@@ -87,7 +88,7 @@ Max Underwater
 - WHEN 사용자가 설명을 읽는다
 - THEN Monthly Gain-to-Pain은 losing-month return burden을, Pain Ratio는 prior-peak drawdown burden을 분모로 사용하는 서로 다른 효율지표임을 구분할 수 있어야 한다
 
-### Requirement: Frontier Risk Trade-off chart axes
+### Requirement: 리스크·성과 균형 분석 chart axes
 8개 metric chart는 모두 동일한 semantic X축을 사용해야 한다(MUST).
 
 ```text
@@ -110,8 +111,20 @@ Y display domain은 observed frontier metric range를 사용하고 curve shape�
 - WHEN selected point가 변경된다
 - THEN 8개 metric chart의 marker, selected-point metrics, weights와 drawdown chart는 동일 point identity로 갱신되어야 한다
 
+### Requirement: Selected Frontier Point allocation table
+선택한 Frontier Point의 자산 구성 표는 `Ticker`, `Name`, `Allocation` 3개 column으로 표시해야 한다(MUST).
+
+- `Ticker`: canonical asset symbol
+- `Name`: input에 snapshotted 된 asset name
+- `Allocation`: 해당 point의 asset weight percentage
+
+#### Scenario: selected allocation identity is readable
+- GIVEN 사용자가 한 frontier point를 선택한다
+- WHEN allocation table이 갱신된다
+- THEN 각 행에서 ticker와 상품명을 함께 확인할 수 있고 Allocation은 해당 point의 weight와 일치해야 한다
+
 ### Requirement: Frontier dashboard objective marker
-동일한 Frontier Risk Trade-off dashboard를 `max_sharpe`와 `target_volatility` optimization에 공통으로 사용해야 한다(MUST). Objective별로 별도 dashboard나 별도 metric set을 만들지 않는다(MUST NOT).
+동일한 리스크·성과 균형 분석 dashboard를 `max_sharpe`와 `target_volatility` optimization에 공통으로 사용해야 한다(MUST). Objective별로 별도 dashboard나 별도 metric set을 만들지 않는다(MUST NOT).
 
 초기 선택 point와 선택점 label은 현재 run의 optimization objective를 반영해야 한다(MUST).
 
@@ -122,8 +135,8 @@ Y display domain은 observed frontier metric range를 사용하고 curve shape�
 
 #### Scenario: Maximum Return run reuses the same dashboard
 - GIVEN `objective: target_volatility`와 유효한 `target_volatility_pct`를 가진 optimization run이 있다
-- WHEN Frontier Risk Trade-off dashboard를 생성한다
-- THEN 8개 metric chart, 축, hover/click, weights와 drawdown interaction은 Maximum Sharpe run과 동일하다
+- WHEN 리스크·성과 균형 분석 dashboard를 생성한다
+- THEN 8개 metric chart, 축, hover/click, allocation table과 drawdown interaction은 Maximum Sharpe run과 동일하다
 - AND 초기 선택점은 목표 변동성 이하 frontier 중 기대수익이 가장 높은 point다
 - AND 선택점에는 Maximum Return과 목표 변동성 값이 표시된다
 
