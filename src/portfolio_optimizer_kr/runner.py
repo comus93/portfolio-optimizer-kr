@@ -83,7 +83,13 @@ def _resolve_annual_rf(
 ) -> float | None:
     request = spec.request
     if request.risk_free.mode is RiskFreeMode.FIXED:
-        return supplied_annual_rf
+        if supplied_annual_rf is not None:
+            return float(supplied_annual_rf)
+        if request.risk_free.annual_rate is None:
+            raise DataValidationError(
+                "fixed risk-free mode requires risk_free.annual_rate_pct"
+            )
+        return float(request.risk_free.annual_rate)
 
     if supplied_annual_rf is not None:
         return float(supplied_annual_rf)
