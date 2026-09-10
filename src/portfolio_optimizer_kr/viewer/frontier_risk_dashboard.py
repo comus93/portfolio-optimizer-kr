@@ -87,6 +87,7 @@ def build_frontier_interactive_payload(
     portfolio_returns: pd.DataFrame,
     symbols: list[str],
     *,
+    asset_names: list[str] | None = None,
     objective: str = "max_sharpe",
     target_volatility_pct: float | None = None,
 ) -> dict[str, Any]:
@@ -99,6 +100,14 @@ def build_frontier_interactive_payload(
         raise ValueError("frontier and overlay point identities do not match")
     if points != [int(value) for value in portfolio_returns.columns.tolist()]:
         raise ValueError("portfolio return matrix point identities do not match")
+
+    resolved_asset_names = (
+        [str(name) for name in asset_names]
+        if asset_names is not None
+        else [str(symbol) for symbol in symbols]
+    )
+    if len(resolved_asset_names) != len(symbols):
+        raise ValueError("asset_names must align one-to-one with symbols")
 
     metric_columns = [
         "cagr_pct",
@@ -146,6 +155,7 @@ def build_frontier_interactive_payload(
         "dates": [timestamp.date().isoformat() for timestamp in portfolio_returns.index],
         "points": points,
         "symbols": symbols,
+        "asset_names": resolved_asset_names,
         "weights_pct": weights_pct,
         "monthly_returns_pct": monthly_returns_pct,
         "drawdown_pct": drawdown_pct,
@@ -207,21 +217,22 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 #frontier-risk-dashboard .fr-help{min-height:44px;margin:4px 0 4px;color:#5f6f84;font-size:11px;line-height:1.42}
 #frontier-risk-dashboard .fr-spark{width:100%;height:158px;display:block;background:#fff;touch-action:pan-y}
 #frontier-risk-dashboard .fr-tooltip{position:absolute;z-index:4;display:none;pointer-events:none;padding:5px 7px;border:1px solid #cbd5e1;border-radius:6px;background:rgba(255,255,255,.97);box-shadow:0 2px 8px rgba(15,23,42,.12);font-size:10px;line-height:1.35;color:#334155;white-space:nowrap}
-#frontier-risk-dashboard .fr-selected{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(420px,1.4fr);gap:16px;margin-top:18px}
+#frontier-risk-dashboard .fr-selected{display:grid;grid-template-columns:minmax(300px,.95fr) minmax(420px,1.4fr);gap:16px;margin-top:18px}
 #frontier-risk-dashboard .fr-panel{border:1px solid #e2e8f2;border-radius:9px;padding:13px;background:#fff}
 #frontier-risk-dashboard .fr-panel h3{margin:0 0 6px}
 #frontier-risk-dashboard .fr-meta{color:#65748b;font-size:12px;margin-bottom:10px}
 #frontier-risk-dashboard .fr-weight-table{width:100%;border-collapse:collapse;font-size:12px}
 #frontier-risk-dashboard .fr-weight-table td,#frontier-risk-dashboard .fr-weight-table th{padding:6px 7px;border:1px solid #e4eaf3}
 #frontier-risk-dashboard .fr-weight-table th{text-align:left;background:#f1f5fb}
-#frontier-risk-dashboard .fr-weight-table td:last-child{text-align:right}
+#frontier-risk-dashboard .fr-weight-table td:first-child{white-space:nowrap}
+#frontier-risk-dashboard .fr-weight-table td:last-child,#frontier-risk-dashboard .fr-weight-table th:last-child{text-align:right;white-space:nowrap}
 #frontier-risk-dashboard .fr-dd{width:100%;height:250px;display:block;background:#fff}
 #frontier-risk-dashboard .fr-foot{margin-top:8px;color:#718096;font-size:11px;line-height:1.45}
 @media(max-width:780px){#frontier-risk-dashboard .fr-selected{grid-template-columns:1fr}}
 </style>
 <section id="frontier-risk-dashboard">
-  <h2>Frontier Risk Trade-off</h2>
-  <p class="fr-note">Efficient Frontier의 모든 포트폴리오를 실제 연환산 변동성(가로축) 순서로 비교합니다. 어느 차트에서든 점을 선택하면 8개 지표, 자산 비중, Drawdown 경로가 같은 포트폴리오로 함께 바뀝니다. 자동 Sweet Spot 판정은 적용하지 않습니다.</p>
+  <h2>리스크·성과 균형 분석</h2>
+  <p class="fr-note">Efficient Frontier의 모든 포트폴리오를 실제 연환산 변동성(가로축) 순서로 비교합니다. 어느 차트에서든 점을 선택하면 8개 지표, 자산 Allocation, Drawdown 경로가 같은 포트폴리오로 함께 바뀝니다. 자동 Sweet Spot 판정은 적용하지 않습니다.</p>
   <div class="fr-grid" id="fr-metric-grid"></div>
   <div class="fr-selected">
     <div class="fr-panel">
@@ -275,6 +286,13 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     if (kind === 'ratio') return Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2);
     return v.toFixed(1);
   };
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
 
   const pointIndex = point => points.indexOf(Number(point));
   const hashMatch = location.hash.match(/frontier-point=(\d+)/);
@@ -499,8 +517,11 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 
   const renderWeights = index => {
     const slot=document.getElementById('fr-weight-table'); if(!slot) return;
-    const rows=data.symbols.map((symbol,i)=>[symbol,Number(data.weights_pct[index][i]||0)]).sort((a,b)=>b[1]-a[1]);
-    slot.innerHTML=`<table class="fr-weight-table"><thead><tr><th>자산</th><th>비중</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${row[0]}</td><td>${row[1].toFixed(2)}%</td></tr>`).join('')}</tbody></table>`;
+    const names=data.asset_names || data.symbols;
+    const rows=data.symbols
+      .map((symbol,i)=>[symbol,names[i]||symbol,Number(data.weights_pct[index][i]||0)])
+      .sort((a,b)=>b[2]-a[2]);
+    slot.innerHTML=`<table class="fr-weight-table"><thead><tr><th>Ticker</th><th>Name</th><th>Allocation</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${escapeHtml(row[0])}</td><td>${escapeHtml(row[1])}</td><td>${row[2].toFixed(2)}%</td></tr>`).join('')}</tbody></table>`;
   };
 
   const render = () => {
