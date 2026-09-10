@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/022-kaw-long-benchmark-smoke.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/021-kaw-short-benchmark-smoke.yaml
+run: true
