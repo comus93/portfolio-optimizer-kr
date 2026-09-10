@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/018-kaw-bond-usd-local-proxy-backtest.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/020-kaw-native-vs-revised-core-backtest.yaml
+run: true
