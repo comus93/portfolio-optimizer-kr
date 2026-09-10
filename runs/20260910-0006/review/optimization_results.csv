@@ -1,0 +1,7 @@
+ticker,name,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
+QQQ,Invesco QQQ Trust  Series 1,0.0,100.0,30.0,17.035924064696513
+SPMO,Invesco S&P 500 Momentum ETF,0.0,100.0,20.0,28.804139051077275
+277540,ACE 아시아TOP50,0.0,100.0,15.0,0.0
+GLD,SPDR Gold Shares,0.0,100.0,15.0,48.390339322815585
+XLE,State Street Energy Select Sector SPDR ETF,0.0,100.0,15.0,5.769597561410617
+144600,KODEX 은선물(H),0.0,100.0,5.0,0.0
