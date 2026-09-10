@@ -92,7 +92,7 @@ assets:
 
     assert seen["request"].risk_free.mode is RiskFreeMode.FIXED
     assert seen["request"].risk_free.annual_rate == pytest.approx(PINNED_RF)
-    assert seen["annual_rf"] is None
+    assert seen["annual_rf"] == pytest.approx(PINNED_RF)
     assert effective["risk_free"] == DEFAULT_RESEARCH_RISK_FREE
 
 
@@ -115,7 +115,7 @@ portfolios:
 
     assert seen["request"].risk_free.mode is RiskFreeMode.FIXED
     assert seen["request"].risk_free.annual_rate == pytest.approx(PINNED_RF)
-    assert seen["annual_rf"] is None
+    assert seen["annual_rf"] == pytest.approx(PINNED_RF)
     assert effective["risk_free"] == DEFAULT_RESEARCH_RISK_FREE
 
 
