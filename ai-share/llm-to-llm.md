@@ -6,94 +6,113 @@ branch: `main`
 
 ## Current State
 
-KAW 재구성의 current canonical 정의를 개정했다. 현재 정의의 source of truth는:
+KAW target-reconstruction study is being revised before rerunning the Native-vs-Core bridge.
+
+Canonical sources:
 
 ```text
 studies/kaw-target-reconstruction/study.md
+studies/kaw-target-reconstruction/report.md
 ```
 
-`studies/kaw-target-reconstruction/report.md`의 SPY/EEM/132030 기반 표와 기존 run은 historical evidence이며 current 정의로 재해석하면 안 된다.
+`study.md` owns the current portfolio definitions. Historical runs remain immutable evidence under their original definitions.
 
 ## Decisions
 
-### KAW Native Proxy
+### KAW Native Proxy — current canonical
+
+| Sleeve | Code/Ticker | Proxy | Weight | Listing/Inception |
+|---|---|---|---:|---|
+| Nasdaq100 | 133690 | TIGER 미국나스닥100 | 10% | 2010-10-18 |
+| US dividend | 402970 | ACE 미국배당다우존스 | 10% | 2021-10-21 |
+| Korea | 069500 | KODEX 200 | 8% | 2002-10-14 |
+| China CSI300 | 192090 | TIGER 차이나CSI300 | 8.5% | 2014-02-17 |
+| India Nifty50 | 200250 | KIWOOM 인도Nifty50(합성) | 8.5% | 2014-06-26 |
+| Japan | 101280 | KODEX 일본TOPIX100 | 5% | 2008-02-20 |
+| US long Treasury | 267440 | RISE 미국장기국채선물(H) | 15% | 2017-04-20 |
+| KR 30Y Treasury | 385560 | RISE KIS국고채30년Enhanced | 15% | 2021-05-26 |
+| Gold | GLD | SPDR Gold Shares | 20% | 2004-11-18 |
+
+History bottleneck: `402970`, listed 2021-10-21.
+
+Therefore:
 
 ```text
-133690  TIGER 미국나스닥100             10.0%
-402970  ACE 미국배당다우존스            10.0%
-069500  KODEX 200                        8.0%
-192090  TIGER 차이나CSI300               8.5%
-200250  KIWOOM 인도Nifty50(합성)         8.5%
-101280  KODEX 일본TOPIX100               5.0%
-267440  RISE 미국장기국채선물(H)         15.0%
-385560  RISE KIS국고채30년Enhanced       15.0%
-GLD     SPDR Gold Shares                 20.0%
+all constituents exist from: 2021-10-21
+first complete Month-to-Month month: 2021-11
+canonical Native usable period: 2021-11 onward
+standard completed bridge window: 2021-11-01 ~ 2026-08-31
 ```
 
-Standard recent period: 2021-11 onward.
+### KAW Core — revised economic definition
 
-Changes: China `168580 -> 192090`; Gold `132030 -> GLD`; India stays `200250`.
+Old Core `QQQ / SPY / EWY / EEM / EWJ / TLT / GLD` is retired for new research.
 
-### KAW Core: Portfolio Visualizer
+PV implementation:
 
 ```text
-QQQ   10.0%
-SCHD  10.0%
-EWY    8.0%
-ASHR   8.5%
-INDY   8.5%
-EWJ    5.0%
-TLT   30.0%
-GLD   20.0%
+QQQ 10
+SCHD 10
+EWY 8
+ASHR 8.5
+INDY 8.5
+EWJ 5
+TLT 30
+GLD 20
 ```
 
-Conservative full-month start: 2014-01 onward.
-
-### KAW Core: internal engine
+PV listing/inception dates:
 
 ```text
-QQQ     10.0%
-SCHD    10.0%
-EWY      8.0%
-192090   8.5%
-200250   8.5%
-EWJ      5.0%
-TLT     30.0%
-GLD     20.0%
+QQQ   1999-03-10
+SCHD  2011-10-20
+EWY   2000-05-09
+ASHR  2013-11-06
+INDY  2009-11-18
+EWJ   1996-03-12
+TLT   2002-07-22
+GLD   2004-11-18
 ```
 
-Conservative full-month start: 2014-07 onward.
+Core PV default conservative start: `2014-01`.
 
-PV uses ASHR/INDY for platform compatibility. Internal engine uses 192090/200250 because recent native return-path fidelity is materially better. These are two implementations of the same economic Core.
-
-Old `SPY 10 + EEM 17` Core is retired as current canonical because SPY is a weak US-dividend proxy and EEM introduces unintended Taiwan/Korea/other-EM exposure.
-
-### Bond
-
-Keep:
+Internal-engine implementation:
 
 ```text
-Native bond = 267440 15% + 385560 15%
-Core bond   = TLT 30%
+QQQ 10
+SCHD 10
+EWY 8
+192090 8.5
+200250 8.5
+EWJ 5
+TLT 30
+GLD 20
 ```
 
-TLT is a coarse aggregate long-duration proxy, not a literal replica of either native component. In consistent KRW comparison it does not perfectly match monthly movement, but risk magnitude is closer than EDV/ZROZ. Final acceptance is at whole-portfolio level because bond is 30% of KAW.
+Internal Core bottleneck is `200250`, listed 2014-06-26. First complete calendar month is `2014-07`, so canonical Internal-Core usable period is `2014-07 onward`.
 
-### FX
+PV uses ASHR/INDY for US-listed compatibility. Internal engine uses 192090/200250 because they reproduce the intended native China/India paths better in recent comparison.
+
+Gold is GLD in both Native and Core.
+
+Bond definition remains:
 
 ```text
-Internal reporting currency = KRW
-All USD assets -> same USD/KRW conversion rule
-No asset-specific FX exception
+Native = 267440 15% + 385560 15%
+Core   = TLT 30%
 ```
 
-Do not remove FX from TLT merely because local-USD correlation improves. That is ex-post tuning / overfitting. Local-USD bond runs are diagnostic only.
+TLT is a coarse aggregate bond-sleeve proxy, not a literal proxy for either component.
+
+### FX rule
+
+Internal research reports in KRW and applies the same USD/KRW conversion rule to every USD asset. No asset-specific FX exception is allowed merely because it improves recent-period correlation. The earlier local-USD TLT experiment is diagnostic evidence only.
 
 ### Risk target / RF
 
-Final target-vol evaluation target remains **11.5% annual volatility**.
+Final experimental target volatility remains `11.5%`, not 9.94%.
 
-Default repeated-study RF unless explicitly overridden:
+Pinned research RF when omitted:
 
 ```yaml
 risk_free:
@@ -101,8 +120,13 @@ risk_free:
   annual_rate_pct: 3.8394827586206895
 ```
 
-GitHub Issue #1 remains open for dynamic TB3MS robustness.
+## Important Constraints
+
+- No stitched Direct/Core NAV.
+- Portfolio generation != evaluation.
+- Do not reinterpret historical Direct v1/v2 runs as results for the current Native definition.
+- Whole-portfolio bridge fidelity is the final acceptance criterion. Do not overfit individual sleeves to the recent bridge window.
 
 ## Next
 
-Run a fresh whole-portfolio bridge with revised Native Proxy vs revised Core Internal under one KRW FX rule. Evaluate monthly correlation, direction agreement, beta, tracking error, volatility ratio, drawdown correlation, MDD timing/depth, and secondary CAGR gap. Do not tune proxies after seeing the result merely to maximize recent fit.
+Rerun the bridge with the revised definitions over the common Native window `2021-11-01 ~ 2026-08-31`, then evaluate correlation, direction agreement, beta, tracking error, drawdown correlation, volatility ratio, CAGR gap, and whether a scalar calibration is still necessary.
