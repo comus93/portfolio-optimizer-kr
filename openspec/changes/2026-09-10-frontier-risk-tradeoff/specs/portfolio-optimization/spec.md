@@ -23,7 +23,7 @@ Overlay는 최소 다음 field를 포함해야 한다.
 - THEN 기존 point identity, expected return, volatility, ex-ante Sharpe와 weights를 변경하지 않는다
 
 ### Requirement: Frontier interactive backdata
-Optimization report는 모든 Efficient Frontier point에 대해 client-side 선택과 재표시에 필요한 최소 realized backdata를 compact JSON으로 보존해야 한다(MUST).
+Optimization report는 모든 Efficient Frontier point에 대해 client-side 선택과 재표시에 필요한 canonical realized backdata를 compact JSON으로 보존해야 한다(MUST).
 
 JSON은 최소 다음 데이터를 포함해야 한다.
 
@@ -31,14 +31,84 @@ JSON은 최소 다음 데이터를 포함해야 한다.
 - monthly observation dates
 - point별 asset weights
 - point별 realized monthly portfolio return path
+- point별 canonical realized drawdown path
 - point별 CAGR, ex-post Sharpe, Monthly Gain-to-Pain, Pain Ratio, MDD, TUW, Pain Index, Maximum Underwater Months
 
-동일 point의 wealth, drawdown, annual-return 등 monthly return path로 재생성 가능한 파생 시계열을 별도 중복 저장하도록 요구해서는 안 된다(MUST NOT).
+Browser presentation layer는 monthly return path에서 drawdown 같은 canonical finance metric을 다시 계산해서는 안 된다(MUST NOT). 클릭/hover 시 persisted canonical values를 선택하고 chart coordinate로 변환하는 presentation-only transform만 수행한다.
 
 #### Scenario: static report point selection
 - GIVEN GitHub Pages에 게시된 정적 `report.html`과 embedded frontier JSON이 있다
 - WHEN 사용자가 frontier dashboard에서 한 point를 선택한다
-- THEN 서버 계산 없이 browser-side JavaScript만으로 해당 point의 metrics, weights와 drawdown path를 갱신할 수 있어야 한다
+- THEN 서버 호출 없이 browser-side JavaScript가 persisted canonical metrics, weights와 drawdown path를 선택하여 화면을 함께 갱신해야 한다
+
+### Requirement: Frontier Risk Trade-off primary reporting metrics
+Frontier Risk Trade-off dashboard는 다음 8개 realized metric을 같은 primary reporting level에서 제공해야 한다(MUST).
+
+- CAGR
+- Sharpe Ratio
+- Monthly Gain-to-Pain
+- Pain Ratio
+- Maximum Drawdown
+- Time Under Water
+- Pain Index
+- Max Underwater
+
+각 metric card는 사용자가 지표의 의미를 판단할 수 있도록 한글 설명을 제공해야 한다(MUST).
+
+```text
+CAGR
+연복리 수익률 (%)
+
+Sharpe Ratio
+샤프지수
+
+Monthly Gain-to-Pain
+손실이 난 달들의 총 손실 1단위당, 최종적으로 얼마의 순수익을 남겼는가
+
+Pain Ratio
+전고점 아래에서 겪은 낙폭 부담 1단위당 최종적으로 얼마의 연환산 초과수익을 얻었는가
+(낙폭 부담은 하락의 깊이와 지속기간을 함께 반영)
+
+Maximum Drawdown
+낙폭 (%)
+
+Time Under Water
+이전 최고점을 회복하지 못하는 기간(물려있는 기간)
+
+Pain Index
+평균 낙폭 (깊이와 지속시간 반영)
+
+Max Underwater
+최장 미회복 기간 (개월)
+```
+
+#### Scenario: metric meanings remain distinguishable
+- GIVEN Monthly Gain-to-Pain과 Pain Ratio가 같은 dashboard에 있다
+- WHEN 사용자가 설명을 읽는다
+- THEN Monthly Gain-to-Pain은 losing-month return burden을, Pain Ratio는 prior-peak drawdown burden을 분모로 사용하는 서로 다른 효율지표임을 구분할 수 있어야 한다
+
+### Requirement: Frontier Risk Trade-off chart axes
+8개 metric chart는 모두 동일한 semantic X축을 사용해야 한다(MUST).
+
+```text
+X = Annualized Volatility %
+```
+
+Point index를 chart의 실제 X coordinate로 사용해서는 안 된다(MUST NOT). 각 chart의 Y축은 해당 realized metric의 실제 값과 단위를 사용해야 한다(MUST).
+
+각 chart는 최소 다음 정보를 화면에서 읽을 수 있게 제공해야 한다(MUST).
+
+- X축 title과 numeric scale
+- Y축 title/unit과 numeric scale
+- 선택된 point marker
+- 선택/hover point의 frontier point id, annualized volatility와 해당 metric value
+
+Y display domain은 observed frontier metric range를 사용하고 curve shape를 읽을 수 있도록 여백을 둘 수 있다(MAY). 모든 chart에서 Y축을 0부터 강제 시작해서는 안 된다(MUST NOT), 단 semantic zero baseline이 필요한 별도 metric이 향후 정의되는 경우는 예외다.
+
+#### Scenario: same point stays synchronized
+- GIVEN 사용자가 어느 metric chart에서든 한 frontier point를 클릭한다
+- WHEN selected point가 변경된다
+- THEN 8개 metric chart의 marker, selected-point metrics, weights와 drawdown chart는 동일 point identity로 갱신되어야 한다
 
 ### Requirement: Frontier marginal diagnostics are descriptive only
 Frontier point order에서 이전 point 대비 delta를 계산할 수 있어야 한다(MUST).
