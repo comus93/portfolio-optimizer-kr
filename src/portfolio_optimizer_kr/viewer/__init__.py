@@ -1,7 +1,7 @@
 from functools import wraps
 from pathlib import Path
 
-from portfolio_optimizer_kr.report.navigation import refresh_run_navigation
+from portfolio_optimizer_kr.report.navigation import try_refresh_run_navigation
 
 from .builder import build_report_model, build_report_model_from_artifacts
 from .final_renderer import generate_report as _generate_report, render_report
@@ -18,7 +18,7 @@ def generate_report(*args, **kwargs):
     run_dir_value = args[0] if args else kwargs.get("run_dir")
     if run_dir_value is not None:
         run_dir = Path(run_dir_value)
-        refresh_run_navigation(
+        try_refresh_run_navigation(
             run_dir,
             update_index=run_dir.parent.name == "runs",
         )
