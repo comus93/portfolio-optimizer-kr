@@ -7,6 +7,10 @@ from typing import Any, Mapping
 import pandas as pd
 import yaml
 
+from portfolio_optimizer_kr.benchmark_presets import (
+    benchmark_preset_id,
+    materialize_benchmark_preset,
+)
 from portfolio_optimizer_kr.models import (
     AssetSpec,
     BacktestPortfolio,
@@ -126,6 +130,31 @@ def _parse_benchmark(config: Mapping[str, Any]) -> AssetSpec | None:
         name=str(row["name"]).strip() if row.get("name") else None,
         currency=str(row.get("currency") or "KRW").upper(),
     )
+
+
+def _parse_backtest_benchmark(
+    config: Mapping[str, Any], asset_symbols: list[str]
+) -> tuple[AssetSpec | None, BacktestPortfolio | None]:
+    raw = config.get("benchmark")
+    if isinstance(raw, Mapping) and str(raw.get("type") or "").strip().lower() == "portfolio":
+        name = str(raw.get("name") or "Benchmark Portfolio").strip() or "Benchmark Portfolio"
+        raw_weights = _mapping(raw.get("weights_pct", {}), "benchmark.weights_pct")
+        asset_set = set(asset_symbols)
+        unknown = set(str(symbol) for symbol in raw_weights) - asset_set
+        if unknown:
+            raise ConfigValidationError(
+                f"benchmark contains unknown asset: {sorted(unknown)[0]}"
+            )
+        weights = {
+            symbol: _pct_weight(
+                raw_weights.get(symbol, 0), f"benchmark.weights_pct.{symbol}"
+            )
+            for symbol in asset_symbols
+        }
+        if abs(sum(weights.values()) - 1.0) > 1e-8:
+            raise ConfigValidationError("benchmark portfolio weights must sum to 100%")
+        return None, BacktestPortfolio(name=name, target_weights=weights)
+    return _parse_benchmark(config), None
 
 
 def _parse_risk_free(config: Mapping[str, Any]) -> RiskFreeConfig:
@@ -362,6 +391,8 @@ def _backtest_request_from_config(
             raise ConfigValidationError(f"portfolios[{index}] weights must sum to 100%")
         portfolios.append(BacktestPortfolio(name=name, target_weights=weights))
 
+    benchmark_asset, benchmark_portfolio = _parse_backtest_benchmark(config, asset_symbols)
+
     rebalancing_raw = _mapping(config.get("rebalancing", {}), "rebalancing")
     if "bands" in rebalancing_raw or str(rebalancing_raw.get("period", "")).strip().lower() in {
         "bands",
@@ -380,7 +411,8 @@ def _backtest_request_from_config(
         start=start,
         end=end,
         time_period_mode=mode,
-        benchmark=_parse_benchmark(config),
+        benchmark=benchmark_asset,
+        benchmark_portfolio=benchmark_portfolio,
         initial_balance=_positive_number(config.get("initial_balance", 10000), "initial_balance"),
         rebalancing=rebalancing,
         calendar_aligned=calendar_aligned_raw,
@@ -394,17 +426,27 @@ def request_from_config(config: Mapping[str, Any]) -> RunConfig:
         raise ConfigValidationError("run_id is required")
 
     product_mode = _normalise_product_mode(config.get("product_mode"))
-    assets = _parse_asset_rows(config)
+    if product_mode is ProductMode.OPTIMIZATION and benchmark_preset_id(config.get("benchmark")):
+        raise ConfigValidationError(
+            "KAW portfolio benchmark presets are supported only in backtest mode"
+        )
+
+    effective = (
+        materialize_benchmark_preset(config)
+        if product_mode is ProductMode.BACKTEST
+        else dict(config)
+    )
+    assets = _parse_asset_rows(effective)
     if product_mode is ProductMode.BACKTEST:
         request: OptimizationRequest | BacktestRequest = _backtest_request_from_config(
-            config, run_id, assets
+            effective, run_id, assets
         )
     else:
-        request = _optimization_request_from_config(config, run_id, assets)
+        request = _optimization_request_from_config(effective, run_id, assets)
     return RunConfig(
         request=request,
         product_mode=product_mode,
-        usdkrw_symbol=_parse_fx(config),
+        usdkrw_symbol=_parse_fx(effective),
     )
 
 
