@@ -6,16 +6,17 @@ branch: `main`
 
 ## Current State
 
-KAW target-reconstruction proxy redesign and revised Native-vs-Core bridge rerun are complete.
+KAW target-reconstruction proxy redesign and revised Native-vs-Core bridge rerun are complete. KAW is now also implemented as a reusable Backtest benchmark/baseline preset so portfolio studies can replace the default SPY benchmark without copying the KAW constituent list into every Experiment.
 
 Canonical sources:
 
 ```text
 studies/kaw-target-reconstruction/study.md
 studies/kaw-target-reconstruction/report.md
+docs/kaw-benchmark-presets.md
 ```
 
-`study.md` owns current portfolio definitions, listing/inception-derived usable periods, and the canonical routing rule for which KAW representation to use by research purpose. `report.md` owns current interpretation and bridge evidence. Historical runs remain immutable under their original definitions.
+`study.md` owns current portfolio definitions, listing/inception-derived usable periods, and the canonical routing rule for which KAW representation to use by research purpose. `report.md` owns current interpretation and bridge evidence. `docs/kaw-benchmark-presets.md` owns the source-level shortcut usage. Historical runs remain immutable under their original definitions.
 
 ## Decisions
 
@@ -95,6 +96,63 @@ Rules:
 - Do not use the PV Core as the default internal Core merely to make PV and internal inputs look identical.
 - Every new KAW experiment should identify which representation it uses and why.
 
+### Reusable KAW Backtest benchmark presets
+
+Backtest Research Frontend keeps SPY as the default when `benchmark` is omitted. To replace SPY with KAW, use a one-line explicit preset:
+
+```yaml
+# recent / short comparison
+benchmark: kaw_short
+
+# long-history internal comparison
+benchmark: kaw_long
+```
+
+Equivalent aliases:
+
+```text
+kaw_short  = kaw_native
+kaw_long   = kaw_core
+```
+
+Implementation files:
+
+```text
+src/portfolio_optimizer_kr/benchmark_presets.py
+src/portfolio_optimizer_kr/config/yaml.py
+src/portfolio_optimizer_kr/models.py
+src/portfolio_optimizer_kr/backtest.py
+src/portfolio_optimizer_kr/research.py
+src/portfolio_optimizer_kr/runner.py
+src/portfolio_optimizer_kr/config/names.py
+```
+
+Behavior:
+
+- KAW shortcut is materialized before Backtest parsing/execution into explicit benchmark constituent assets and fixed target weights.
+- Persisted `input.yaml` contains the full materialized benchmark, so historical runs do not depend on a future registry definition.
+- Composite benchmark uses the same shared market-data, FX, common-period alignment, `build_portfolio_path()`, monthly rebalancing and calendar-alignment logic as normal portfolios.
+- Existing benchmark-relative analytics are reused: active return, tracking error, information ratio, active contribution, and up/down-market analysis.
+- Existing single-asset `benchmark: SPY` and explicit no-benchmark behavior are preserved.
+- KAW composite presets are Backtest-only. Optimization benchmark semantics are unchanged.
+- No hidden date-based switch from Native to Core is performed.
+
+OpenSpec change:
+
+```text
+openspec/changes/2026-09-10-kaw-benchmark-presets/
+```
+
+Short-preset E2E smoke:
+
+```text
+experiment: studies/kaw-target-reconstruction/experiments/021-kaw-short-benchmark-smoke.yaml
+run: runs/20260910-0002
+pages: https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0002/report.html
+```
+
+The Experiment contains only `benchmark: kaw_short`; the persisted run input expands it to all nine Native constituents/weights. SPY Candidate versus KAW Native produced benchmark-relative output including active return 6.8830%p, tracking error 10.5732%, and information ratio 0.6510, proving the composite benchmark path feeds the existing analytics.
+
 ### FX / RF / risk target
 
 - Internal research reports in KRW.
@@ -170,10 +228,10 @@ Interpretation: proxy redesign materially fixed the earlier bridge distortion. C
 
 ## Next
 
-Resume portfolio-level research using the routing rule above:
+Resume portfolio-level research using the routing rule and benchmark shortcuts above:
 
-- recent comparison → KAW Native Proxy
-- long-history internal comparison → KAW Core Revised Internal
-- Portfolio Visualizer work → KAW Core PV
+- recent comparison → `benchmark: kaw_short`
+- long-history internal comparison → `benchmark: kaw_long`
+- Portfolio Visualizer work → KAW Core PV holdings
 
 For risk-matched comparisons use 11.5% annual volatility.
