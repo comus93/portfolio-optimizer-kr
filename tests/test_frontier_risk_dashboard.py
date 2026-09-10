@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import pandas as pd
+import pytest
 
 from portfolio_optimizer_kr.viewer.frontier_risk_dashboard import (
     build_frontier_interactive_payload,
@@ -83,17 +84,24 @@ def test_frontier_interactive_payload_is_columnar_and_json_safe(tmp_path) -> Non
         ["A", "B"],
     )
 
+    assert payload["schema_version"] == 2
     assert payload["points"] == [1, 2]
     assert payload["symbols"] == ["A", "B"]
     assert payload["weights_pct"] == [[40.0, 60.0], [70.0, 30.0]]
     assert payload["default_point"] == 2
     assert len(payload["monthly_returns_pct"]) == 2
     assert len(payload["monthly_returns_pct"][0]) == 3
+    assert len(payload["drawdown_pct"]) == 2
+    assert payload["drawdown_pct"][0] == pytest.approx([0.0, -2.0, 0.0])
+    assert payload["drawdown_pct"][1] == pytest.approx([0.0, -3.0, 0.0])
 
     path = tmp_path / "frontier_interactive.json"
     write_frontier_interactive_payload(path, payload)
     decoded = json.loads(path.read_text(encoding="utf-8"))
     assert decoded["metrics"]["monthly_gain_to_pain_ratio"] == [1.2, 1.5]
+    assert decoded["definitions"]["cagr_pct"] == "연복리 수익률 (%)"
+    assert "총 손실 1단위당" in decoded["definitions"]["monthly_gain_to_pain_ratio"]
+    assert "연환산 초과수익" in decoded["definitions"]["pain_ratio"]
 
 
 def test_dashboard_injection_is_idempotent_and_near_frontier(tmp_path) -> None:
@@ -120,3 +128,10 @@ def test_dashboard_injection_is_idempotent_and_near_frontier(tmp_path) -> None:
     assert html.index('id="frontier-risk-dashboard"') < html.index('id="next"')
     assert "Monthly Gain-to-Pain" in html
     assert "Pain Ratio" in html
+    assert "손실이 난 달들의 총 손실 1단위당" in html
+    assert "전고점 아래에서 겪은 낙폭 부담 1단위당" in html
+    assert "연환산 변동성 (%)" in html
+    assert "최장 미회복 기간 (개월)" in html
+    assert "drawdown_pct" in html
+    assert "drawdownSeries" not in html
+    assert "nearestIndexByVol" in html
