@@ -220,6 +220,7 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
   const pointIndex = point => points.indexOf(Number(point));
   const hashMatch = location.hash.match(/frontier-point=(\d+)/);
   let selected = hashMatch ? pointIndex(hashMatch[1]) : pointIndex(data.default_point);
+  let pinnedMetricKey = null;
   if (selected < 0) selected = 0;
 
   const extentWithPadding = values => {
@@ -343,22 +344,56 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     tooltip.className='fr-tooltip';
     card.appendChild(tooltip);
 
+    const tooltipText = targetIndex =>
+      `Point ${points[targetIndex]} · 변동성 ${volatility[targetIndex].toFixed(2)}% · ${label} ${fmt(values[targetIndex],kind)}`;
+
+    const placeTooltipAtClient = (targetIndex, clientX, clientY) => {
+      tooltip.textContent=tooltipText(targetIndex);
+      const rect=card.getBoundingClientRect();
+      tooltip.style.left=`${Math.min(clientX-rect.left+8, Math.max(rect.width-230, 4))}px`;
+      tooltip.style.top=`${Math.max(clientY-rect.top-30, 4)}px`;
+      tooltip.style.display='block';
+    };
+
+    const showPinnedTooltip = () => {
+      if (pinnedMetricKey !== key || !Number.isFinite(values[index])) return;
+      requestAnimationFrame(() => {
+        const ctm=svg.getScreenCTM();
+        const rect=card.getBoundingClientRect();
+        let clientX=rect.left + rect.width/2;
+        let clientY=rect.top + 70;
+        if (ctm && typeof DOMPoint !== 'undefined') {
+          try {
+            const screenPoint=new DOMPoint(x(volatility[index]), y(values[index])).matrixTransform(ctm);
+            clientX=screenPoint.x;
+            clientY=screenPoint.y;
+          } catch (_) {
+            // Keep the card-centered fallback.
+          }
+        }
+        placeTooltipAtClient(index, clientX, clientY);
+      });
+    };
+
     const interaction=document.createElementNS(ns,'rect');
     interaction.setAttribute('x','0');interaction.setAttribute('y','0');
     interaction.setAttribute('width',w);interaction.setAttribute('height',h);
     interaction.setAttribute('fill','transparent');interaction.setAttribute('pointer-events','all');
     interaction.addEventListener('pointermove', event => {
       const hover=nearestIndexByVol(event,svg,left,right,w);
-      tooltip.textContent=`Point ${points[hover]} · 변동성 ${volatility[hover].toFixed(2)}% · ${label} ${fmt(values[hover],kind)}`;
-      const rect=card.getBoundingClientRect();
-      tooltip.style.left=`${Math.min(event.clientX-rect.left+8, Math.max(rect.width-230, 4))}px`;
-      tooltip.style.top=`${Math.max(event.clientY-rect.top-30, 4)}px`;
-      tooltip.style.display='block';
+      placeTooltipAtClient(hover,event.clientX,event.clientY);
     });
-    interaction.addEventListener('pointerleave',()=>{tooltip.style.display='none';});
-    interaction.addEventListener('click', event => select(nearestIndexByVol(event, svg, left, right, w)));
+    interaction.addEventListener('pointerleave',()=>{
+      if (pinnedMetricKey === key) showPinnedTooltip();
+      else tooltip.style.display='none';
+    });
+    interaction.addEventListener('click', event => {
+      pinnedMetricKey=key;
+      select(nearestIndexByVol(event, svg, left, right, w));
+    });
     svg.appendChild(interaction);
     card.appendChild(svg);
+    if (pinnedMetricKey === key) showPinnedTooltip();
     return card;
   };
 
