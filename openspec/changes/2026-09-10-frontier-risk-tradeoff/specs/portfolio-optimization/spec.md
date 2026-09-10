@@ -110,6 +110,23 @@ Y display domain은 observed frontier metric range를 사용하고 curve shape�
 - WHEN selected point가 변경된다
 - THEN 8개 metric chart의 marker, selected-point metrics, weights와 drawdown chart는 동일 point identity로 갱신되어야 한다
 
+### Requirement: Frontier dashboard objective marker
+동일한 Frontier Risk Trade-off dashboard를 `max_sharpe`와 `target_volatility` optimization에 공통으로 사용해야 한다(MUST). Objective별로 별도 dashboard나 별도 metric set을 만들지 않는다(MUST NOT).
+
+초기 선택 point와 선택점 label은 현재 run의 optimization objective를 반영해야 한다(MUST).
+
+- `max_sharpe`: 기존 realized Maximum Sharpe default point를 유지하고 `Maximum Sharpe`로 표시한다.
+- `target_volatility`: frontier point 중 `volatility_pct <= target_volatility_pct`를 만족하는 feasible point에서 `expected_return_pct`가 가장 높은 point를 초기 선택하고 `Maximum Return · Target Vol X%`로 표시한다.
+
+`target_volatility` dashboard에서 Maximum Sharpe point를 별도 보조 marker로 추가하지 않는다(MUST NOT). 사용자는 동일한 8개 curve를 탐색하되 이번 optimization objective가 선택한 point 하나만 강조해서 볼 수 있어야 한다.
+
+#### Scenario: Maximum Return run reuses the same dashboard
+- GIVEN `objective: target_volatility`와 유효한 `target_volatility_pct`를 가진 optimization run이 있다
+- WHEN Frontier Risk Trade-off dashboard를 생성한다
+- THEN 8개 metric chart, 축, hover/click, weights와 drawdown interaction은 Maximum Sharpe run과 동일하다
+- AND 초기 선택점은 목표 변동성 이하 frontier 중 기대수익이 가장 높은 point다
+- AND 선택점에는 Maximum Return과 목표 변동성 값이 표시된다
+
 ### Requirement: Frontier marginal diagnostics are descriptive only
 Frontier point order에서 이전 point 대비 delta를 계산할 수 있어야 한다(MUST).
 
