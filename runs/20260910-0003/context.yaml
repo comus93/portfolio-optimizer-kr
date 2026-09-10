@@ -1,0 +1,4 @@
+run_id: 20260910-0003
+study: studies/kaw-target-reconstruction/study.md
+experiment: studies/kaw-target-reconstruction/experiments/022-kaw-long-benchmark-smoke.yaml
+product_mode: backtest
