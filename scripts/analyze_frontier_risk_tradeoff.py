@@ -31,6 +31,15 @@ def _asset_returns_from_review(monthly: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(data, index=monthly.index)
 
 
+def _asset_names(config: dict, symbols: list[str]) -> list[str]:
+    by_symbol = {
+        str(asset.get("symbol")): str(asset.get("name") or asset.get("symbol"))
+        for asset in (config.get("assets") or [])
+        if isinstance(asset, dict) and asset.get("symbol") is not None
+    }
+    return [by_symbol.get(str(symbol), str(symbol)) for symbol in symbols]
+
+
 def analyze_run(run_path: Path) -> Path:
     started = perf_counter()
     review = run_path / "review"
@@ -67,11 +76,13 @@ def analyze_run(run_path: Path) -> Path:
     output_path = review / "frontier_risk_tradeoff.csv"
     overlay.to_csv(output_path, index=False)
 
+    symbols = list(asset_returns.columns)
     payload = build_frontier_interactive_payload(
         frontier,
         overlay,
         portfolio_returns,
-        list(asset_returns.columns),
+        symbols,
+        asset_names=_asset_names(config, symbols),
         objective=objective,
         target_volatility_pct=(
             float(target_volatility_pct)
