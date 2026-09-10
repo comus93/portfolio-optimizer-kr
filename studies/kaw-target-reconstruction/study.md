@@ -115,6 +115,30 @@ Operational interpretation:
 
 This routing rule is part of the canonical study definition. Future KAW experiments should state which of these three representations is being used and why.
 
+#### 3.1 KAW benchmark risk budget for Maximum Return tests
+
+When KAW is used as the risk baseline for a **Maximum Return subject to volatility** experiment, the canonical recommended risk budget is now **10.0% annualized standard deviation (volatility)**.
+
+The recommendation is grounded in the realized volatility of the two current canonical KAW representations:
+
+| KAW representation | Validation run / window | Realized annualized standard deviation |
+|---|---|---:|
+| **KAW Native Proxy** | recent canonical window, 2021-11 through 2026-08 | **9.70%** |
+| **KAW Core Revised Internal** | long canonical window, 2014-07 through 2026-08 | **9.32%** |
+
+Both the recent high-fidelity Native Proxy and the longer-history Core cluster close to a 10% annualized volatility level. Therefore the default KAW-equivalent risk constraint for future Maximum Return comparisons is:
+
+```text
+Maximize Return
+subject to annualized standard deviation <= 10.0%
+```
+
+Interpretation: the experiment asks how much return a candidate portfolio can produce while staying within approximately the same **volatility budget that KAW itself has historically exhibited**.
+
+The **10.0% threshold is a standard-deviation / volatility constraint, not an MDD constraint**. Maximum Drawdown remains an important realized-risk evaluation metric and should be reviewed separately after optimization.
+
+The previously used **11.5% annualized-volatility target is retained only as historical calibration evidence and is superseded as the default KAW benchmarking risk budget**. An experiment may still use another target when the research question explicitly requires it, but that deviation should be stated in the Experiment definition rather than applied implicitly.
+
 ### 4. Bond-sleeve interpretation
 
 The Core keeps **TLT 30%** as a compressed proxy for the combined native bond sleeve:
