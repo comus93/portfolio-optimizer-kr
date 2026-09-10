@@ -1,0 +1,50 @@
+name: Validate KAW benchmark presets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/portfolio_optimizer_kr/benchmark_presets.py"
+      - "src/portfolio_optimizer_kr/config/**"
+      - "src/portfolio_optimizer_kr/models.py"
+      - "src/portfolio_optimizer_kr/backtest.py"
+      - "src/portfolio_optimizer_kr/research.py"
+      - "src/portfolio_optimizer_kr/runner.py"
+      - "tests/test_kaw_benchmark_presets.py"
+      - "tests/test_backtest.py"
+      - "tests/test_backtest_execution.py"
+      - "tests/test_backtest_input_persistence.py"
+      - ".github/workflows/validate-kaw-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Compile runtime
+        run: python -m compileall -q src/portfolio_optimizer_kr
+
+      - name: Run KAW and benchmark regressions
+        run: |
+          python -m pytest -q \
+            tests/test_kaw_benchmark_presets.py \
+            tests/test_backtest.py \
+            tests/test_backtest_execution.py \
+            tests/test_backtest_input_persistence.py \
+            tests/test_research_risk_free_default.py
