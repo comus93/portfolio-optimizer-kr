@@ -1,0 +1,4 @@
+run_id: 20260910-0017
+study: studies/provided-portfolio-v1-optimization/study.md
+experiment: studies/provided-portfolio-v1-optimization/experiments/006-aia-schd-max-return-vol11_5-same-period.yaml
+product_mode: optimization
