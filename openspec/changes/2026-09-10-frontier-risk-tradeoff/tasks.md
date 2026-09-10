@@ -12,14 +12,15 @@
 - [x] 실제 100-point research run으로 JSON size / report size / analyzer elapsed time 확인
 - [x] GitHub Pages publish workflow 성공 확인
 - [x] 사용자가 실제 browser에서 point click / synchronized redraw 동작 확인
-- [ ] 승인된 8개 지표 한글 설명을 metric card에 반영
-- [ ] 8개 metric chart 공통 X축을 실제 annualized volatility (%)로 변경하고 X/Y scale/title 표시
-- [ ] selected point line+dot 및 point/volatility/metric tooltip 보강
-- [ ] canonical drawdown matrix를 interactive JSON에 저장하고 browser-side finance 재계산 제거
-- [ ] Selected Point Drawdown chart에 기간/낙폭 축 scale과 title 추가
-- [ ] targeted unit regression 및 JSON safety 검증
-- [ ] GitHub Actions validation 통과
-- [ ] 새 100-point research run으로 analyzer time / JSON size / report size 재확인
-- [ ] GitHub Pages publish 성공 및 실제 정적 report artifact 확인
-- [ ] 기존 Efficient Frontier numerical regression을 baseline tag와 별도 비교 검증
+- [x] 승인된 8개 지표 한글 설명을 metric card에 반영
+- [x] 8개 metric chart 공통 X축을 실제 annualized volatility (%)로 변경하고 X/Y scale/title 표시
+- [x] selected point line+dot 및 point/volatility/metric tooltip 보강
+- [x] canonical drawdown matrix를 interactive JSON에 저장하고 browser-side finance 재계산 제거
+- [x] Selected Point Drawdown chart에 기간/낙폭 축 scale과 title 추가
+- [x] targeted unit regression 및 JSON safety 검증
+- [x] GitHub Actions validation 통과
+- [x] 새 100-point research run으로 analyzer time / JSON size / report size 재확인
+- [x] GitHub Pages publish 성공 및 실제 정적 report artifact 확인
+- [ ] 새 axis/설명 배치에 대한 사용자 visual acceptance 확인
+- [ ] 기존 Efficient Frontier numerical regression을 baseline tag와 frozen-input 기준으로 별도 비교 검증
 - [x] Sweet spot 자동 판정은 이번 change에 포함하지 않고 실제 curve 검토 이후 별도 결정
