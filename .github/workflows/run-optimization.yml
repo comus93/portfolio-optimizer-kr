@@ -116,7 +116,8 @@ jobs:
           set -euo pipefail
           RUN_PATH="${{ steps.execute.outputs.run_path }}"
           PAGE_BASE_URL="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url')"
-          REPORT_RELATIVE_PATH="${RUN_PATH#./}/report.html"
+          REPORT_PATH="$RUN_PATH/report.html"
+          REPORT_RELATIVE_PATH="$(realpath --relative-to="$GITHUB_WORKSPACE" "$REPORT_PATH")"
           PUBLIC_REPORT_URL="${PAGE_BASE_URL%/}/${REPORT_RELATIVE_PATH}"
 
           python scripts/register_public_report_url.py "$RUN_PATH" "$PUBLIC_REPORT_URL"
@@ -171,7 +172,7 @@ jobs:
           fi
 
           git pull --rebase origin "$TARGET_BRANCH"
-          CURRENT_FINGERPRINT="$(sha256sum control/execute.yaml | awk '{print $1}')"
+          CURRENT_FINGERPRINT="$(sha256sum control/execute.yaml | sha256sum | awk '{print $1}')"
           if [[ "$CURRENT_FINGERPRINT" != "$SOURCE_FINGERPRINT" ]]; then
             echo "Execution request changed while synchronizing; leaving it untouched."
             exit 0
