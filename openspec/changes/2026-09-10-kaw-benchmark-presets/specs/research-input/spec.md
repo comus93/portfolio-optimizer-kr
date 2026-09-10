@@ -37,3 +37,13 @@ Research Frontend는 requested period만 보고 Native와 Core를 자동 전환�
 - GIVEN 사용자가 장기 기간과 `benchmark: kaw_short`를 함께 명시한다
 - WHEN input을 구성한다
 - THEN 임의로 `kaw_long`으로 바꾸지 않고 명시된 Native preset을 보존한다
+
+### Requirement: KAW benchmark preset does not mutate unrelated research settings
+KAW benchmark preset은 benchmark identity와 constituent/weight materialization만 제공해야 하며 period, risk-free rate, Optimization objective, target volatility 또는 기타 unrelated research setting을 암묵적으로 변경해서는 안 된다(MUST NOT).
+
+#### Scenario: KAW preset과 별도 risk budget
+- GIVEN 사용자가 KAW를 benchmark로 선택하고 별도 실험에서 특정 target volatility를 사용한다
+- WHEN Research Frontend가 preset을 materialize한다
+- THEN KAW preset 자체가 target volatility를 자동 주입하거나 변경하지 않는다
+
+현재 KAW 연구에서 사용하는 `10.0% annualized standard deviation` 권장 risk budget은 `studies/kaw-target-reconstruction/study.md`가 소유하는 연구 convention이며, 이 benchmark preset capability의 자동 product default가 아니다.
