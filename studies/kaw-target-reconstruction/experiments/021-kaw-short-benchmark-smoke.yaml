@@ -1,0 +1,25 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: SPY
+  name: State Street SPDR S&P 500 ETF Trust
+  currency: USD
+portfolios:
+- name: SPY Candidate
+  weights_pct:
+    SPY: 100
+benchmark: kaw_short
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206895
+fx:
+  usdkrw_symbol: USD/KRW
