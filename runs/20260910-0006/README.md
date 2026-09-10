@@ -39,7 +39,7 @@ Generated from persisted run artifacts for human/LLM navigation. Canonical value
 
 ## Artifacts
 
-- [Public Report](https://comus93.github.io/portfolio-optimizer-kr//home/runner/work/portfolio-optimizer-kr/portfolio-optimizer-kr/runs/20260910-0006/report.html)
+- [Public Report](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0006/report.html)
 - [Report](report.html)
 - [Input](input.yaml)
 - [Result](result.json)
