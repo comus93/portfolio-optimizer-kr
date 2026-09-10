@@ -133,7 +133,7 @@ Max Underwater
 최장 미회복 기간 (개월)
 ```
 
-### Chart axis
+### Chart axis / interaction
 
 8개 metric chart는 같은 semantic X축을 사용한다.
 
@@ -143,7 +143,7 @@ X = Annualized Volatility %
 
 각 point의 실제 `volatility_pct`를 X coordinate로 사용하며 point index를 균등 간격 X coordinate로 사용하지 않는다. Y축은 각 metric의 실제 값/단위다.
 
-각 chart는 X/Y numeric tick, axis title, selected point line+dot를 표시한다. Hover/tap tooltip은 최소 `Frontier Point`, `연환산 변동성`, 해당 metric value를 보여준다. Y domain은 실제 frontier range에 작은 여백을 더해 curve shape를 읽기 쉽게 하고 0 시작을 강제하지 않는다.
+각 chart는 X/Y numeric tick, axis title, selected point line+dot를 표시한다. Hover tooltip은 현재 pointer가 가리키는 `Frontier Point`, `연환산 변동성`, 해당 metric value를 임시 표시한다. 사용자가 point를 클릭 또는 터치해 선택하면 해당 chart의 tooltip은 선택된 point 정보로 고정되어 pointer가 떠난 뒤에도 유지되며, 다른 chart 또는 point를 새로 선택하면 고정 대상이 새 선택으로 이동한다. Y domain은 실제 frontier range에 작은 여백을 더해 curve shape를 읽기 쉽게 하고 0 시작을 강제하지 않는다.
 
 Selected Point Drawdown chart도 X축 기간, Y축 낙폭(%) scale과 title을 제공한다.
 
