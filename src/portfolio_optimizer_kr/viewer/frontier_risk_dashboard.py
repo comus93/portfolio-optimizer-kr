@@ -99,12 +99,12 @@ def build_frontier_interactive_payload(
         "definitions": {
             "cagr_pct": "연복리 수익률 (%)",
             "ex_post_sharpe": "샤프지수",
-            "monthly_gain_to_pain_ratio": "손실이 난 달들의 총 손실 1단위당, 최종적으로 얼마의 순수익을 남겼는가",
-            "pain_ratio": "전고점 아래에서 겪은 낙폭 부담 1단위당 최종적으로 얼마의 연환산 초과수익을 얻었는가 (낙폭 부담은 하락의 깊이와 지속기간을 함께 반영)",
+            "monthly_gain_to_pain_ratio": "손실이 난 달들의 총 손실 1단위당, 최종적으로 얼마의 순수익을 남겼는가 · 높을수록 손실월의 총손실 대비 순수익 효율이 높음",
+            "pain_ratio": "전고점 아래에서 겪은 낙폭 부담 1단위당 최종적으로 얼마의 연환산 초과수익을 얻었는가 (낙폭 부담은 하락의 깊이와 지속기간을 함께 반영) · 높을수록 낙폭 부담 대비 초과수익 효율이 높음",
             "maximum_drawdown_pct": "낙폭 (%)",
-            "tuw_pct": "이전 최고점을 회복하지 못하는 기간(물려있는 기간)",
-            "pain_index_pct": "평균 낙폭 (깊이와 지속시간 반영)",
-            "max_underwater_months": "최장 미회복 기간 (개월)",
+            "tuw_pct": "이전 최고점을 회복하지 못하는 기간(물려있는 기간) · 낮을수록 전고점 아래에 머문 시간이 짧음",
+            "pain_index_pct": "평균 낙폭 (깊이와 지속시간 반영) · 낮을수록 투자기간 전체의 낙폭 부담이 작음",
+            "max_underwater_months": "최장 미회복 기간 (개월) · 낮을수록 최장 회복 대기기간이 짧음",
         },
     }
 
@@ -193,12 +193,12 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
   const configs = [
     ['cagr_pct','CAGR','연복리 수익률 (%)','연복리 수익률 (%)','pct'],
     ['ex_post_sharpe','Sharpe Ratio','샤프지수','샤프지수','ratio'],
-    ['monthly_gain_to_pain_ratio','Monthly Gain-to-Pain','손실이 난 달들의 총 손실 1단위당, 최종적으로 얼마의 순수익을 남겼는가','Gain-to-Pain','ratio'],
-    ['pain_ratio','Pain Ratio','전고점 아래에서 겪은 낙폭 부담 1단위당 최종적으로 얼마의 연환산 초과수익을 얻었는가 (낙폭 부담은 하락의 깊이와 지속기간을 함께 반영)','Pain Ratio','ratio'],
+    ['monthly_gain_to_pain_ratio','Monthly Gain-to-Pain','손실이 난 달들의 총 손실 1단위당, 최종적으로 얼마의 순수익을 남겼는가 · 높을수록 손실월의 총손실 대비 순수익 효율이 높음','Gain-to-Pain','ratio'],
+    ['pain_ratio','Pain Ratio','전고점 아래에서 겪은 낙폭 부담 1단위당 최종적으로 얼마의 연환산 초과수익을 얻었는가 (낙폭 부담은 하락의 깊이와 지속기간을 함께 반영) · 높을수록 낙폭 부담 대비 초과수익 효율이 높음','Pain Ratio','ratio'],
     ['maximum_drawdown_pct','Maximum Drawdown','낙폭 (%)','낙폭 (%)','pct'],
-    ['tuw_pct','Time Under Water','이전 최고점을 회복하지 못하는 기간(물려있는 기간)','미회복 기간 비율 (%)','pct'],
-    ['pain_index_pct','Pain Index','평균 낙폭 (깊이와 지속시간 반영)','평균 낙폭 (%)','pct'],
-    ['max_underwater_months','Max Underwater','최장 미회복 기간 (개월)','최장 미회복 기간 (개월)','months'],
+    ['tuw_pct','Time Under Water','이전 최고점을 회복하지 못하는 기간(물려있는 기간) · 낮을수록 전고점 아래에 머문 시간이 짧음','미회복 기간 비율 (%)','pct'],
+    ['pain_index_pct','Pain Index','평균 낙폭 (깊이와 지속시간 반영) · 낮을수록 투자기간 전체의 낙폭 부담이 작음','평균 낙폭 (%)','pct'],
+    ['max_underwater_months','Max Underwater','최장 미회복 기간 (개월) · 낮을수록 최장 회복 대기기간이 짧음','최장 미회복 기간 (개월)','months'],
   ];
 
   const fmt = (value, kind) => {
