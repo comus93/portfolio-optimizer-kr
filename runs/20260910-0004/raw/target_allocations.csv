@@ -1,0 +1,11 @@
+portfolio,ticker,name,target_weight,target_weight_pct
+SPY Candidate,SPY,State Street SPDR S&P 500 ETF Trust,1.0,100.0
+SPY Candidate,133690,TIGER 미국나스닥100,0.0,0.0
+SPY Candidate,402970,ACE 미국배당다우존스,0.0,0.0
+SPY Candidate,069500,KODEX 200,0.0,0.0
+SPY Candidate,192090,TIGER 차이나CSI300,0.0,0.0
+SPY Candidate,200250,KIWOOM 인도Nifty50(합성),0.0,0.0
+SPY Candidate,101280,KODEX 일본TOPIX100,0.0,0.0
+SPY Candidate,267440,RISE 미국장기국채선물(H),0.0,0.0
+SPY Candidate,385560,RISE KIS국고채30년Enhanced,0.0,0.0
+SPY Candidate,GLD,SPDR Gold Shares,0.0,0.0

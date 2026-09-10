@@ -1,0 +1,67 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: SPY
+  name: State Street SPDR S&P 500 ETF Trust
+  currency: USD
+- symbol: '133690'
+  name: TIGER 미국나스닥100
+  currency: KRW
+- symbol: '402970'
+  name: ACE 미국배당다우존스
+  currency: KRW
+- symbol: 069500
+  name: KODEX 200
+  currency: KRW
+- symbol: '192090'
+  name: TIGER 차이나CSI300
+  currency: KRW
+- symbol: '200250'
+  name: KIWOOM 인도Nifty50(합성)
+  currency: KRW
+- symbol: '101280'
+  name: KODEX 일본TOPIX100
+  currency: KRW
+- symbol: '267440'
+  name: RISE 미국장기국채선물(H)
+  currency: KRW
+- symbol: '385560'
+  name: RISE KIS국고채30년Enhanced
+  currency: KRW
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+portfolios:
+- name: SPY Candidate
+  weights_pct:
+    SPY: 100
+benchmark:
+  type: portfolio
+  preset: kaw_native
+  name: KAW Native Proxy
+  usable_from: 2021-11
+  weights_pct:
+    '133690': 10.0
+    '402970': 10.0
+    069500: 8.0
+    '192090': 8.5
+    '200250': 8.5
+    '101280': 5.0
+    '267440': 15.0
+    '385560': 15.0
+    GLD: 20.0
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+fx:
+  usdkrw_symbol: USD/KRW
+run_id: 20260910-0004
