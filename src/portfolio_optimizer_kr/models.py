@@ -80,6 +80,7 @@ class BacktestRequest:
     end: str | pd.Timestamp | None = None
     time_period_mode: TimePeriodMode = TimePeriodMode.MONTH_TO_MONTH
     benchmark: AssetSpec | None = None
+    benchmark_portfolio: BacktestPortfolio | None = None
     initial_balance: float = 10000.0
     rebalancing: RebalancingPeriod = RebalancingPeriod.MONTHLY
     calendar_aligned: bool = True
