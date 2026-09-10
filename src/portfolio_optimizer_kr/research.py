@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from portfolio_optimizer_kr.benchmark_presets import materialize_benchmark_preset
 from portfolio_optimizer_kr.config import request_from_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.models import ProductMode
@@ -114,6 +115,10 @@ def _apply_research_defaults(config: Mapping[str, Any]) -> dict[str, Any]:
             portfolios.append(row)
         effective["portfolios"] = portfolios
 
+    # KAW shortcuts are a Research Frontend convenience only. Materialize them
+    # before parsing/execution so persisted input contains the actual benchmark
+    # constituents and target weights used by the run.
+    effective = materialize_benchmark_preset(effective)
     return effective
 
 
