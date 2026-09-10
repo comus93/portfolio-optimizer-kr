@@ -33,13 +33,34 @@ Repository의 `runs/README.md`는 persisted run을 탐색할 수 있는 aggregat
 Catalog는 최소 다음 열을 유지해야 한다(MUST).
 
 ```text
-Run | Product | Study / Experiment | Period | Benchmark | Summary
+Run | Product | Study / Experiment | Period | Benchmark | Report | Summary
 ```
 
 #### Scenario: multiple run discovery
 - GIVEN `runs/` 아래 여러 persisted run이 있다
 - WHEN aggregate catalog를 생성한다
 - THEN 각 run directory를 개별 탐색하지 않고 run identity와 대략적인 실험 목적을 비교할 수 있다
+- AND public report URL이 등록된 run은 `Report` 열에서 바로 열 수 있다
+
+### Requirement: Public report URL is passed through, not derived by navigation
+Public report URL은 실행 또는 publication orchestration이 exact URL로 제공하고 run publication metadata에 저장해야 한다(MUST). Navigation layer는 repository owner, Pages domain, run path 규칙을 조합하여 public URL을 자체 계산해서는 안 된다(MUST NOT).
+
+Run publication metadata는 `runs/<run_id>/links.yaml`의 `public_report_url`을 사용한다.
+
+#### Scenario: arbitrary publication location
+- GIVEN 실행기가 `https://reports.example.net/custom/result.html`을 public report URL로 등록했다
+- WHEN run README와 aggregate catalog를 생성한다
+- THEN 두 navigation artifact는 전달받은 URL을 그대로 링크한다
+- AND GitHub Pages 고정 도메인 또는 고정 경로 규칙을 적용하지 않는다
+
+### Requirement: Public report link survives navigation rebuild
+등록된 public report URL은 일반 navigation 재생성 이후에도 run README와 aggregate catalog에 다시 적용할 수 있어야 한다(MUST).
+
+#### Scenario: report regeneration
+- GIVEN `links.yaml`에 public report URL이 등록된 completed run이 있다
+- WHEN report 또는 navigation README가 재생성된다
+- THEN run README의 `Artifacts`에 `Public Report` 링크가 다시 나타난다
+- AND `runs/README.md`의 `Report` 열에도 동일 URL이 나타난다
 
 ### Requirement: Aggregate catalog is derived and rebuildable
 Aggregate catalog는 각 run의 persisted artifact를 기준으로 deterministic하게 재생성할 수 있어야 한다(MUST). 과거 run이 별도 hand-written catalog metadata를 요구해서는 안 된다(MUST NOT).
