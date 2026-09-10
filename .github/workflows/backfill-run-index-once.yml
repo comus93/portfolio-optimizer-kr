@@ -31,7 +31,7 @@ jobs:
 
       - name: Commit aggregate catalog
         run: |
-          if git diff --quiet -- runs/README.md; then
+          if [ -z "$(git status --porcelain -- runs/README.md)" ]; then
             echo "runs/README.md already current"
             exit 0
           fi
