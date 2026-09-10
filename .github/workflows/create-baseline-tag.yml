@@ -1,0 +1,39 @@
+name: Create baseline tag
+
+on:
+  push:
+    branches:
+      - tmp/create-baseline-tag-v2
+    paths:
+      - .github/workflows/create-baseline-tag.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create immutable baseline tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="baseline-20260910-pre-pain-metrics"
+          TARGET="ddbd18f2fa39c72ce2d0568cf9571b4bd843b828"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            REMOTE="$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')"
+            if [[ -z "$REMOTE" ]]; then
+              REMOTE="$(git ls-remote --tags origin "refs/tags/$TAG" | awk '{print $1}')"
+            fi
+            test "$REMOTE" = "$TARGET"
+            echo "Tag already exists at expected target: $TAG -> $TARGET"
+            exit 0
+          fi
+          git tag -a "$TAG" "$TARGET" -m "Baseline before Pain Index, Pain Ratio, and Monthly Gain-to-Pain reporting"
+          git push origin "refs/tags/$TAG"
