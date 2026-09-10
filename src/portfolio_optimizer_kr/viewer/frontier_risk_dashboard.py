@@ -146,7 +146,7 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 #frontier-risk-dashboard .fr-label{font-size:12px;font-weight:700;color:#334155}
 #frontier-risk-dashboard .fr-value{font-size:18px;font-weight:750;color:#172033}
 #frontier-risk-dashboard .fr-help{min-height:44px;margin:4px 0 4px;color:#5f6f84;font-size:11px;line-height:1.42}
-#frontier-risk-dashboard .fr-spark{width:100%;height:158px;display:block;background:#fff}
+#frontier-risk-dashboard .fr-spark{width:100%;height:158px;display:block;background:#fff;touch-action:pan-y}
 #frontier-risk-dashboard .fr-tooltip{position:absolute;z-index:4;display:none;pointer-events:none;padding:5px 7px;border:1px solid #cbd5e1;border-radius:6px;background:rgba(255,255,255,.97);box-shadow:0 2px 8px rgba(15,23,42,.12);font-size:10px;line-height:1.35;color:#334155;white-space:nowrap}
 #frontier-risk-dashboard .fr-selected{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(420px,1.4fr);gap:16px;margin-top:18px}
 #frontier-risk-dashboard .fr-panel{border:1px solid #e2e8f2;border-radius:9px;padding:13px;background:#fff}
@@ -236,9 +236,21 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 
   const xDomain = extentWithPadding(volatility);
 
-  const nearestIndexByVol = (event, svg, paddingLeft, paddingRight, width) => {
+  const pointerXInSvg = (event, svg, width) => {
+    const ctm = svg.getScreenCTM();
+    if (ctm && typeof DOMPoint !== 'undefined') {
+      try {
+        return new DOMPoint(event.clientX, event.clientY).matrixTransform(ctm.inverse()).x;
+      } catch (_) {
+        // Fall through to the rectangular approximation for older browsers.
+      }
+    }
     const rect = svg.getBoundingClientRect();
-    const local = (event.clientX - rect.left) / Math.max(rect.width, 1) * width;
+    return (event.clientX - rect.left) / Math.max(rect.width, 1) * width;
+  };
+
+  const nearestIndexByVol = (event, svg, paddingLeft, paddingRight, width) => {
+    const local = pointerXInSvg(event, svg, width);
     const plotWidth = width - paddingLeft - paddingRight;
     const clipped = Math.min(width - paddingRight, Math.max(paddingLeft, local));
     const targetVol = xDomain[0] + (clipped - paddingLeft) / Math.max(plotWidth, 1) * (xDomain[1] - xDomain[0]);
@@ -331,7 +343,11 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     tooltip.className='fr-tooltip';
     card.appendChild(tooltip);
 
-    svg.addEventListener('pointermove', event => {
+    const interaction=document.createElementNS(ns,'rect');
+    interaction.setAttribute('x','0');interaction.setAttribute('y','0');
+    interaction.setAttribute('width',w);interaction.setAttribute('height',h);
+    interaction.setAttribute('fill','transparent');interaction.setAttribute('pointer-events','all');
+    interaction.addEventListener('pointermove', event => {
       const hover=nearestIndexByVol(event,svg,left,right,w);
       tooltip.textContent=`Point ${points[hover]} · 변동성 ${volatility[hover].toFixed(2)}% · ${label} ${fmt(values[hover],kind)}`;
       const rect=card.getBoundingClientRect();
@@ -339,8 +355,9 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
       tooltip.style.top=`${Math.max(event.clientY-rect.top-30, 4)}px`;
       tooltip.style.display='block';
     });
-    svg.addEventListener('pointerleave',()=>{tooltip.style.display='none';});
-    svg.addEventListener('click', event => select(nearestIndexByVol(event, svg, left, right, w)));
+    interaction.addEventListener('pointerleave',()=>{tooltip.style.display='none';});
+    interaction.addEventListener('click', event => select(nearestIndexByVol(event, svg, left, right, w)));
+    svg.appendChild(interaction);
     card.appendChild(svg);
     return card;
   };
