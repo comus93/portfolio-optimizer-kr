@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .backtest import write_backtest_analysis_run
-from .navigation import write_run_readme
+from .navigation import refresh_run_navigation
 from .result import write_analysis_run as write_optimization_analysis_run
 
 
@@ -16,7 +16,12 @@ def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
     else:
         write_optimization_analysis_run(result, output_dir)
 
-    # Product writers persist canonical artifacts first. The README is a
-    # derived discovery/navigation projection and may be regenerated later
-    # after effective input/context/report artifacts are available.
-    write_run_readme(output_dir, result=result)
+    # Product writers persist canonical artifacts first. Navigation files are
+    # derived projections and may be regenerated after input/context/report are
+    # available. Only the canonical `runs/` root receives an aggregate index.
+    directory = Path(output_dir)
+    refresh_run_navigation(
+        directory,
+        result=result,
+        update_index=directory.parent.name == "runs",
+    )
