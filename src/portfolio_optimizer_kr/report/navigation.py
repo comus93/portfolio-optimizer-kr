@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import warnings
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -47,14 +48,20 @@ _OPTIMIZATION_METRICS = (
 def _read_yaml(path: Path) -> dict[str, Any]:
     if not path.is_file():
         return {}
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        return {}
     return dict(loaded) if isinstance(loaded, Mapping) else {}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         return {}
-    loaded = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
     return dict(loaded) if isinstance(loaded, Mapping) else {}
 
 
@@ -97,6 +104,15 @@ def _period(input_data: Mapping[str, Any], configuration: Mapping[str, Any]) -> 
             if first and last:
                 return f"{int(start_year):04d}-{first:02d} ~ {int(end_year):04d}-{last:02d}"
 
+    analysis_period = input_data.get("analysis_period")
+    if not isinstance(analysis_period, Mapping):
+        analysis_period = configuration.get("analysis_period")
+    if isinstance(analysis_period, Mapping):
+        start = analysis_period.get("start")
+        end = analysis_period.get("end")
+        if start or end:
+            return f"{start or 'N/A'} ~ {end or 'N/A'}"
+
     start = input_data.get("start") or configuration.get("start")
     end = input_data.get("end") or configuration.get("end")
     if start or end:
@@ -138,6 +154,11 @@ def _rebalancing(input_data: Mapping[str, Any], configuration: Mapping[str, Any]
             if aligned is None or str(period).lower() in {"monthly", "none"}:
                 return str(period)
             return f"{period} (calendar aligned: {'Yes' if aligned else 'No'})"
+
+    portfolio = input_data.get("portfolio")
+    if isinstance(portfolio, Mapping) and portfolio.get("rebalancing_period"):
+        return str(portfolio["rebalancing_period"])
+
     value = configuration.get("rebalancing") or configuration.get("rebalancing_period")
     return str(value) if value not in (None, "") else "N/A"
 
@@ -192,6 +213,24 @@ def _weights_pct(raw: Mapping[str, Any], *, already_pct: bool) -> str:
     return ", ".join(parts) if parts else "N/A"
 
 
+def _optimization_provided_weights(input_data: Mapping[str, Any]) -> dict[str, float]:
+    weights: dict[str, float] = {}
+    raw_assets = input_data.get("assets")
+    if not isinstance(raw_assets, list):
+        return weights
+    for row in raw_assets:
+        if not isinstance(row, Mapping) or not row.get("symbol"):
+            continue
+        value = row.get("provided_weight_pct")
+        if value is None:
+            continue
+        try:
+            weights[str(row["symbol"])] = float(value)
+        except (TypeError, ValueError):
+            continue
+    return weights
+
+
 def _portfolio_rows(
     input_data: Mapping[str, Any], result: Mapping[str, Any]
 ) -> list[tuple[str, str]]:
@@ -229,6 +268,11 @@ def _portfolio_rows(
     provided = input_data.get("provided_weights") or configuration.get("provided_weights")
     if isinstance(provided, Mapping) and provided:
         rows.append(("Provided Portfolio", _weights_pct(provided, already_pct=False)))
+    else:
+        provided_pct = _optimization_provided_weights(input_data)
+        if provided_pct:
+            rows.append(("Provided Portfolio", _weights_pct(provided_pct, already_pct=True)))
+
     optimized = result.get("optimization_result")
     if isinstance(optimized, Mapping):
         weights = optimized.get("weights")
@@ -241,8 +285,11 @@ def _performance_rows(run_dir: Path, product_mode: str) -> tuple[list[str], list
     path = run_dir / "review" / "performance_summary.csv"
     if not path.is_file():
         return [], []
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+    except (OSError, UnicodeError, csv.Error):
+        return [], []
     if not rows:
         return [], []
     portfolios = [key for key in rows[0] if key not in {"metric", "unit"}]
@@ -309,14 +356,23 @@ def build_run_readme(
     result: Mapping[str, Any] | None = None,
 ) -> str:
     directory = Path(run_dir)
-    persisted_result = dict(result) if isinstance(result, Mapping) else _read_json(directory / "result.json")
+    persisted_result = (
+        dict(result)
+        if isinstance(result, Mapping)
+        else _read_json(directory / "result.json")
+    )
     input_data = _read_yaml(directory / "input.yaml")
     context = _read_yaml(directory / "context.yaml")
     configuration = persisted_result.get("configuration")
     if not isinstance(configuration, Mapping):
         configuration = {}
 
-    run_id = str(configuration.get("run_id") or input_data.get("run_id") or context.get("run_id") or directory.name)
+    run_id = str(
+        configuration.get("run_id")
+        or input_data.get("run_id")
+        or context.get("run_id")
+        or directory.name
+    )
     product_mode = str(
         configuration.get("product_mode")
         or input_data.get("product_mode")
@@ -325,7 +381,9 @@ def build_run_readme(
     ).lower()
     benchmark = _benchmark(input_data, configuration)
     portfolios = _portfolio_rows(input_data, persisted_result)
-    title, purpose = _title_and_purpose(input_data, context, product_mode, portfolios, benchmark)
+    title, purpose = _title_and_purpose(
+        input_data, context, product_mode, portfolios, benchmark
+    )
 
     lines = [
         f"# {_escape(title)}",
@@ -354,17 +412,27 @@ def build_run_readme(
 
     if portfolios:
         lines.extend(["| Portfolio | Allocation |", "|---|---|"])
-        lines.extend(f"| {_escape(name)} | {_escape(allocation)} |" for name, allocation in portfolios)
+        lines.extend(
+            f"| {_escape(name)} | {_escape(allocation)} |"
+            for name, allocation in portfolios
+        )
     else:
         lines.append("No portfolio allocation summary is available.")
 
     lines.extend(["", "## Key Results", ""])
     performance_names, performance_rows = _performance_rows(directory, product_mode)
     if performance_rows and performance_names:
-        lines.append("| Portfolio | " + " | ".join(_escape(row["metric"]) for row in performance_rows) + " |")
+        lines.append(
+            "| Portfolio | "
+            + " | ".join(_escape(row["metric"]) for row in performance_rows)
+            + " |"
+        )
         lines.append("|---|" + "---:|" * len(performance_rows))
         for name in performance_names:
-            values = [_fmt_number(row.get(name), row.get("unit")) for row in performance_rows]
+            values = [
+                _fmt_number(row.get(name), row.get("unit"))
+                for row in performance_rows
+            ]
             lines.append(f"| {_escape(name)} | " + " | ".join(values) + " |")
     else:
         lines.append("Representative performance summary is not available for this run.")
@@ -376,7 +444,10 @@ def build_run_readme(
     elif isinstance(raw_notes, list) and raw_notes:
         lines.extend(f"- {_escape(note)}" for note in raw_notes)
     else:
-        lines.append("Generated from persisted run artifacts for human/LLM navigation. Canonical values remain in `result.json` and `raw/`.")
+        lines.append(
+            "Generated from persisted run artifacts for human/LLM navigation. "
+            "Canonical values remain in `result.json` and `raw/`."
+        )
 
     lines.extend(["", "## Artifacts", ""])
     lines.extend(_artifact_lines(directory))
@@ -409,7 +480,9 @@ def _index_record(run_dir: Path) -> dict[str, str]:
     ).lower()
     benchmark = _benchmark(input_data, configuration)
     portfolios = _portfolio_rows(input_data, result)
-    title, _ = _title_and_purpose(input_data, context, product_mode, portfolios, benchmark)
+    title, _ = _title_and_purpose(
+        input_data, context, product_mode, portfolios, benchmark
+    )
     study = _context_name(context.get("study"), kind="study")
     experiment = _context_name(context.get("experiment"), kind="experiment")
     if study == "N/A" and experiment == "N/A":
@@ -432,16 +505,23 @@ def _index_record(run_dir: Path) -> dict[str, str]:
 
 def build_runs_index(runs_root: str | Path) -> str:
     root = Path(runs_root)
-    records = [
-        _index_record(path)
-        for path in sorted(root.iterdir(), key=lambda item: item.name, reverse=True)
-        if path.is_dir() and (path / "result.json").is_file()
-    ] if root.is_dir() else []
+    records = (
+        [
+            _index_record(path)
+            for path in sorted(
+                root.iterdir(), key=lambda item: item.name, reverse=True
+            )
+            if path.is_dir() and (path / "result.json").is_file()
+        ]
+        if root.is_dir()
+        else []
+    )
 
     lines = [
         "# Run Index",
         "",
-        "This catalog is generated from persisted run artifacts for repository navigation. Canonical values remain inside each run directory.",
+        "This catalog is generated from persisted run artifacts for repository "
+        "navigation. Canonical values remain inside each run directory.",
         "",
         "| Run | Product | Study / Experiment | Period | Benchmark | Summary |",
         "|---|---|---|---|---|---|",
@@ -476,3 +556,22 @@ def refresh_run_navigation(
     write_run_readme(directory, result=result)
     if update_index:
         write_runs_index(directory.parent)
+
+
+def try_refresh_run_navigation(
+    run_dir: str | Path,
+    *,
+    result: Mapping[str, Any] | None = None,
+    update_index: bool = True,
+) -> bool:
+    """Best-effort refresh that cannot invalidate an otherwise completed run."""
+    try:
+        refresh_run_navigation(
+            run_dir,
+            result=result,
+            update_index=update_index,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as exc:
+        warnings.warn(f"run navigation refresh failed: {exc}", RuntimeWarning, stacklevel=2)
+        return False
+    return True
