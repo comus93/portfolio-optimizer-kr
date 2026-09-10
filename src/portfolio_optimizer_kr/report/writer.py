@@ -5,7 +5,7 @@ from typing import Any
 
 from .backtest import write_backtest_analysis_run
 from .navigation import try_refresh_run_navigation
-from .public_links import apply_public_report_links
+from .public_links import try_apply_public_report_links
 from .result import write_analysis_run as write_optimization_analysis_run
 
 
@@ -27,4 +27,4 @@ def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
         result=result,
         update_index=update_index,
     )
-    apply_public_report_links(directory, update_index=update_index)
+    try_apply_public_report_links(directory, update_index=update_index)
