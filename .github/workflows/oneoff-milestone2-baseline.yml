@@ -2,18 +2,17 @@ name: One-off milestone 2 baseline tag
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - '.github/workflows/oneoff-milestone2-baseline.yml'
+      - .github/workflows/oneoff-milestone2-baseline.yml
 
 permissions:
   contents: write
 
 jobs:
-  tag-baseline:
+  tag_baseline:
     runs-on: ubuntu-latest
-    env:
-      TAG_NAME: baseline-20260911-milestone-2
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,15 +20,12 @@ jobs:
 
       - name: Verify baseline metadata
         run: |
-          grep -q 'baseline-20260911-milestone-2' README.md
-          grep -q 'Milestone 2 is complete' docs/milestones/2026-09-11-milestone-2.md
-          grep -q '20260911-0007' docs/milestones/2026-09-11-milestone-2.md
-          if git show-ref --tags --verify --quiet "refs/tags/${TAG_NAME}"; then
-            echo "Tag already exists: ${TAG_NAME}" >&2
-            exit 1
-          fi
+          grep -q "baseline-20260911-milestone-2" README.md
+          grep -q "Milestone 2 is complete" docs/milestones/2026-09-11-milestone-2.md
+          grep -q "20260911-0007" docs/milestones/2026-09-11-milestone-2.md
+          test -z "$(git tag -l baseline-20260911-milestone-2)"
 
-      - name: Remove one-off workflow and finalize baseline commit
+      - name: Finalize commit and tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -37,17 +33,6 @@ jobs:
           git commit -m "chore: finalize milestone 2 baseline marker"
           git pull --rebase origin main
           git push origin HEAD:main
-
-      - name: Create annotated baseline tag
-        run: |
-          git tag -a "${TAG_NAME}" -m "Milestone 2 baseline (2026-09-11)
-
-Representative run: 20260911-0007
-Includes shared Optimization/Backtest drawdown-recovery analytics, normalized underwater duration, unified drawdown comparison presentation, runs index cleanup, regression/browser validation, and baseline documentation.
-
-Follow-up recovery-resilience aggregation / Sweet Spot rules are intentionally outside this baseline."
-          git push origin "refs/tags/${TAG_NAME}"
-
-      - name: Show pinned commit
-        run: |
-          echo "${TAG_NAME} -> $(git rev-list -n 1 "${TAG_NAME}")"
+          git tag -a baseline-20260911-milestone-2 -m "Milestone 2 baseline 2026-09-11; representative run 20260911-0007; recovery aggregation and Sweet Spot rules remain follow-up research."
+          git push origin refs/tags/baseline-20260911-milestone-2
+          git rev-list -n 1 baseline-20260911-milestone-2
