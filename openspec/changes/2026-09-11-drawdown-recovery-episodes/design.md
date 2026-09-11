@@ -45,12 +45,19 @@ Canonical artifact는 최소 `portfolio`, `rank`, `date`, `month_since_bottom`, 
 
 기존 shared Drawdowns component를 재사용한다. Browser는 recovery formula를 다시 계산하지 않는다.
 
-- episode table: 기존 PV-style recovery columns 유지 + `Recovery Rate` 추가
+- drawdown path는 portfolio별 반복 chart가 아니라 한 개의 shared overlay chart로 렌더링한다.
+- chart foreground selector는 line emphasis에만 사용한다. 선택 state가 summary/table visibility를 바꾸지 않는다.
+- non-selected context line도 실제 비교가 가능하도록 충분한 opacity와 stroke width를 유지한다.
+- Drawdown comparison에서만 색 순서는 `blue -> green -> orange`를 사용한다. Optimization에서는 `Provided -> Optimized -> Benchmark` identity 순서와 일치시킨다.
+- overlay chart 바로 아래에 모든 portfolio의 `탄성회복도`를 한 table로 나열한다. 값은 canonical `Normalized Underwater Duration` summary를 그대로 소비한다.
+- 그 아래 episode table은 portfolio마다 모두 렌더링하고 Optimization에서는 `Provided -> Optimized -> Benchmark` 순서로 고정한다.
+- episode table은 기존 PV-style recovery columns와 `Recovery Rate`를 유지한다.
 - `Recovery Progress from Bottom` chart는 user-facing report에서 표시하지 않는다.
 
 ## Validation
 
 - synthetic episode에서 timing, recovery rate, progress path를 독립 검증한다.
 - Optimization/Backtest 양쪽에서 recovery artifact가 생성되는지 확인한다.
-- shared report component가 canonical episode value를 소비하는지 확인한다.
+- shared report component가 canonical episode/resilience value를 소비하는지 확인한다.
+- browser contract에서 단일 overlay chart, blue/green/orange order, context-line visibility, 모든 resilience row 및 episode table 상시 노출을 확인한다.
 - 대표 Optimization run을 재생성해 user-facing 결과를 검토한다.
