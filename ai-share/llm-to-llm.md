@@ -1,286 +1,525 @@
 # Session Handover
 
-created_at: 2026-09-10
+created_at: 2026-09-11T12:35:00+09:00
 project: `comus93/portfolio-optimizer-kr`
 branch: `main`
 
 ## Current State
 
-KAW target reconstruction is complete enough to use as the project's reusable portfolio baseline / benchmark for future Backtest research.
+The current working thread is no longer KAW proxy reconstruction. It is the **Provided Portfolio optimization report + frontier risk/recovery analysis** work.
 
-Canonical sources:
-
-```text
-studies/kaw-target-reconstruction/study.md
-studies/kaw-target-reconstruction/report.md
-docs/kaw-benchmark-presets.md
-```
-
-`study.md` owns current KAW definitions, listing/inception-derived usable periods, routing rules, and the KAW-equivalent risk budget. `report.md` owns current bridge interpretation/evidence. Historical runs remain immutable under their original definitions.
-
-Reusable Backtest benchmark presets are implemented:
-
-```yaml
-benchmark: kaw_short   # KAW Native Proxy
-benchmark: kaw_long    # KAW Core Revised Internal
-```
-
-Aliases:
+Most recent user-facing Maximum Return report:
 
 ```text
-kaw_short = kaw_native
-kaw_long  = kaw_core
+runs/20260911-0002
+https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0002/report.html
 ```
 
-The default benchmark remains SPY when omitted. No hidden date-based switch is performed.
+The user visually confirmed the previously broken **5Y Rolling Returns chart now works**.
 
-A reporting bug that caused the PV-style `Risk and Return Metrics` section to disappear was fixed. Root cause: fixed RF from the parsed YAML request was not propagated when no external annual_rf override was supplied. `runner._resolve_annual_rf()` now uses the request's fixed annual rate in that case. Post-fix KAW benchmark smoke runs are `20260910-0004` and `20260910-0005`.
+Recent report/UI work already completed before this handover:
 
-## Decisions
+- Frontier risk dashboard title is `리스크·성과 균형 분석`.
+- Maximum Return report uses the same 8 frontier metrics as Maximum Sharpe.
+- Maximum Return target-vol run carries an objective marker/label.
+- The risk dashboard was enlarged for desktop:
+  - minimum card width roughly `360px`
+  - chart height roughly `220px`
+  - typically 3 columns on desktop, responsive to 1 column on mobile
+- For `target_volatility` runs, a fixed **Target Volatility guideline** was added to the frontier risk charts. It is distinct from the movable selected-point line.
+- Report header objective/benchmark pills were made more visible while preserving the existing background treatment.
+- 5Y rolling report rendering was fixed by removing the fragile delayed/double-render timing and using the shared historical renderer as the final mount path.
 
-### 1. KAW Native Proxy — canonical recent / short-period baseline
-
-| Sleeve | Code / Ticker | Instrument | Weight | Listing / Inception |
-|---|---|---|---:|---|
-| Nasdaq 100 | `133690` | TIGER 미국나스닥100 | 10.0% | 2010-10-18 |
-| US dividend | `402970` | ACE 미국배당다우존스 | 10.0% | 2021-10-21 |
-| Korea | `069500` | KODEX 200 | 8.0% | 2002-10-14 |
-| China / CSI 300 | `192090` | TIGER 차이나CSI300 | 8.5% | 2014-02-17 |
-| India / Nifty 50 | `200250` | KIWOOM 인도Nifty50(합성) | 8.5% | 2014-06-26 |
-| Japan | `101280` | KODEX 일본TOPIX100 | 5.0% | 2008-02-20 |
-| US long Treasury | `267440` | RISE 미국장기국채선물(H) | 15.0% | 2017-04-20 |
-| KR 30Y Treasury | `385560` | RISE KIS국고채30년Enhanced | 15.0% | 2021-05-26 |
-| Gold | `GLD` | SPDR Gold Shares | 20.0% | 2004-11-18 |
-
-History bottleneck: `402970`, listed 2021-10-21.
-
-Canonical usable period:
+Latest same-universe Maximum Return experiment remains:
 
 ```text
-2021-11 onward
+studies/provided-portfolio-v1-optimization/experiments/006-aia-schd-max-return-vol11_5-same-period.yaml
 ```
 
-Standard completed recent/bridge window used so far:
+Same assets / same period as the AIA+SCHD Maximum Sharpe comparison, target volatility 11.5%.
+
+Latest exact Maximum Return optimizer weights from the prior validated run family:
 
 ```text
-2021-11-01 through 2026-08-31
-58 monthly observations
+QQQ      15.8052%
+SPMO     27.0483%
+AIA       0.0000%
+GLD      47.6163%
+XLE       4.2723%
+144600    0.0000%
+SCHD      5.2578%
 ```
 
-### 2. KAW Core Revised Internal — canonical long-history baseline
+The frontier dashboard still has **no automatic Sweet Spot rule**. This is deliberate. The user explicitly wants to inspect actual curves before defining any automatic optimum rule.
 
-| Sleeve | Code / Ticker | Instrument | Weight | Listing / Inception |
-|---|---|---|---:|---|
-| Nasdaq 100 | `QQQ` | Invesco QQQ | 10.0% | 1999-03-10 |
-| US dividend | `SCHD` | Schwab U.S. Dividend Equity ETF | 10.0% | 2011-10-20 |
-| Korea | `EWY` | iShares MSCI South Korea ETF | 8.0% | 2000-05-09 |
-| China / CSI 300 | `192090` | TIGER 차이나CSI300 | 8.5% | 2014-02-17 |
-| India / Nifty 50 | `200250` | KIWOOM 인도Nifty50(합성) | 8.5% | 2014-06-26 |
-| Japan | `EWJ` | iShares MSCI Japan ETF | 5.0% | 1996-03-12 |
-| Combined long-duration bond sleeve | `TLT` | iShares 20+ Year Treasury Bond ETF | 30.0% | 2002-07-22 |
-| Gold | `GLD` | SPDR Gold Shares | 20.0% | 2004-11-18 |
+---
 
-History bottleneck: `200250`, listed 2014-06-26.
+## Recovery Resilience Discussion — IMPORTANT
 
-Canonical usable period:
+The current open work is to make **recovery resilience / rebound strength** an explicit part of drawdown episode analytics.
+
+The user's question is not merely "how long was the portfolio underwater?" but:
+
+> When an asset or portfolio hits a trough, how quickly and strongly does it spring back toward the previous peak?
+
+The user specifically wants to distinguish assets/portfolios that may suffer a deep drawdown but recover sharply, from assets that fall less but remain weak for a long time.
+
+### Existing metrics are not enough
+
+Existing frontier metrics:
+
+- MDD
+- Time Under Water (TUW)
+- Pain Index
+- Max Underwater Months
+
+are useful but do not isolate **Bottom -> Recovery** behavior.
+
+`Max Underwater` slope on the frontier is NOT itself a recovery-resilience metric. Its X-axis is volatility, so its slope only says how worst underwater duration changes as risk changes.
+
+### Existing Drawdown Episode structure
+
+Canonical drawdown episode code currently lives in:
 
 ```text
-2014-07 onward
+src/portfolio_optimizer_kr/analytics/metrics.py
 ```
 
-Core bond convention:
+Current `drawdown_episodes()` fields:
 
 ```text
-Native bond = 267440 15% + 385560 15%
-Core bond   = TLT 30%
+rank
+start
+bottom
+recovery
+maximum_drawdown
+duration_months
 ```
 
-TLT is a coarse aggregate behavioral proxy for the 30% bond sleeve, not a literal proxy for either Native bond component.
+Important semantic issue:
 
-### 3. KAW Core PV — Portfolio Visualizer-only implementation
+`duration_months` is currently `len(segment)`, i.e. the number of monthly observations from the first underwater observation through recovery, inclusive. It is not a clean calendar-month difference and it does not isolate recovery time.
+
+Example from current run artifact:
 
 ```text
-QQQ 10 / SCHD 10 / EWY 8 / ASHR 8.5 / INDY 8.5 / EWJ 5 / TLT 30 / GLD 20
+runs/20260911-0002/review/drawdowns.csv
 ```
 
-Use only for Portfolio Visualizer compatibility. Conservative study start: `2014-01`.
-
-Do not substitute the PV definition for the internal-engine Core. Internal research uses `192090` / `200250`; PV uses `ASHR` / `INDY`.
-
-### 4. Canonical representation routing
+Optimized 2020-09 -> 2021-05 episode has:
 
 ```text
-Recent / short-period internal comparison
--> KAW Native Proxy
--> benchmark: kaw_short
--> usable 2021-11 onward
-
-Long-history internal comparison
--> KAW Core Revised Internal
--> benchmark: kaw_long
--> usable 2014-07 onward
-
-Portfolio Visualizer research
--> KAW Core PV holdings
--> conservative start 2014-01
+start          2020-09-30
+bottom         2020-10-31
+recovery       2021-05-31
+duration_months 9
 ```
 
-Do not stitch Native backward before 2021-11. Do not use Core merely because it has longer history when Native covers the intended recent period.
+Calendar difference is 8 months, but `duration_months=9` because both endpoint observations are counted.
 
-### 5. FX and RF conventions
+### Existing report already shows a presentation-only Recovery Time
 
-Internal research:
+This was a key discovery.
 
-- reporting currency: KRW
-- every USD asset uses the same USD/KRW conversion rule
-- no asset-specific FX exception to improve fit
-- pinned default fixed risk-free rate: `3.8394827586206895%` annual
-
-### 6. KAW-equivalent risk budget — UPDATED
-
-The canonical recommended risk budget for **Maximum Return subject to volatility** experiments is now:
+Shared PV-style drawdown renderer already has a table with:
 
 ```text
-annualized standard deviation <= 10.0%
+Rank
+Start
+End
+Length
+Recovery By
+Recovery Time
+Underwater Period
+Drawdown
 ```
 
-Reason:
+Relevant shared renderer:
 
 ```text
-KAW Native Proxy recent realized annualized std ≈ 9.70%
-KAW Core Revised Internal long realized annualized std ≈ 9.32%
+src/portfolio_optimizer_kr/viewer/pv_visual.py
 ```
 
-Both cluster around a 10% volatility level. Therefore 10.0% is the default KAW-equivalent risk budget.
-
-This is a **standard-deviation / volatility constraint, not an MDD constraint**. MDD remains a separate realized-risk evaluation metric.
-
-The previously used `11.5%` annual volatility target is historical calibration only and is superseded as the default KAW benchmarking risk budget.
-
-## Key Validation Evidence
-
-### Revised Native vs Core bridge
-
-Experiment:
+It currently computes presentation values from the episode dates:
 
 ```text
-studies/kaw-target-reconstruction/experiments/020-kaw-native-vs-revised-core-backtest.yaml
+Length          ~= Start -> Bottom
+Recovery Time   = Bottom -> Recovery
+Underwater      ~= Start -> Recovery
 ```
 
-Run:
+using `_month_delta(...)` and `_duration_label(...)` in the renderer.
+
+This means the visual concept already exists, but the finance semantics are **not canonical upstream values yet**.
+
+That is exactly what the next implementation should fix: move the recovery-duration semantics into canonical analytics/artifacts instead of leaving finance calculations in the renderer.
+
+Architecture rule to preserve:
+
+> Browser/report presentation must not invent or recompute canonical financial metrics. Canonical drawdown/recovery values belong in shared analytics and persisted artifacts.
+
+---
+
+## Agreed Recovery Episode Model
+
+The user approved extending the existing **Drawdown Episode** model rather than creating a separate parallel analytics system.
+
+Conceptual episode:
 
 ```text
-runs/20260910-0001
-https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0001/report.html
+Peak
+ |
+ | Decline phase
+ v
+Bottom / Trough
+ |
+ | Recovery phase
+ v
+Recovery to prior Peak
 ```
 
-Same recent window, KRW, monthly rebalance, fixed RF:
+Desired fields/concepts:
 
 ```text
-                        Native       Core
-CAGR                    9.60%       10.28%
-Annualized return       9.67%       10.41%
-Std dev                  9.70%       10.80%
-MDD                    -13.83%      -12.80%
-Sharpe                   0.600        0.608
-End balance             15,575       16,046
+Peak
+Start
+Bottom
+Recovery
+Decline Months
+Recovery Months
+Underwater Months
+Maximum Drawdown
+Recovery Rate
 ```
 
-Bridge fidelity:
+Not all of these need to become new columns immediately if an existing field already has an accepted meaning, but the canonical semantics must be explicit.
+
+### Recovery Months
+
+Primary direct recovery measure:
 
 ```text
-monthly correlation      0.9168
-direction agreement      51/58 = 87.9%
-Native-on-Core beta      0.8240
-OLS R²                   0.8406
-annualized tracking err  4.32%
-drawdown correlation     0.9430
+Recovery Months = months from Bottom/Trough to Recovery
 ```
 
-Interpretation: revised Core is acceptable as a longer-history behavioral approximation of current KAW. It is not a literal Native NAV reconstruction.
-
-### Post-fix KAW benchmark smoke runs
-
-Short / Native benchmark:
+Interpretation:
 
 ```text
-runs/20260910-0004
-https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0004/report.html
+lower = faster recovery
 ```
 
-Long / Core benchmark:
+This is the cleanest answer to:
+
+> Once the portfolio hit bottom, how long did it take to regain the previous peak?
+
+Unrecovered episode:
 
 ```text
-runs/20260910-0005
-https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0005/report.html
+Recovery Months = N/A
 ```
 
-These supersede `0002/0003` as smoke-validation references because the earlier reports were generated before the fixed-RF propagation bug was corrected. `0002/0003` remain immutable historical artifacts.
+Never fabricate a future recovery date.
 
-`0005` long-run KAW Core summary versus SPY candidate over 2014-07 through 2026-08:
+### Recovery Rate
+
+Second metric, meant to account for how deep the trough was.
+
+For a completed episode:
 
 ```text
-KAW Core CAGR      11.07%
-KAW Core Std        9.32%
-KAW Core MDD      -12.80%
-KAW Core Sharpe     0.77
-
-SPY CAGR           16.73%
-SPY Std            14.07%
-SPY MDD           -17.41%
-SPY Sharpe          0.91
+Recovery Rate = (Peak / Trough)^(12 / RecoveryMonths) - 1
 ```
 
-The KAW evaluation question is portfolio-level return/stability tradeoff versus alternatives, not whether the revised proxy perfectly reproduces every Native constituent.
+Equivalent interpretation:
 
-## User Provided Portfolio — next comparison candidate
+> Annualized compound rate achieved from the trough back to the previous peak.
 
-The user previously supplied this fixed-weight portfolio:
-
-| Ticker | Instrument | Weight | Inception / listing |
-|---|---|---:|---|
-| `QQQ` | Invesco QQQ | 20% | 1999-03-10 |
-| `SPMO` | Invesco S&P 500 Momentum ETF | 10% | 2015-10-09 |
-| `GDX` | VanEck Gold Miners ETF | 10% | 2006-05-16 |
-| `SLV` | iShares Silver Trust | 10% | 2006-04-21 |
-| `AIA` | iShares Asia 50 ETF | 15% | 2007-11-13 |
-| `XLE` | Energy Select Sector SPDR ETF | 15% | 1998-12-16 |
-| `PTF` | Invesco Dorsey Wright Technology Momentum ETF | 10% | 2006-10-12 |
-| `SHG` | Shinhan Financial Group ADR | 10% | 2003-09-16 |
-| **Total** |  | **100%** |  |
-
-History bottleneck: `SPMO`, inception 2015-10-09.
-
-Canonical first complete Month-to-Month month for the portfolio:
+Example:
 
 ```text
-2015-11
+Peak = 100
+Trough = 80
+Recovery Months = 6
+Recovery Rate = (100/80)^(12/6)-1 = 56.25%
 ```
 
-Therefore:
+Interpretation:
 
-- long comparison against `kaw_long` can use common period from `2015-11` onward
-- recent comparison against `kaw_short` can use common period from `2021-11` onward
-- for KAW-risk-matched Maximum Return experiments, use the new default `10.0%` annualized standard-deviation constraint unless an experiment explicitly states another target
+```text
+higher = stronger rebound
+```
 
-## Important Constraints
+This avoids the distortion of comparing only recovery duration. A -20% drawdown recovered in 6 months can represent stronger rebound behavior than a -5% drawdown recovered in 3 months.
 
-- No stitched KAW Native/Core NAV.
-- Do not reintroduce old `SPY`/`EEM` Core mappings.
-- Do not reinterpret historical Direct v1/v2 runs as current Native results.
-- Whole-portfolio fidelity is the Core acceptance criterion; avoid fitting individual sleeves to the 58-month bridge window.
-- Portfolio generation != portfolio evaluation.
-- USD assets are uniformly converted to KRW in internal research.
-- `10.0%` is the current default KAW-equivalent **Std/volatility** budget for Maximum Return tests; it is not MDD.
+Edge cases/spec decisions to make explicit during implementation:
 
-## Next
+- Recovery Rate is unavailable for unrecovered episodes.
+- Recovery Months <= 0 requires explicit handling; do not silently divide by zero.
+- Use the actual wealth ratio at Peak/Trough, not an approximation that treats MDD percentage points as linear return.
+- Preserve monthly-observation semantics and document whether month count is calendar delta vs observation-step count. The preferred direction from discussion is a clean Bottom -> Recovery month delta, not the old inclusive `len(segment)` convention.
 
-The KAW baseline is ready. Resume from portfolio-level comparison rather than proxy reconstruction.
+### Recovery Progress Curve
 
-Natural next study using the user's Provided Portfolio:
+The user also liked a possible normalized monthly recovery visualization inspired by Cumulative Active Return charts.
 
-1. Fixed-weight Provided Portfolio vs `kaw_long` over the common long period beginning `2015-11`.
-2. Fixed-weight Provided Portfolio vs `kaw_short` over the common recent period beginning `2021-11`.
-3. Compare CAGR, annualized Std, MDD, Sharpe/Sortino, drawdown shape, and benchmark-relative metrics.
-4. Run opportunity-set / Maximum Return analysis at the canonical KAW-equivalent risk budget of **10.0% annualized Std**.
-5. Keep fixed-weight deployed behavior separate from optimized opportunity-set evaluation.
+For each episode, align the trough at month 0 and normalize recovery progress:
+
+```text
+RecoveryProgress_t = (Value_t - Trough) / (Peak - Trough) * 100
+```
+
+So:
+
+```text
+Trough        = 0%
+Half recovered = 50%
+Prior peak    = 100%
+```
+
+Potential chart:
+
+```text
+X = Months Since Trough
+Y = Recovery Progress %
+```
+
+This is useful for comparing "spring-like" rebound shape across assets or portfolios.
+
+However, this chart is **not yet implemented and should not be forced into v1 before inspecting the episode-level values first**.
+
+### Asset-level vs portfolio-level recovery
+
+Important interpretation rule:
+
+- Asset recovery curves explain *why* a portfolio may recover well.
+- Portfolio recovery episodes are the actual realized portfolio outcome.
+- Individual asset recovery curves must not be algebraically added to claim portfolio recovery, because portfolio peak/trough dates, rebalancing, and cross-asset correlations differ.
+
+The user was interested in asset-by-asset monthly recovery curves, but the agreed first move is to make the drawdown episode recovery metrics canonical and inspect real results before defining any aggregate score or more elaborate chart.
+
+---
+
+## What Was Implemented vs NOT Implemented
+
+### Already implemented before the recovery-resilience request
+
+- 5Y Rolling Returns renderer fix, user visually confirmed working.
+- Larger `리스크·성과 균형 분석` dashboard.
+- Target Volatility guideline for Maximum Return risk-analysis charts.
+- More visible objective/benchmark header pills.
+- Existing PV-style Drawdown table already displays `Recovery Time` and `Underwater Period`, but these are currently calculated in the renderer from dates.
+
+### Recovery-resilience implementation status
+
+**No new canonical recovery-resilience code was completed yet.**
+
+The previous chat was interrupted while inspecting repository governance/specs and existing drawdown implementation.
+
+Spec/code investigation completed:
+
+- `AGENTS.md` read.
+- `openspec/config.yaml` read.
+- `openspec/specs/portfolio-analytics/spec.md` inspected.
+- `docs/report-ui-specification.md` inspected.
+- `src/portfolio_optimizer_kr/analytics/metrics.py` inspected.
+- `src/portfolio_optimizer_kr/pipeline.py` inspected.
+- `src/portfolio_optimizer_kr/backtest.py` inspected.
+- `src/portfolio_optimizer_kr/viewer/pv_visual.py` inspected.
+- `src/portfolio_optimizer_kr/viewer/shared_historical_overlay.py` inspected.
+- Relevant tests inspected, especially:
+  - `tests/test_analytics.py`
+  - `tests/test_backtest_report_content_contract.py`
+
+No recovery-specific OpenSpec delta, source change, test change, run, or Pages publication has been completed yet.
+
+Do **not** tell the user that Recovery Months/Recovery Rate is implemented until source + tests + real run have actually been completed and inspected.
+
+---
+
+## Relevant Canonical Specs / Existing Contracts
+
+Current shared analytics spec already requires drawdown episode fields:
+
+```text
+openspec/specs/portfolio-analytics/spec.md
+```
+
+Current baseline requirement is roughly:
+
+```text
+Rank, Start, Bottom, Recovery, Maximum Drawdown, Duration Months
+```
+
+Unrecovered episodes must preserve unavailable recovery semantics.
+
+Report UI baseline:
+
+```text
+docs/report-ui-specification.md
+```
+
+Drawdown episode minimum currently includes:
+
+```text
+Rank
+Start
+Bottom
+Recovery
+Maximum Drawdown
+Duration
+```
+
+Shared report architecture already requires Optimization and Backtest to reuse the same historical drawdown component.
+
+Therefore this is a **shared portfolio-analytics change affecting both portfolio-optimization and portfolio-backtest**.
+
+Per AGENTS.md, implementation should:
+
+1. create/update an OpenSpec change first
+2. document affected products
+3. add affected regressions for both Optimization and Backtest
+4. keep finance calculation upstream of the viewer
+
+The existing active change `2026-09-10-frontier-risk-tradeoff` is about frontier risk tradeoff and may not be the cleanest ownership boundary for canonical drawdown episode semantics. Evaluate whether to extend it or create a focused new change such as `2026-09-11-drawdown-recovery-resilience`. Do not create duplicate formulas in product-specific specs.
+
+---
+
+## Recommended Next Implementation
+
+### 1. Create OpenSpec delta
+
+Shared capability:
+
+```text
+portfolio-analytics
+```
+
+Affected products:
+
+```text
+portfolio-optimization
+portfolio-backtest
+```
+
+Define exact formulas/units for:
+
+```text
+Recovery Months
+Recovery Rate
+```
+
+Also clarify the meaning of existing `duration_months` and whether it remains backward-compatible or is supplemented by explicit decline/recovery/underwater fields.
+
+### 2. Extend canonical `drawdown_episodes()`
+
+File:
+
+```text
+src/portfolio_optimizer_kr/analytics/metrics.py
+```
+
+Persist at minimum:
+
+```text
+recovery_months
+recovery_rate
+```
+
+Strongly consider explicit upstream values for:
+
+```text
+decline_months
+underwater_months
+```
+
+if that allows the renderer to stop computing finance duration semantics itself.
+
+### 3. Preserve legacy field carefully
+
+Do not silently change `duration_months` semantics without migration/regression review. Existing artifacts/tests may depend on its inclusive observation-count meaning.
+
+Safer first version:
+
+```text
+keep duration_months as-is for compatibility
+add explicit recovery_months
+add explicit decline_months / underwater_months if needed
+add recovery_rate
+```
+
+Then the user-facing table can use the explicit fields.
+
+### 4. Update shared renderer
+
+File:
+
+```text
+src/portfolio_optimizer_kr/viewer/pv_visual.py
+```
+
+The renderer should consume canonical persisted values rather than recompute them from dates.
+
+User-facing Worst Drawdowns table can remain close to:
+
+```text
+Rank | Start | End/Bottom | Length | Recovery By | Recovery Time | Underwater Period | Drawdown
+```
+
+Potential addition after inspecting real results:
+
+```text
+Recovery Rate
+```
+
+Do not redesign the whole Drawdowns section before seeing the first output.
+
+### 5. Tests
+
+Add synthetic analytics tests proving:
+
+- Bottom -> Recovery month count
+- unrecovered episode returns N/A for recovery fields
+- Recovery Rate formula matches independent calculation
+- legacy `duration_months` behavior is intentionally preserved if kept
+
+Update shared report contract test so the renderer uses canonical recovery values.
+
+Because this is shared analytics, run both Optimization and Backtest affected regressions.
+
+### 6. Real research run
+
+Regenerate the same Provided Portfolio / Maximum Return 11.5% experiment used for `20260911-0002` so the user can compare the recovery metrics without changing the investment universe/period/objective.
+
+Then inspect actual major episodes such as COVID and 2022 rather than immediately inventing a portfolio-level aggregate score.
+
+### 7. Only after viewing results
+
+Discuss whether to add:
+
+- median Recovery Months
+- depth-weighted Recovery Months
+- depth-weighted Recovery Rate
+- Recovery Progress curve
+- 1M / 3M / 6M Recovery Progress
+- drawdown-depth buckets
+
+Do **not** define a composite `Spring Score` yet.
+
+The user explicitly wants to inspect real episode curves/data before defining any aggregation rule.
+
+---
+
+## Key Product Principle
+
+The recovery-resilience work should remain interpretable:
+
+```text
+MDD              = how deep did it fall?
+Underwater/TUW   = how long was capital below prior peak?
+Recovery Months  = once bottomed, how long to regain the peak?
+Recovery Rate    = how forcefully did it compound from trough back to peak?
+```
+
+This is the clean conceptual family the user approved.
+
+The immediate next step is implementation + same-condition report regeneration, then review actual results together before adding any aggregate recovery score or automatic rule.
