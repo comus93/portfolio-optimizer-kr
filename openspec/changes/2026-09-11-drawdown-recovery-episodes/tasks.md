@@ -7,6 +7,6 @@
 - [x] shared Drawdowns component에 Recovery Rate 및 worst-5 Recovery Progress chart 추가
 - [x] synthetic analytics regression 추가
 - [x] Optimization/Backtest affected-scope regression 실행
-- [ ] 동일 조건 Maximum Return 11.5% Optimization run 재생성
-- [ ] generated drawdown/recovery artifacts와 report semantic 확인
+- [x] 동일 조건 Maximum Return 11.5% Optimization run 재생성 (`20260911-0003`)
+- [x] generated drawdown/recovery artifacts와 report semantic 확인
 - [ ] user-facing report에서 결과 검토 후 aggregation/sweet-spot 규칙은 별도 후속 판단
