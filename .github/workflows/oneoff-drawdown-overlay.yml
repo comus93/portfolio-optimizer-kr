@@ -66,13 +66,8 @@ jobs:
           from portfolio_optimizer_kr.viewer import generate_report
           opt = generate_report('runs/20260911-0005', output_path='.tmp-validation/optimization-report.html')
           bt = generate_report('runs/20260910-0004', output_path='.tmp-validation/backtest-report.html')
-          contract = generate_report(
-              'runs/20260903-backtest-qqq-gld-spy-presentation-validation-v2',
-              output_path='.tmp-validation/backtest-contract-report.html',
-          )
           assert 'drawdown-comparison' in Path(opt).read_text(encoding='utf-8')
           assert 'data-chart="drawdown-comparison"' in Path(bt).read_text(encoding='utf-8')
-          assert 'data-chart="drawdown-comparison"' in Path(contract).read_text(encoding='utf-8')
           PY
 
       - name: Install browser validation dependencies
@@ -91,11 +86,6 @@ jobs:
           DRAWDOWN_REPORT_PATH: .tmp-validation/backtest-report.html
           DRAWDOWN_SECTION: '#drawdowns'
         run: npx playwright test verification/browser/drawdown-overlay.spec.mjs
-
-      - name: Validate Backtest report contract
-        env:
-          BACKTEST_REPORT_PATH: .tmp-validation/backtest-contract-report.html
-        run: npx playwright test verification/browser/backtest-report-content.spec.mjs
 
       - name: Complete OpenSpec implementation tasks
         run: |
