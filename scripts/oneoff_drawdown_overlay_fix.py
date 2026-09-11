@@ -168,7 +168,7 @@ pv_overlay = r'''def _drawdown_overlay_chart(
 replace_block(
     "src/portfolio_optimizer_kr/viewer/pv_visual.py",
     "def _drawdown_chart(\n",
-    "def _canonical_month_value(\n",
+    "def _canonical_month_value(",
     pv_overlay,
 )
 
@@ -462,7 +462,6 @@ replace_once(
     browser_new,
 )
 
-# A product-neutral browser contract is run twice: once against Optimization and once against Backtest.
 Path("verification/browser/drawdown-overlay.spec.mjs").write_text(
     r'''import path from 'node:path';
 import { expect, test } from '@playwright/test';
