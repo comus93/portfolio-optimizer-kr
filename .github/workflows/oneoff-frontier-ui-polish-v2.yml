@@ -1,0 +1,64 @@
+name: One-off frontier UI polish v2
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/oneoff-frontier-ui-polish-v2.yml']
+permissions:
+  contents: write
+  actions: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Apply approved UI changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def rep(s,a,b,label):
+              if s.count(a)!=1: raise SystemExit(f'{label}: {s.count(a)} matches')
+              return s.replace(a,b,1)
+
+          p=Path('src/portfolio_optimizer_kr/viewer/frontier_risk_dashboard.py'); s=p.read_text()
+          s=rep(s,'minmax(260px,1fr)','minmax(360px,1fr)','grid width')
+          s=rep(s,'height:158px;display:block;background:#fff;touch-action:pan-y','height:220px;display:block;background:#fff;touch-action:pan-y','css height')
+          s=rep(s,'@media(max-width:780px){#frontier-risk-dashboard .fr-selected{grid-template-columns:1fr}}','@media(max-width:780px){#frontier-risk-dashboard .fr-grid{grid-template-columns:1fr}#frontier-risk-dashboard .fr-spark{height:auto}#frontier-risk-dashboard .fr-selected{grid-template-columns:1fr}}','mobile')
+          s=rep(s,'  const xDomain = extentWithPadding(volatility);',"  const targetVolatility = Number(data.target_volatility_pct);\n  const hasTargetVolatility = data.objective === 'target_volatility' && Number.isFinite(targetVolatility);\n  const xDomain = extentWithPadding(hasTargetVolatility ? [...volatility, targetVolatility] : volatility);",'target domain')
+          s=rep(s,'const w=360,h=158,left=48,right=12,top=18,bottom=38;','const w=360,h=220,left=48,right=12,top=18,bottom=42;','viewbox height')
+          a="    svg.appendChild(svgText(ns,left+plotW/2,h-5,'연환산 변동성 (%)',{'font-size':'9','fill':'#64748b','text-anchor':'middle'}));\n\n    const pts=[];"
+          b="    svg.appendChild(svgText(ns,left+plotW/2,h-5,'연환산 변동성 (%)',{'font-size':'9','fill':'#64748b','text-anchor':'middle'}));\n\n    if (hasTargetVolatility) {\n      const guideX=x(targetVolatility);\n      const guide=document.createElementNS(ns,'line');\n      guide.setAttribute('x1',guideX);guide.setAttribute('x2',guideX);guide.setAttribute('y1',top);guide.setAttribute('y2',h-bottom);\n      guide.setAttribute('stroke','#f59e0b');guide.setAttribute('stroke-width','1.4');guide.setAttribute('stroke-dasharray','5 4');guide.setAttribute('opacity','.95');\n      svg.appendChild(guide);\n      svg.appendChild(svgText(ns,Math.min(guideX+4,w-right-2),top+10,`Target ${targetVolatility.toFixed(2)}%`,{'font-size':'9','fill':'#b45309','text-anchor':guideX>w-right-82?'end':'start'}));\n    }\n\n    const pts=[];"
+          s=rep(s,a,b,'target guide'); p.write_text(s)
+
+          p=Path('site/report-template.html'); s=p.read_text()
+          s=rep(s,'.pill { background:#e9effb; color:#244886; padding:4px 8px; border-radius:99px; font-size:12px; }','.pill { background:#e9effb; color:#244886; padding:4px 8px; border-radius:99px; font-size:19px; font-weight:700; line-height:1.25; }','overview pills'); p.write_text(s)
+
+          p=Path('openspec/changes/2026-09-10-frontier-risk-tradeoff/specs/portfolio-optimization/spec.md'); s=p.read_text()
+          m='`target_volatility` dashboard에서 Maximum Sharpe point를 별도 보조 marker로 추가하지 않는다(MUST NOT). 사용자는 동일한 8개 curve를 탐색하되 이번 optimization objective가 선택한 point 하나만 강조해서 볼 수 있어야 한다.\n'
+          s=rep(s,m,m+'\n`target_volatility` dashboard의 8개 metric chart는 `target_volatility_pct`를 공통 X축의 고정 세로 점선 guideline으로 표시해야 한다(MUST). Guideline은 selected point와 구분되고 다른 point를 선택해도 이동하지 않는다(MUST). `max_sharpe`에서는 표시하지 않는다(MUST NOT).\n','guide spec')
+          s+='\n### Requirement: 리스크·성과 균형 분석 responsive size\nPC Web에서 metric card는 최소 폭 360px, chart 기준 높이 220px로 반응형 배치해야 한다(MUST). 780px 이하에서는 1열로 배치하고 SVG 비율을 유지하며 축소한다(MUST).\n\n### Requirement: Optimization overview visibility\n상단 objective와 benchmark pill은 기존 배경 효과를 유지하면서 `Provided Portfolio` heading과 동등한 19px bold typography로 표시해야 한다(MUST).\n'; p.write_text(s)
+
+          p=Path('openspec/changes/2026-09-10-frontier-risk-tradeoff/tasks.md'); s=p.read_text(); s+='\n- [x] Maximum Return metric chart에 고정 Target Volatility guideline 표시\n- [x] PC metric card 360px / chart 220px 및 mobile 1열 반응형 적용\n- [x] 상단 objective / benchmark pill 19px bold 가시성 강화\n'; p.write_text(s)
+          PY
+      - name: Targeted validation
+        run: |
+          python -m pip install -e . pytest
+          pytest -q tests/test_frontier_risk_dashboard.py tests/test_optimizer_shared_historical_mount.py
+          grep -q 'minmax(360px,1fr)' src/portfolio_optimizer_kr/viewer/frontier_risk_dashboard.py
+          grep -q 'h=220' src/portfolio_optimizer_kr/viewer/frontier_risk_dashboard.py
+          grep -q 'stroke-dasharray' src/portfolio_optimizer_kr/viewer/frontier_risk_dashboard.py
+          grep -q 'font-size:19px; font-weight:700' site/report-template.html
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/oneoff-frontier-ui-polish.yml .github/workflows/oneoff-frontier-ui-polish-v2.yml
+          git add -A
+          git commit -m 'feat: polish frontier target guide and chart sizing'
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Generate fresh Maximum Return report
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: gh workflow run run-optimization.yml --ref main
