@@ -19,8 +19,8 @@
 - [x] 선택 portfolio 기준 탄성회복도 + Worst Drawdowns detail 전환 검증
 - [x] Optimization/Backtest unit/browser affected regression 실행
 - [x] 동일 Maximum Return 11.5% 대표 Optimization report 재생성 및 overlay UX 확인 (`20260911-0006`)
-- [ ] overlay context line 가시성 상향 및 Drawdown 전용 blue/green/orange color order 적용
-- [ ] overlay chart 아래 모든 portfolio 탄성회복도 comparison table 상시 표시
-- [ ] Worst Drawdowns episode table을 Provided/Optimized/Benchmark 순서로 모두 상시 표시
-- [ ] foreground 선택이 chart line emphasis에만 영향을 주도록 browser contract 수정
-- [ ] Optimization/Backtest affected regression 및 대표 Optimization report 재생성
+- [x] overlay context line 가시성 상향 및 Drawdown 전용 blue/green/orange color order 적용
+- [x] overlay chart 아래 모든 portfolio 탄성회복도 comparison table 상시 표시
+- [x] Worst Drawdowns episode table을 Provided/Optimized/Benchmark 순서로 모두 상시 표시
+- [x] foreground 선택이 chart line emphasis에만 영향을 주도록 browser contract 수정
+- [x] Optimization/Backtest affected regression 및 대표 Optimization report 재생성

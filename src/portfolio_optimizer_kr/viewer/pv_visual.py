@@ -886,9 +886,10 @@ def _drawdown_overlay_chart(
 
     base_paths: list[str] = []
     focus_paths: list[str] = []
+    drawdown_colors = ("#2563eb", "#16a34a", "#f97316")
     colors: list[str] = []
     for index, (_, column, label) in enumerate(available):
-        color = hc.PALETTE[index % len(hc.PALETTE)]
+        color = drawdown_colors[index % len(drawdown_colors)]
         colors.append(color)
         part = shaped[["date", column]].dropna()
         coords = [
@@ -1021,24 +1022,60 @@ def _drawdown_episode_table(part: pd.DataFrame) -> str:
 
 
 
-def _drawdown_resilience_kpi(part: pd.DataFrame) -> str:
-    if part.empty:
-        value_text = "N/A"
-        sample_text = ""
-    else:
-        row = part.iloc[0]
-        value = row.get("normalized_underwater_duration_months_per_10pct")
-        value_text = f"{float(value):.1f}개월 / 10% DD" if hc.finite(value) else "N/A"
-        count = row.get("completed_episode_count")
-        sample_text = (
-            f" · completed {int(float(count))}/10 episodes"
-            if hc.finite(count)
-            else ""
+def _drawdown_resilience_table(
+    resilience_frame: pd.DataFrame | None,
+    targets: list[tuple[str, str, str]],
+) -> str:
+    rows: list[str] = []
+    for key, _column, label in targets:
+        if (
+            resilience_frame is not None
+            and not resilience_frame.empty
+            and "portfolio" in resilience_frame
+        ):
+            part = resilience_frame[
+                resilience_frame["portfolio"].astype(str) == key
+            ]
+        else:
+            part = pd.DataFrame()
+
+        if part.empty:
+            value_text = "N/A"
+            completed_text = "N/A"
+        else:
+            row = part.iloc[0]
+            value = row.get("normalized_underwater_duration_months_per_10pct")
+            value_text = (
+                f"{float(value):.1f}개월 / 10% DD"
+                if hc.finite(value)
+                else "N/A"
+            )
+            count = row.get("completed_episode_count")
+            limit = row.get("episode_limit")
+            if hc.finite(count) and hc.finite(limit):
+                completed_text = f"{int(float(count))}/{int(float(limit))}"
+            elif hc.finite(count):
+                completed_text = str(int(float(count)))
+            else:
+                completed_text = "N/A"
+
+        rows.append(
+            '<tr class="drawdown-resilience-row" '
+            f'data-portfolio="{hc.esc(key)}">'
+            f'<td class="identity-cell">{hc.esc(label)}</td>'
+            f'<td>{hc.esc(value_text)}</td>'
+            f'<td>{hc.esc(completed_text)}</td>'
+            '</tr>'
         )
+
     return (
-        '<p class="panel-subtitle drawdown-elasticity-kpi">'
-        '<strong>탄성회복도</strong> · '
-        f'{hc.esc(value_text)} · 낮을수록 좋음{hc.esc(sample_text)}</p>'
+        '<div class="drawdown-resilience-summary">'
+        '<p class="panel-subtitle"><strong>탄성회복도</strong> · '
+        'Normalized Underwater Duration · 낮을수록 좋음</p>'
+        '<div class="table-wrap"><table class="drawdown-resilience-table">'
+        '<thead><tr><th>Portfolio</th><th>탄성회복도</th>'
+        '<th>Completed Episodes</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody></table></div></div>'
     )
 
 
@@ -1065,6 +1102,7 @@ def drawdown_presentation(
     if not targets:
         return '<p class="muted">N/A</p>'
 
+    drawdown_colors = ("#2563eb", "#16a34a", "#f97316")
     selector_inputs: list[str] = []
     selector_labels: list[str] = []
     detail_blocks: list[str] = []
@@ -1072,7 +1110,7 @@ def drawdown_presentation(
 
     for index, (key, _column, label) in enumerate(targets):
         control_id = f"drawdown-select-{index}"
-        color = hc.PALETTE[index % len(hc.PALETTE)]
+        color = drawdown_colors[index % len(drawdown_colors)]
         selector_inputs.append(
             f'<input class="drawdown-choice" type="radio" name="drawdown-selected-series" '
             f'id="{control_id}" value="{hc.esc(key)}" '
@@ -1092,22 +1130,11 @@ def drawdown_presentation(
             ].copy()
         else:
             part = pd.DataFrame()
-        if (
-            resilience_frame is not None
-            and not resilience_frame.empty
-            and "portfolio" in resilience_frame
-        ):
-            resilience_part = resilience_frame[
-                resilience_frame["portfolio"].astype(str) == key
-            ].copy()
-        else:
-            resilience_part = pd.DataFrame()
 
         detail_blocks.append(
             f'<div class="drawdown-detail" data-portfolio="{hc.esc(key)}" '
             f'data-series-index="{index}">'
             f'<h3>Drawdowns for {hc.esc(label)}</h3>'
-            f'{_drawdown_resilience_kpi(resilience_part)}'
             '<h4>Drawdown Episodes</h4>'
             f'{_drawdown_episode_table(part)}</div>'
         )
@@ -1117,10 +1144,7 @@ def drawdown_presentation(
                 '{background:#eef4ff;border-color:var(--color);color:#0f172a;font-weight:700}',
                 f'#{control_id}:checked ~ .drawdown-chart-host '
                 f'.drawdown-focus-series[data-series-index="{index}"]'
-                '{opacity:1;stroke-width:3.6}',
-                f'#{control_id}:checked ~ .drawdown-details '
-                f'.drawdown-detail[data-series-index="{index}"]'
-                '{display:block}',
+                '{opacity:1;stroke-width:3.8}',
             ]
         )
 
@@ -1134,21 +1158,25 @@ def drawdown_presentation(
         '.drawdown-selector-label:hover{background:#f8fafc}'
         '.drawdown-selector-label:focus-visible{outline:2px solid #2563eb;outline-offset:2px}'
         '.drawdown-selector-dot{width:12px;height:3px;border-radius:99px;background:var(--color);display:inline-block}'
-        '.drawdown-base-series{opacity:.34;stroke-width:1.6;transition:opacity .15s,stroke-width .15s}'
-        '.drawdown-focus-series{opacity:0;stroke-width:3.6;transition:opacity .15s}'
-        '.drawdown-details{margin-top:16px}'
-        '.drawdown-detail{display:none}'
+        '.drawdown-base-series{opacity:.58;stroke-width:1.9;transition:opacity .15s,stroke-width .15s}'
+        '.drawdown-focus-series{opacity:0;stroke-width:3.8;transition:opacity .15s}'
+        '.drawdown-resilience-summary{margin-top:14px}'
+        '.drawdown-resilience-table{min-width:520px}'
+        '.drawdown-details{margin-top:20px}'
+        '.drawdown-detail{margin-top:24px}'
         + ''.join(selector_rules)
         + '</style>'
     )
     chart = _drawdown_overlay_chart(series_frame, targets)
+    resilience = _drawdown_resilience_table(resilience_frame, targets)
     return (
         '<div class="analysis-panel drawdown-comparison-panel">'
         '<h3>Drawdown Comparison</h3>'
-        '<p class="panel-subtitle">Select a portfolio to foreground its drawdown path and review its recovery details.</p>'
+        '<p class="panel-subtitle">Select a portfolio to foreground its drawdown path. Comparison metrics and Worst Drawdowns remain visible for every portfolio.</p>'
         f'{style}{"".join(selector_inputs)}'
         f'<div class="drawdown-selector" role="radiogroup" aria-label="Drawdown portfolio selection">{"".join(selector_labels)}</div>'
         f'<div class="drawdown-chart-host">{chart}</div>'
+        f'{resilience}'
         f'<div class="drawdown-details">{"".join(detail_blocks)}</div>'
         '</div>'
     )

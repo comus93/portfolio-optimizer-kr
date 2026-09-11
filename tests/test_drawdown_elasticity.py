@@ -38,4 +38,6 @@ def test_drawdown_presentation_displays_canonical_elasticity_kpi() -> None:
     assert "탄성회복도" in rendered
     assert "3.1개월 / 10% DD" in rendered
     assert "낮을수록 좋음" in rendered
-    assert "completed 7/10 episodes" in rendered
+    assert 'class="drawdown-resilience-table"' in rendered
+    assert "Completed Episodes" in rendered
+    assert ">7/10</td>" in rendered

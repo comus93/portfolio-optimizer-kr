@@ -48,7 +48,7 @@ def test_annual_returns_is_grouped_chart_with_year_shared_hover():
     assert html.escape(BENCHMARK) in rendered
 
 
-def test_drawdowns_share_one_overlay_chart_and_selected_detail_markup():
+def test_drawdowns_share_one_overlay_chart_and_static_comparison_details():
     series = pd.DataFrame(
         [
             {"date": "2024-01-31", "Growth 70/30_drawdown_pct": -2.0, "Balanced 50/50_drawdown_pct": -1.0, "benchmark_drawdown_pct": -3.0},
@@ -69,9 +69,9 @@ def test_drawdowns_share_one_overlay_chart_and_selected_detail_markup():
     episodes["annualized_recovery_rate_pct"] = [63.2, 26.8, None]
     resilience = pd.DataFrame(
         [
-            {"portfolio": "Growth 70/30", "normalized_underwater_duration_months_per_10pct": 4.2, "completed_episode_count": 7},
-            {"portfolio": "Balanced 50/50", "normalized_underwater_duration_months_per_10pct": 5.1, "completed_episode_count": 6},
-            {"portfolio": "benchmark", "normalized_underwater_duration_months_per_10pct": 6.3, "completed_episode_count": 8},
+            {"portfolio": "Growth 70/30", "normalized_underwater_duration_months_per_10pct": 4.2, "completed_episode_count": 7, "episode_limit": 10},
+            {"portfolio": "Balanced 50/50", "normalized_underwater_duration_months_per_10pct": 5.1, "completed_episode_count": 6, "episode_limit": 10},
+            {"portfolio": "benchmark", "normalized_underwater_duration_months_per_10pct": 6.3, "completed_episode_count": 8, "episode_limit": 10},
         ]
     )
     rendered = _drawdown_presentation(series, episodes, PORTFOLIOS, BENCHMARK, resilience)
@@ -89,7 +89,13 @@ def test_drawdowns_share_one_overlay_chart_and_selected_detail_markup():
     assert "Balanced 50/50" in rendered
     assert html.escape(BENCHMARK) in rendered
     assert "탄성회복도" in rendered
+    assert 'class="drawdown-resilience-table"' in rendered
     assert "4.2개월 / 10% DD" in rendered
+    assert "5.1개월 / 10% DD" in rendered
+    assert "6.3개월 / 10% DD" in rendered
+    assert rendered.index("Growth 70/30") < rendered.index("Balanced 50/50") < rendered.index(html.escape(BENCHMARK))
+    assert "#2563eb" in rendered and "#16a34a" in rendered and "#f97316" in rendered
+    assert "opacity:.58" in rendered
     for header in ["Start", "End", "Length", "Recovery By", "Recovery Time", "Underwater Period", "Recovery Rate", "Drawdown"]:
         assert header in rendered
     assert "Mar 2024" in rendered

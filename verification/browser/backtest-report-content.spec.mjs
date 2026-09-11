@@ -67,21 +67,30 @@ test.describe('Backtest PV visual acceptance contract', () => {
     await expect(drawdowns.locator('.drawdown-focus-series')).not.toHaveCount(0);
     const firstChoice = drawdowns.locator('.drawdown-choice').first();
     const secondChoice = drawdowns.locator('.drawdown-choice').nth(1);
+    const details = drawdowns.locator('.drawdown-detail');
+    const resilienceRows = drawdowns.locator('.drawdown-resilience-table tbody tr');
+    const choiceCount = await drawdowns.locator('.drawdown-choice').count();
+    await expect(details).toHaveCount(choiceCount);
+    await expect(resilienceRows).toHaveCount(choiceCount);
     await expect(firstChoice).toBeChecked();
-    await expect(drawdowns.locator('.drawdown-detail').first()).toBeVisible();
-    await expect(drawdowns.locator('.drawdown-detail').nth(1)).toBeHidden();
+    for (let index = 0; index < choiceCount; index += 1) {
+      await expect(details.nth(index)).toBeVisible();
+      await expect(resilienceRows.nth(index)).toBeVisible();
+    }
     await expect(drawdowns.locator('.drawdown-focus-series').first()).toHaveCSS('opacity', '1');
     await expect(drawdowns.locator('.drawdown-focus-series').nth(1)).toHaveCSS('opacity', '0');
+    await expect(drawdowns.locator('.drawdown-base-series').first()).toHaveCSS('opacity', '0.58');
     await drawdowns.locator('.drawdown-selector-label').nth(1).click();
     await expect(secondChoice).toBeChecked();
-    await expect(drawdowns.locator('.drawdown-detail').first()).toBeHidden();
-    const activeDetail = drawdowns.locator('.drawdown-detail').nth(1);
-    await expect(activeDetail).toBeVisible();
     await expect(drawdowns.locator('.drawdown-focus-series').first()).toHaveCSS('opacity', '0');
     await expect(drawdowns.locator('.drawdown-focus-series').nth(1)).toHaveCSS('opacity', '1');
-    await expect(activeDetail.getByText('Recovery By', { exact: true })).toBeVisible();
-    await expect(activeDetail.getByText('Recovery Time', { exact: true })).toBeVisible();
-    await expect(activeDetail.getByText('Underwater Period', { exact: true })).toBeVisible();
+    for (let index = 0; index < choiceCount; index += 1) {
+      await expect(details.nth(index)).toBeVisible();
+      await expect(resilienceRows.nth(index)).toBeVisible();
+    }
+    await expect(details.nth(1).getByText('Recovery By', { exact: true })).toBeVisible();
+    await expect(details.nth(1).getByText('Recovery Time', { exact: true })).toBeVisible();
+    await expect(details.nth(1).getByText('Underwater Period', { exact: true })).toBeVisible();
 
     const assets = page.locator('#assets');
     await expect(assets.locator('#portfolio-assets')).toBeVisible();
