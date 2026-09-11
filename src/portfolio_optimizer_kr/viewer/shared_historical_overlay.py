@@ -230,7 +230,9 @@ def apply_optimizer_shared_historical_components(
   const mount = () => {{
     for (const [selector, markup] of Object.entries(replacements)) {{
       const host = document.querySelector(selector); if (!host) continue;
-      host.classList.add('shared-historical-host'); host.innerHTML = markup;
+      host.classList.add('shared-historical-host');
+      host.innerHTML = markup;
+      host.dataset.sharedRendererMounted = 'true';
     }}
     document.querySelectorAll('.shared-historical-host .chart-mark[data-tooltip]').forEach(mark => {{
       const show = event => {{
@@ -245,8 +247,12 @@ def apply_optimizer_shared_historical_components(
       mark.addEventListener('mouseenter', show); mark.addEventListener('mousemove', show); mark.addEventListener('mouseleave', hide); mark.addEventListener('focus', show); mark.addEventListener('blur', hide);
     }});
   }};
-  if (document.readyState === 'complete') setTimeout(mount, 180);
-  else window.addEventListener('load', () => setTimeout(mount, 180), {{once:true}});
+  const scheduleMount = () => {{
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(mount);
+    else setTimeout(mount, 0);
+  }};
+  if (document.readyState === 'complete') scheduleMount();
+  else window.addEventListener('load', scheduleMount, {{once:true}});
 }})();
 </script>'''
     document = document.replace("</body>", f"{script}\n</body>", 1) if "</body>" in document else f"{document}\n{script}"
