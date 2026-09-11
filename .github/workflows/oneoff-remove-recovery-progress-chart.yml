@@ -38,12 +38,13 @@ jobs:
           blocks_start = pv.index('        blocks.append(', recovery_filter_start)
           pv = pv[:recovery_filter_start] + pv[blocks_start:]
 
-          old_render = '''            f"{_drawdown_episode_table(part)}"
-            "<h4>Recovery Progress from Bottom</h4>"
-            f"{_recovery_progress_chart(recovery_part, label)}</div>"
-'''
-          new_render = '''            f"{_drawdown_episode_table(part)}</div>"
-'''
+          old_render = '\n'.join([
+              '            f"{_drawdown_episode_table(part)}"',
+              '            "<h4>Recovery Progress from Bottom</h4>"',
+              '            f"{_recovery_progress_chart(recovery_part, label)}</div>"',
+              '',
+          ])
+          new_render = '            f"{_drawdown_episode_table(part)}</div>"\n'
           if old_render not in pv:
               raise SystemExit('recovery progress render block not found')
           pv = pv.replace(old_render, new_render, 1)
@@ -51,14 +52,18 @@ jobs:
 
           test_path = Path('tests/test_backtest_report_content_contract.py')
           test = test_path.read_text(encoding='utf-8')
-          old_asserts = '''    assert "Recovery Progress from Bottom" in rendered
-    assert "Months Since Bottom" in rendered
-    assert "Recovery Progress %" in rendered
-'''
-          new_asserts = '''    assert "Recovery Progress from Bottom" not in rendered
-    assert "Months Since Bottom" not in rendered
-    assert "Recovery Progress %" not in rendered
-'''
+          old_asserts = '\n'.join([
+              '    assert "Recovery Progress from Bottom" in rendered',
+              '    assert "Months Since Bottom" in rendered',
+              '    assert "Recovery Progress %" in rendered',
+              '',
+          ])
+          new_asserts = '\n'.join([
+              '    assert "Recovery Progress from Bottom" not in rendered',
+              '    assert "Months Since Bottom" not in rendered',
+              '    assert "Recovery Progress %" not in rendered',
+              '',
+          ])
           if old_asserts not in test:
               raise SystemExit('recovery progress assertions not found')
           test = test.replace(old_asserts, new_asserts, 1)
