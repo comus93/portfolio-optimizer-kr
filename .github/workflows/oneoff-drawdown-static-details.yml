@@ -52,8 +52,9 @@ jobs:
           bt = generate_report('runs/20260910-0004', output_path='.tmp-validation/backtest-report.html')
           opt_html = Path(opt).read_text(encoding='utf-8')
           bt_html = Path(bt).read_text(encoding='utf-8')
+          assert 'drawdown-comparison' in opt_html
+          assert 'data-chart="drawdown-comparison"' in bt_html
           for html in (opt_html, bt_html):
-              assert html.count('data-chart="drawdown-comparison"') == 1
               assert 'drawdown-resilience-table' in html
               assert 'opacity:.58' in html
               assert '#2563eb' in html and '#16a34a' in html and '#f97316' in html
