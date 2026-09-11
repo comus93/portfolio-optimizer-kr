@@ -26,6 +26,22 @@ jobs:
       - name: Apply implementation
         run: python scripts/oneoff_drawdown_overlay_fix.py
 
+      - name: Repair generated browser path helper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('verification/browser/drawdown-overlay.spec.mjs')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          for line in lines:
+              if "return `/${relative.replaceAll" in line:
+                  output.append("  const normalized = relative.split(path.sep).join('/');")
+                  output.append("  return `/${normalized.startsWith('./') ? normalized.slice(2) : normalized}`;")
+              else:
+                  output.append(line)
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+
       - name: Install project
         run: |
           python -m pip install --upgrade pip
