@@ -1,0 +1,499 @@
+name: One-off drawdown recovery episodes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-drawdown-recovery.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply recovery analytics and shared report changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return text.replace(old, new, 1)
+
+          def replace_block(text, start_marker, end_marker, replacement, label):
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit(f'{label}: start marker not found')
+              end = text.find(end_marker, start)
+              if end < 0:
+                  raise SystemExit(f'{label}: end marker not found')
+              return text[:start] + replacement.rstrip() + '\n\n' + text[end:]
+
+          metrics_path = Path('src/portfolio_optimizer_kr/analytics/metrics.py')
+          metrics = metrics_path.read_text(encoding='utf-8')
+          new_drawdown = '''def _month_delta(start: object, end: object) -> int | None:
+              if start is None or end is None or pd.isna(start) or pd.isna(end):
+                  return None
+              start_ts = pd.Timestamp(start)
+              end_ts = pd.Timestamp(end)
+              return (end_ts.year - start_ts.year) * 12 + end_ts.month - start_ts.month
+
+
+          def _decorate_drawdown_episode(
+              row: dict[str, object],
+              *,
+              latest: pd.Timestamp,
+          ) -> dict[str, object]:
+              start = pd.Timestamp(row["start"])
+              bottom = pd.Timestamp(row["bottom"])
+              recovery_value = row.get("recovery")
+              recovery = None if recovery_value is None or pd.isna(recovery_value) else pd.Timestamp(recovery_value)
+              decline_delta = _month_delta(start, bottom)
+              recovery_months = _month_delta(bottom, recovery) if recovery is not None else None
+              underwater_end = recovery if recovery is not None else latest
+              underwater_delta = _month_delta(start, underwater_end)
+              maximum_drawdown = float(row["maximum_drawdown"])
+              recovery_rate = None
+              if recovery_months is not None and recovery_months > 0 and -1.0 < maximum_drawdown < 0.0:
+                  recovery_rate = (1.0 / (1.0 + maximum_drawdown)) ** (12.0 / recovery_months) - 1.0
+              row.update(
+                  {
+                      "decline_months": None if decline_delta is None else decline_delta + 1,
+                      "recovery_months": recovery_months,
+                      "underwater_months": None if underwater_delta is None else underwater_delta + 1,
+                      "annualized_recovery_rate": recovery_rate,
+                  }
+              )
+              return row
+
+
+          def drawdown_episodes(monthly_returns: pd.Series) -> pd.DataFrame:
+              wealth = (1.0 + monthly_returns).cumprod()
+              drawdown = wealth / wealth.cummax() - 1.0
+              columns = [
+                  "rank", "start", "bottom", "recovery", "maximum_drawdown", "duration_months",
+                  "decline_months", "recovery_months", "underwater_months", "annualized_recovery_rate",
+              ]
+              if drawdown.empty:
+                  return pd.DataFrame(columns=columns)
+              episodes: list[dict[str, object]] = []
+              start = None
+              for when, value in drawdown.items():
+                  if value < 0 and start is None:
+                      start = when
+                  if start is not None and value >= -1e-12:
+                      segment = drawdown.loc[start:when]
+                      bottom = segment.idxmin()
+                      episodes.append(
+                          {
+                              "start": start,
+                              "bottom": bottom,
+                              "recovery": when,
+                              "maximum_drawdown": float(segment.min()),
+                              "duration_months": len(segment),
+                          }
+                      )
+                      start = None
+              if start is not None:
+                  segment = drawdown.loc[start:]
+                  episodes.append(
+                      {
+                          "start": start,
+                          "bottom": segment.idxmin(),
+                          "recovery": None,
+                          "maximum_drawdown": float(segment.min()),
+                          "duration_months": len(segment),
+                      }
+                  )
+              latest = pd.Timestamp(drawdown.index[-1])
+              ordered = sorted(episodes, key=lambda row: row["maximum_drawdown"])
+              for rank, row in enumerate(ordered, start=1):
+                  row["rank"] = rank
+                  _decorate_drawdown_episode(row, latest=latest)
+              return pd.DataFrame(ordered, columns=columns)
+
+
+          def drawdown_recovery_progress(
+              monthly_returns: pd.Series,
+              episodes: pd.DataFrame | None = None,
+          ) -> pd.DataFrame:
+              columns = [
+                  "rank", "date", "month_since_bottom", "recovery_progress_pct", "drawdown",
+                  "maximum_drawdown", "recovered",
+              ]
+              if monthly_returns.empty:
+                  return pd.DataFrame(columns=columns)
+              drawdown = drawdown_series(monthly_returns)
+              source = drawdown_episodes(monthly_returns) if episodes is None else episodes
+              if source.empty:
+                  return pd.DataFrame(columns=columns)
+              latest = pd.Timestamp(drawdown.index[-1])
+              rows: list[dict[str, object]] = []
+              for _, episode in source.iterrows():
+                  bottom = pd.to_datetime(episode.get("bottom"), errors="coerce")
+                  recovery = pd.to_datetime(episode.get("recovery"), errors="coerce")
+                  if pd.isna(bottom):
+                      continue
+                  end = latest if pd.isna(recovery) else pd.Timestamp(recovery)
+                  bottom = pd.Timestamp(bottom)
+                  bottom_drawdown = float(episode.get("maximum_drawdown"))
+                  if not (-1.0 < bottom_drawdown < 0.0):
+                      continue
+                  segment = drawdown.loc[bottom:end]
+                  for when, value in segment.items():
+                      months = _month_delta(bottom, when)
+                      progress = (float(value) - bottom_drawdown) / (-bottom_drawdown) * 100.0
+                      if abs(progress) < 1e-10:
+                          progress = 0.0
+                      if abs(progress - 100.0) < 1e-8:
+                          progress = 100.0
+                      rows.append(
+                          {
+                              "rank": int(episode.get("rank")),
+                              "date": when,
+                              "month_since_bottom": int(months or 0),
+                              "recovery_progress_pct": float(progress),
+                              "drawdown": float(value),
+                              "maximum_drawdown": bottom_drawdown,
+                              "recovered": not pd.isna(recovery),
+                          }
+                      )
+              return pd.DataFrame(rows, columns=columns)
+          '''
+          metrics = replace_block(metrics, 'def drawdown_episodes(', 'def rolling_returns(', new_drawdown, 'drawdown analytics block')
+          metrics_path.write_text(metrics, encoding='utf-8')
+
+          init_path = Path('src/portfolio_optimizer_kr/analytics/__init__.py')
+          init = init_path.read_text(encoding='utf-8')
+          init = replace_once(init, '    drawdown_episodes,\n', '    drawdown_episodes,\n    drawdown_recovery_progress,\n', 'analytics import')
+          init = replace_once(init, '    "drawdown_episodes",\n', '    "drawdown_episodes",\n    "drawdown_recovery_progress",\n', 'analytics all')
+          init_path.write_text(init, encoding='utf-8')
+
+          for filename in ['src/portfolio_optimizer_kr/pipeline.py', 'src/portfolio_optimizer_kr/backtest.py']:
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              text = replace_once(text, '    drawdown_episodes,\n', '    drawdown_episodes,\n    drawdown_recovery_progress,\n', f'{filename} import')
+              old = '''    drawdown_rows = []
+              for name, path in paths.items():
+                  table = drawdown_episodes(path.returns).copy()
+                  table.insert(0, "portfolio", name)
+                  drawdown_rows.append(table)
+              drawdowns = (
+                  pd.concat(drawdown_rows, ignore_index=True)
+                  if drawdown_rows
+                  else pd.DataFrame()
+              )
+          '''
+              if filename.endswith('backtest.py'):
+                  old = old.replace('    drawdown_rows = []', '    drawdown_rows: list[pd.DataFrame] = []')
+              new = old.replace(
+                  '    drawdown_rows' + (': list[pd.DataFrame]' if filename.endswith('backtest.py') else '') + ' = []',
+                  '    drawdown_rows' + (': list[pd.DataFrame]' if filename.endswith('backtest.py') else '') + ' = []\n    recovery_progress_rows: list[pd.DataFrame] = []',
+              )
+              new = new.replace(
+                  '        table.insert(0, "portfolio", name)\n        drawdown_rows.append(table)',
+                  '        progress = drawdown_recovery_progress(path.returns, table).copy()\n        table.insert(0, "portfolio", name)\n        if not progress.empty:\n            progress.insert(0, "portfolio", name)\n            recovery_progress_rows.append(progress)\n        drawdown_rows.append(table)',
+              )
+              new = new + '''    recovery_progress = (
+                  pd.concat(recovery_progress_rows, ignore_index=True)
+                  if recovery_progress_rows
+                  else pd.DataFrame()
+              )
+          '''
+              text = replace_once(text, old, new, f'{filename} recovery build')
+              text = replace_once(
+                  text,
+                  '            "drawdowns": drawdowns.to_dict(orient="records"),\n',
+                  '            "drawdowns": drawdowns.to_dict(orient="records"),\n            "drawdown_recovery_progress": recovery_progress.to_dict(orient="records"),\n',
+                  f'{filename} canonical recovery',
+              )
+              text = replace_once(
+                  text,
+                  '        "drawdowns": drawdowns,\n',
+                  '        "drawdowns": drawdowns,\n        "drawdown_recovery_progress": recovery_progress,\n',
+                  f'{filename} table recovery',
+              )
+              path.write_text(text, encoding='utf-8')
+
+          result_path = Path('src/portfolio_optimizer_kr/report/result.py')
+          result = result_path.read_text(encoding='utf-8')
+          result = replace_once(
+              result,
+              '                "contribution",\n',
+              '                "contribution",\n                "recovery_rate",\n',
+              'review recovery rate percent',
+          )
+          result_path.write_text(result, encoding='utf-8')
+
+          overlay_path = Path('src/portfolio_optimizer_kr/viewer/shared_historical_overlay.py')
+          overlay = overlay_path.read_text(encoding='utf-8')
+          overlay = replace_once(
+              overlay,
+              '    drawdowns = _rename_identities(_artifact(root, "drawdowns.csv"), labels)\n',
+              '    drawdowns = _rename_identities(_artifact(root, "drawdowns.csv"), labels)\n    recovery_progress = _rename_identities(_artifact(root, "drawdown_recovery_progress.csv"), labels)\n',
+              'optimizer recovery artifact',
+          )
+          overlay = replace_once(
+              overlay,
+              '    add("#drawdown-chart .chart", not drawdown_series.empty, _drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label))\n',
+              '    add("#drawdown-chart .chart", not drawdown_series.empty, _drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, recovery_progress))\n',
+              'optimizer recovery render',
+          )
+          overlay_path.write_text(overlay, encoding='utf-8')
+
+          backtest_renderer_path = Path('src/portfolio_optimizer_kr/viewer/backtest_renderer.py')
+          backtest_renderer = backtest_renderer_path.read_text(encoding='utf-8')
+          backtest_renderer = replace_once(
+              backtest_renderer,
+              '    drawdowns = artifact("drawdowns.csv")\n    drawdown_series = artifact("drawdown_series.csv")\n',
+              '    drawdowns = artifact("drawdowns.csv")\n    drawdown_series = artifact("drawdown_series.csv")\n    recovery_progress = artifact("drawdown_recovery_progress.csv")\n',
+              'backtest recovery artifact',
+          )
+          backtest_renderer = replace_once(
+              backtest_renderer,
+              '_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label)',
+              '_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, recovery_progress)',
+              'backtest recovery render',
+          )
+          backtest_renderer_path.write_text(backtest_renderer, encoding='utf-8')
+
+          pv_path = Path('src/portfolio_optimizer_kr/viewer/pv_visual.py')
+          pv = pv_path.read_text(encoding='utf-8')
+          new_episode_table = '''def _canonical_month_value(row: pd.Series, name: str, fallback: int | None) -> int | None:
+              value = row.get(name)
+              if hc.finite(value):
+                  return int(round(float(value)))
+              return fallback
+
+
+          def _drawdown_episode_table(part: pd.DataFrame) -> str:
+              if part.empty:
+                  return '<p class="muted">N/A</p>'
+              ordered = (part.sort_values("rank") if "rank" in part else part).head(10)
+              rows = []
+              for _, row in ordered.iterrows():
+                  start = pd.to_datetime(row.get("start"), errors="coerce")
+                  bottom = pd.to_datetime(row.get("bottom"), errors="coerce")
+                  recovery = pd.to_datetime(row.get("recovery"), errors="coerce")
+                  length_months = _canonical_month_value(row, "decline_months", _month_delta(start, bottom, inclusive=True))
+                  recovery_months = _canonical_month_value(row, "recovery_months", _month_delta(bottom, recovery))
+                  underwater_fallback = _month_delta(start, recovery, inclusive=True)
+                  underwater_months = _canonical_month_value(row, "underwater_months", underwater_fallback)
+                  length = _duration_label(length_months)
+                  recovery_time = _duration_label(recovery_months)
+                  underwater = _duration_label(underwater_months)
+                  drawdown = row.get("maximum_drawdown_pct", row.get("max_drawdown_pct"))
+                  recovery_rate = row.get("annualized_recovery_rate_pct")
+                  rows.append(
+                      "<tr>"
+                      f"<td>{hc.esc(row.get('rank', ''))}</td>"
+                      f"<td>{hc.esc(start.strftime('%b %Y') if not pd.isna(start) else 'N/A')}</td>"
+                      f"<td>{hc.esc(bottom.strftime('%b %Y') if not pd.isna(bottom) else 'N/A')}</td>"
+                      f"<td>{hc.esc(length)}</td>"
+                      f"<td>{hc.esc(recovery.strftime('%b %Y') if not pd.isna(recovery) else 'N/A')}</td>"
+                      f"<td>{hc.esc(recovery_time)}</td>"
+                      f"<td>{hc.esc(underwater)}</td>"
+                      f"<td>{hc.esc(hc.pct(recovery_rate))}</td>"
+                      f"<td>{hc.esc(hc.pct(drawdown))}</td>"
+                      "</tr>"
+                  )
+              return (
+                  '<div class="table-wrap">'
+                  '<table class="drawdown-episodes pv-drawdown-table">'
+                  "<thead><tr><th>Rank</th><th>Start</th><th>End</th>"
+                  "<th>Length</th><th>Recovery By</th><th>Recovery Time</th>"
+                  "<th>Underwater Period</th><th>Recovery Rate</th><th>Drawdown</th></tr></thead>"
+                  f"<tbody>{''.join(rows)}</tbody></table></div>"
+                  '<p class="muted">Worst 10 drawdowns included above</p>'
+              )
+
+
+          def _recovery_progress_chart(part: pd.DataFrame, label: str) -> str:
+              if part.empty or "rank" not in part or "month_since_bottom" not in part or "recovery_progress_pct" not in part:
+                  return '<p class="muted">N/A</p>'
+              shaped = part.copy()
+              shaped["rank"] = pd.to_numeric(shaped["rank"], errors="coerce")
+              shaped["month_since_bottom"] = pd.to_numeric(shaped["month_since_bottom"], errors="coerce")
+              shaped["recovery_progress_pct"] = pd.to_numeric(shaped["recovery_progress_pct"], errors="coerce")
+              shaped = shaped.dropna(subset=["rank", "month_since_bottom", "recovery_progress_pct"])
+              ranks = sorted(int(value) for value in shaped["rank"].unique())[:5]
+              shaped = shaped[shaped["rank"].isin(ranks)]
+              if shaped.empty:
+                  return '<p class="muted">N/A</p>'
+              left, right, top, bottom = 78, 24, 24, 70
+              plot_width = hc.WIDTH - left - right
+              plot_height = hc.HEIGHT - top - bottom
+              x_max = max(float(shaped["month_since_bottom"].max()), 1.0)
+              y_min, y_max = 0.0, 100.0
+              x_for = lambda value: left + float(value) * plot_width / x_max
+              y_for = lambda value: top + (y_max - float(value)) * plot_height / 100.0
+              grid = []
+              for value in (0, 25, 50, 75, 100):
+                  y = y_for(value)
+                  klass = "zero-axis" if value == 100 else "grid-line"
+                  grid.append(f'<line x1="{left}" y1="{y:.2f}" x2="{left+plot_width}" y2="{y:.2f}" class="{klass}" />')
+                  grid.append(f'<text x="{left-10}" y="{y+4:.2f}" text-anchor="end" class="axis-label y-tick-label">{value}%</text>')
+              paths = []
+              marks = []
+              legend_items = []
+              for series_index, rank in enumerate(ranks):
+                  episode = shaped[shaped["rank"] == rank].sort_values("month_since_bottom")
+                  if episode.empty:
+                      continue
+                  color = hc.PALETTE[series_index % len(hc.PALETTE)]
+                  coords = " ".join(
+                      f'{x_for(row["month_since_bottom"]):.2f},{y_for(row["recovery_progress_pct"]):.2f}'
+                      for _, row in episode.iterrows()
+                  )
+                  paths.append(f'<polyline points="{coords}" fill="none" stroke="{color}" stroke-width="2.2" class="recovery-progress-series" />')
+                  first = episode.iloc[0]
+                  mdd = first.get("maximum_drawdown_pct")
+                  recovered = bool(first.get("recovered"))
+                  legend_label = f'#{rank} {hc.pct(mdd)}' + ('' if recovered else ' · Ongoing')
+                  legend_items.append((legend_label, color))
+                  for _, row in episode.iterrows():
+                      month = int(row["month_since_bottom"])
+                      progress = float(row["recovery_progress_pct"])
+                      title = f'Month {month} after bottom'
+                      items = [(f'#{rank} Recovery Progress', hc.pct(progress), color)]
+                      legacy = _legacy_tooltip(title, items)
+                      marks.append(
+                          f'<circle cx="{x_for(month):.2f}" cy="{y_for(progress):.2f}" r="5" fill="transparent" '
+                          'class="chart-mark recovery-progress-mark" tabindex="0" '
+                          f'data-tooltip="{hc.esc(legacy)}" data-tooltip-json="{_tooltip_payload(title, items)}" aria-label="{hc.esc(legacy)}" />'
+                      )
+              tick_months = sorted(set([0, int(round(x_max/4)), int(round(x_max/2)), int(round(x_max*3/4)), int(round(x_max))]))
+              x_ticks = ''.join(
+                  f'<text x="{x_for(value):.2f}" y="{top+plot_height+24}" text-anchor="middle" class="axis-label x-tick-label">{value}</text>'
+                  for value in tick_months
+              )
+              svg = f'''<svg class="analysis-chart recovery-progress-chart" viewBox="0 0 {hc.WIDTH} {hc.HEIGHT}" role="img" aria-label="{hc.esc(label)} recovery progress from bottom">
+                {''.join(grid)}
+                <line x1="{left}" y1="{top}" x2="{left}" y2="{top+plot_height}" class="axis y-axis-line" />
+                {''.join(paths)}{''.join(marks)}{x_ticks}
+                <line x1="{left}" y1="{top+plot_height}" x2="{left+plot_width}" y2="{top+plot_height}" class="axis x-axis-line" />
+                <text x="{left+plot_width/2:.2f}" y="{hc.HEIGHT-14}" text-anchor="middle" class="axis-title">Months Since Bottom</text>
+                <text x="20" y="{top+plot_height/2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 20 {top+plot_height/2:.2f})">Recovery Progress %</text>
+              </svg>'''
+              return hc.chart_shell(f'recovery-progress-{label}', svg, hc.legend(legend_items))
+          '''
+          pv = replace_block(pv, 'def _drawdown_episode_table(', 'def drawdown_presentation(', new_episode_table, 'drawdown episode presentation')
+          pv = replace_once(
+              pv,
+              '    benchmark_label: str | None,\n) -> str:\n    blocks = []\n',
+              '    benchmark_label: str | None,\n    recovery_frame: pd.DataFrame | None = None,\n) -> str:\n    blocks = []\n',
+              'drawdown presentation signature',
+          )
+          pv = replace_once(
+              pv,
+              '        else:\n            part = pd.DataFrame()\n        blocks.append(\n',
+              '        else:\n            part = pd.DataFrame()\n        if recovery_frame is not None and not recovery_frame.empty and "portfolio" in recovery_frame:\n            recovery_part = recovery_frame[recovery_frame["portfolio"].astype(str) == key].copy()\n        else:\n            recovery_part = pd.DataFrame()\n        blocks.append(\n',
+              'drawdown recovery filtering',
+          )
+          pv = replace_once(
+              pv,
+              '            "<h4>Drawdown Episodes</h4>"\n            f"{_drawdown_episode_table(part)}</div>"\n',
+              '            "<h4>Drawdown Episodes</h4>"\n            f"{_drawdown_episode_table(part)}"\n            "<h4>Recovery Progress from Bottom</h4>"\n            f"{_recovery_progress_chart(recovery_part, label)}</div>"\n',
+              'drawdown recovery chart',
+          )
+          pv_path.write_text(pv, encoding='utf-8')
+
+          test_path = Path('tests/test_analytics.py')
+          test = test_path.read_text(encoding='utf-8')
+          test = replace_once(
+              test,
+              'from portfolio_optimizer_kr.analytics import active_analytics, active_return_metrics, drawdown_episodes, monthly_returns_table, performance_summary, return_decomposition, risk_contribution, trailing_returns\n',
+              'from portfolio_optimizer_kr.analytics import active_analytics, active_return_metrics, drawdown_episodes, drawdown_recovery_progress, monthly_returns_table, performance_summary, return_decomposition, risk_contribution, trailing_returns\n',
+              'analytics test import',
+          )
+          test += '''\n\ndef test_drawdown_recovery_timing_rate_and_progress():\n    idx = pd.date_range("2024-01-31", periods=5, freq="ME")\n    returns = pd.Series([0.10, -0.20, 0.125, 0.11111111111111116, 0.0], index=idx)\n    episode = drawdown_episodes(returns).iloc[0]\n    assert episode["start"] == idx[1]\n    assert episode["bottom"] == idx[1]\n    assert episode["recovery"] == idx[3]\n    assert episode["decline_months"] == 1\n    assert episode["recovery_months"] == 2\n    assert episode["underwater_months"] == 3\n    assert episode["annualized_recovery_rate"] == pytest.approx((1 / 0.8) ** 6 - 1)\n    progress = drawdown_recovery_progress(returns, drawdown_episodes(returns))\n    assert list(progress["month_since_bottom"]) == [0, 1, 2]\n    assert progress.iloc[0]["recovery_progress_pct"] == pytest.approx(0.0)\n    assert progress.iloc[1]["recovery_progress_pct"] == pytest.approx(50.0)\n    assert progress.iloc[2]["recovery_progress_pct"] == pytest.approx(100.0)\n\n\ndef test_ongoing_drawdown_keeps_recovery_metrics_unavailable():\n    idx = pd.date_range("2024-01-31", periods=3, freq="ME")\n    returns = pd.Series([0.10, -0.20, 0.05], index=idx)\n    episode = drawdown_episodes(returns).iloc[0]\n    assert pd.isna(episode["recovery"])\n    assert pd.isna(episode["recovery_months"])\n    assert pd.isna(episode["annualized_recovery_rate"])\n    assert episode["underwater_months"] == 2\n    progress = drawdown_recovery_progress(returns, drawdown_episodes(returns))\n    assert bool(progress["recovered"].iloc[0]) is False\n'''
+          test_path.write_text(test, encoding='utf-8')
+
+          report_test_path = Path('tests/test_backtest_report_content_contract.py')
+          report_test = report_test_path.read_text(encoding='utf-8')
+          report_test = replace_once(
+              report_test,
+              '    rendered = _drawdown_presentation(series, episodes, PORTFOLIOS, BENCHMARK)\n',
+              '''    recovery = pd.DataFrame([\n        {"portfolio":"Growth 70/30","rank":1,"date":"2024-02-29","month_since_bottom":0,"recovery_progress_pct":0.0,"maximum_drawdown_pct":-4.0,"recovered":True},\n        {"portfolio":"Growth 70/30","rank":1,"date":"2024-03-31","month_since_bottom":1,"recovery_progress_pct":100.0,"maximum_drawdown_pct":-4.0,"recovered":True},\n    ])\n    episodes["decline_months"] = 2\n    episodes["recovery_months"] = [1, 1, None]\n    episodes["underwater_months"] = [3, 3, 3]\n    episodes["annualized_recovery_rate_pct"] = [63.2, 26.8, None]\n    rendered = _drawdown_presentation(series, episodes, PORTFOLIOS, BENCHMARK, recovery)\n''',
+              'drawdown report test setup',
+          )
+          report_test = replace_once(
+              report_test,
+              '    for header in ["Start", "End", "Length", "Recovery By", "Recovery Time", "Underwater Period", "Drawdown"]:\n',
+              '    for header in ["Start", "End", "Length", "Recovery By", "Recovery Time", "Underwater Period", "Recovery Rate", "Drawdown"]:\n',
+              'drawdown report headers',
+          )
+          report_test = replace_once(
+              report_test,
+              '    assert "Worst 10 drawdowns" in rendered\n',
+              '    assert "Worst 10 drawdowns" in rendered\n    assert "Recovery Progress from Bottom" in rendered\n    assert "Months Since Bottom" in rendered\n    assert "Recovery Progress %" in rendered\n',
+              'drawdown recovery chart assertions',
+          )
+          report_test_path.write_text(report_test, encoding='utf-8')
+          PY
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run affected regression
+        run: |
+          python -m compileall -q src/portfolio_optimizer_kr
+          pytest -q \
+            tests/test_analytics.py \
+            tests/test_pipeline.py \
+            tests/test_backtest.py \
+            tests/test_backtest_report_content_contract.py \
+            tests/test_shared_historical_capabilities.py \
+            tests/test_optimizer_shared_historical_mount.py
+
+      - name: Mark implementation tasks complete
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('openspec/changes/2026-09-11-drawdown-recovery-episodes/tasks.md')
+          text = path.read_text(encoding='utf-8')
+          for label in [
+              'shared `drawdown_episodes`에 explicit decline/recovery/underwater timing과 annualized recovery rate 추가',
+              'canonical Recovery Progress monthly path helper 및 artifact 추가',
+              'Optimization pipeline에 recovery progress artifact/result 연결',
+              'Backtest pipeline에 동일 shared recovery artifact/result 연결',
+              'shared Drawdowns component에 Recovery Rate 및 worst-5 Recovery Progress chart 추가',
+              'synthetic analytics regression 추가',
+              'Optimization/Backtest affected-scope regression 실행',
+          ]:
+              text = text.replace(f'- [ ] {label}', f'- [x] {label}')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/oneoff-drawdown-recovery.yml
+          git add src tests openspec/changes/2026-09-11-drawdown-recovery-episodes .github/workflows/oneoff-drawdown-recovery.yml
+          git commit -m 'feat: add canonical drawdown recovery analytics'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Generate fresh Maximum Return report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run run-optimization.yml --ref main
