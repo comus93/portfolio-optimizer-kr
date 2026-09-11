@@ -988,74 +988,6 @@ def _drawdown_episode_table(part: pd.DataFrame) -> str:
     )
 
 
-def _recovery_progress_chart(part: pd.DataFrame, label: str) -> str:
-    if part.empty or "rank" not in part or "month_since_bottom" not in part or "recovery_progress_pct" not in part:
-        return '<p class="muted">N/A</p>'
-    shaped = part.copy()
-    shaped["rank"] = pd.to_numeric(shaped["rank"], errors="coerce")
-    shaped["month_since_bottom"] = pd.to_numeric(shaped["month_since_bottom"], errors="coerce")
-    shaped["recovery_progress_pct"] = pd.to_numeric(shaped["recovery_progress_pct"], errors="coerce")
-    shaped = shaped.dropna(subset=["rank", "month_since_bottom", "recovery_progress_pct"])
-    ranks = sorted(int(value) for value in shaped["rank"].unique())[:5]
-    shaped = shaped[shaped["rank"].isin(ranks)]
-    if shaped.empty:
-        return '<p class="muted">N/A</p>'
-    left, right, top, bottom = 78, 24, 24, 70
-    plot_width = hc.WIDTH - left - right
-    plot_height = hc.HEIGHT - top - bottom
-    x_max = max(float(shaped["month_since_bottom"].max()), 1.0)
-    y_min, y_max = 0.0, 100.0
-    x_for = lambda value: left + float(value) * plot_width / x_max
-    y_for = lambda value: top + (y_max - float(value)) * plot_height / 100.0
-    grid = []
-    for value in (0, 25, 50, 75, 100):
-        y = y_for(value)
-        klass = "zero-axis" if value == 100 else "grid-line"
-        grid.append(f'<line x1="{left}" y1="{y:.2f}" x2="{left+plot_width}" y2="{y:.2f}" class="{klass}" />')
-        grid.append(f'<text x="{left-10}" y="{y+4:.2f}" text-anchor="end" class="axis-label y-tick-label">{value}%</text>')
-    paths = []
-    marks = []
-    legend_items = []
-    for series_index, rank in enumerate(ranks):
-        episode = shaped[shaped["rank"] == rank].sort_values("month_since_bottom")
-        if episode.empty:
-            continue
-        color = hc.PALETTE[series_index % len(hc.PALETTE)]
-        coords = " ".join(
-            f'{x_for(row["month_since_bottom"]):.2f},{y_for(row["recovery_progress_pct"]):.2f}'
-            for _, row in episode.iterrows()
-        )
-        paths.append(f'<polyline points="{coords}" fill="none" stroke="{color}" stroke-width="2.2" class="recovery-progress-series" />')
-        first = episode.iloc[0]
-        mdd = first.get("maximum_drawdown_pct")
-        recovered = bool(first.get("recovered"))
-        legend_label = f'#{rank} {hc.pct(mdd)}' + ('' if recovered else ' · Ongoing')
-        legend_items.append((legend_label, color))
-        for _, row in episode.iterrows():
-            month = int(row["month_since_bottom"])
-            progress = float(row["recovery_progress_pct"])
-            title = f'Month {month} after bottom'
-            items = [(f'#{rank} Recovery Progress', hc.pct(progress), color)]
-            legacy = _legacy_tooltip(title, items)
-            marks.append(
-                f'<circle cx="{x_for(month):.2f}" cy="{y_for(progress):.2f}" r="5" fill="transparent" '
-                'class="chart-mark recovery-progress-mark" tabindex="0" '
-                f'data-tooltip="{hc.esc(legacy)}" data-tooltip-json="{_tooltip_payload(title, items)}" aria-label="{hc.esc(legacy)}" />'
-            )
-    tick_months = sorted(set([0, int(round(x_max/4)), int(round(x_max/2)), int(round(x_max*3/4)), int(round(x_max))]))
-    x_ticks = ''.join(
-        f'<text x="{x_for(value):.2f}" y="{top+plot_height+24}" text-anchor="middle" class="axis-label x-tick-label">{value}</text>'
-        for value in tick_months
-    )
-    svg = f"""<svg class="analysis-chart recovery-progress-chart" viewBox="0 0 {hc.WIDTH} {hc.HEIGHT}" role="img" aria-label="{hc.esc(label)} recovery progress from bottom">
-      {''.join(grid)}
-      <line x1="{left}" y1="{top}" x2="{left}" y2="{top+plot_height}" class="axis y-axis-line" />
-      {''.join(paths)}{''.join(marks)}{x_ticks}
-      <line x1="{left}" y1="{top+plot_height}" x2="{left+plot_width}" y2="{top+plot_height}" class="axis x-axis-line" />
-      <text x="{left+plot_width/2:.2f}" y="{hc.HEIGHT-14}" text-anchor="middle" class="axis-title">Months Since Bottom</text>
-      <text x="20" y="{top+plot_height/2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 20 {top+plot_height/2:.2f})">Recovery Progress %</text>
-    </svg>"""
-    return hc.chart_shell(f'recovery-progress-{label}', svg, hc.legend(legend_items))
 
 def drawdown_presentation(
     series_frame: pd.DataFrame,
@@ -1087,19 +1019,13 @@ def drawdown_presentation(
             ].copy()
         else:
             part = pd.DataFrame()
-        if recovery_frame is not None and not recovery_frame.empty and "portfolio" in recovery_frame:
-            recovery_part = recovery_frame[recovery_frame["portfolio"].astype(str) == key].copy()
-        else:
-            recovery_part = pd.DataFrame()
         blocks.append(
             f'<div class="analysis-panel drawdown-panel" '
             f'data-portfolio="{hc.esc(key)}">'
             f"<h3>Drawdowns for {hc.esc(label)}</h3>"
             f'{_drawdown_chart(series_frame, column, label, f"drawdown-{key}")}'
             "<h4>Drawdown Episodes</h4>"
-            f"{_drawdown_episode_table(part)}"
-            "<h4>Recovery Progress from Bottom</h4>"
-            f"{_recovery_progress_chart(recovery_part, label)}</div>"
+            f"{_drawdown_episode_table(part)}</div>"
         )
     return "".join(blocks) if blocks else '<p class="muted">N/A</p>'
 

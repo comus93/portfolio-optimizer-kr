@@ -81,9 +81,9 @@ def test_drawdowns_have_axes_calendar_ticks_and_recovery_episode_fields():
         assert header in rendered
     assert "Mar 2024" in rendered
     assert "Worst 10 drawdowns" in rendered
-    assert "Recovery Progress from Bottom" in rendered
-    assert "Months Since Bottom" in rendered
-    assert "Recovery Progress %" in rendered
+    assert "Recovery Progress from Bottom" not in rendered
+    assert "Months Since Bottom" not in rendered
+    assert "Recovery Progress %" not in rendered
 
 
 def test_annual_asset_returns_preserve_ticker_series_and_shared_year_hover():
