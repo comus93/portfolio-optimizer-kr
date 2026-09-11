@@ -1,0 +1,88 @@
+name: One-off drawdown recovery episodes v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-drawdown-recovery-v2.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply recovery patch from staged workflow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+          source = Path('.github/workflows/oneoff-drawdown-recovery.yml').read_text(encoding='utf-8')
+          marker = "          python - <<'PY'\n"
+          start = source.index(marker) + len(marker)
+          end = source.index("\n          PY", start)
+          script = textwrap.dedent(source[start:end])
+          script = script.replace("    svg = f'''<svg", '    svg = f"""<svg')
+          script = script.replace("    </svg>'''", '    </svg>"""')
+          exec(compile(script, 'drawdown-recovery-patch.py', 'exec'))
+          PY
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run affected regression
+        run: |
+          python -m compileall -q src/portfolio_optimizer_kr
+          pytest -q \
+            tests/test_analytics.py \
+            tests/test_pipeline.py \
+            tests/test_backtest.py \
+            tests/test_backtest_report_content_contract.py \
+            tests/test_shared_historical_capabilities.py \
+            tests/test_optimizer_shared_historical_mount.py
+
+      - name: Mark implementation tasks complete
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('openspec/changes/2026-09-11-drawdown-recovery-episodes/tasks.md')
+          text = path.read_text(encoding='utf-8')
+          for label in [
+              'shared `drawdown_episodes`에 explicit decline/recovery/underwater timing과 annualized recovery rate 추가',
+              'canonical Recovery Progress monthly path helper 및 artifact 추가',
+              'Optimization pipeline에 recovery progress artifact/result 연결',
+              'Backtest pipeline에 동일 shared recovery artifact/result 연결',
+              'shared Drawdowns component에 Recovery Rate 및 worst-5 Recovery Progress chart 추가',
+              'synthetic analytics regression 추가',
+              'Optimization/Backtest affected-scope regression 실행',
+          ]:
+              text = text.replace(f'- [ ] {label}', f'- [x] {label}')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/oneoff-drawdown-recovery.yml .github/workflows/oneoff-drawdown-recovery-v2.yml
+          git add src tests openspec/changes/2026-09-11-drawdown-recovery-episodes .github/workflows/oneoff-drawdown-recovery.yml .github/workflows/oneoff-drawdown-recovery-v2.yml
+          git commit -m 'feat: add canonical drawdown recovery analytics'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Generate fresh Maximum Return report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run run-optimization.yml --ref main
