@@ -12,3 +12,6 @@
 - [x] user-facing `Recovery Progress from Bottom` chart 제거 및 affected report regression 확인
 - [x] chart 제거 후 대표 Optimization report 재생성 및 user-facing 확인 (`20260911-0004`)
 - [ ] user-facing report에서 결과 검토 후 aggregation/sweet-spot 규칙은 별도 후속 판단
+- [x] Worst 10 recovered drawdowns 기반 Normalized Underwater Duration canonical summary 추가
+- [x] Drawdowns 제목 아래 `탄성회복도 x.x개월 / 10% DD` compact KPI 표시
+- [x] Optimization/Backtest affected regression에서 elasticity artifact/report 확인

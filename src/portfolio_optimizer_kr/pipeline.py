@@ -7,6 +7,7 @@ import pandas as pd
 from portfolio_optimizer_kr.analytics import (
     drawdown_episodes,
     drawdown_recovery_progress,
+    normalized_underwater_duration,
     monthly_returns_table,
     return_decomposition,
     risk_contribution,
@@ -269,9 +270,11 @@ def analyze_prices(
 
     drawdown_rows = []
     recovery_progress_rows: list[pd.DataFrame] = []
+    resilience_rows: list[dict[str, object]] = []
     for name, path in paths.items():
         table = drawdown_episodes(path.returns).copy()
         progress = drawdown_recovery_progress(path.returns, table).copy()
+        resilience_rows.append({"portfolio": name, **normalized_underwater_duration(table)})
         table.insert(0, "portfolio", name)
         if not progress.empty:
             progress.insert(0, "portfolio", name)
@@ -287,6 +290,7 @@ def analyze_prices(
         if recovery_progress_rows
         else pd.DataFrame()
     )
+    drawdown_resilience = pd.DataFrame(resilience_rows)
 
     investable_paths = dict(historical.portfolio_paths(paths))
     return_decomp = {
@@ -404,6 +408,7 @@ def analyze_prices(
             "monthly_returns": monthly_table.to_dict(orient="records"),
             "drawdowns": drawdowns.to_dict(orient="records"),
             "drawdown_recovery_progress": recovery_progress.to_dict(orient="records"),
+            "drawdown_resilience": drawdown_resilience.to_dict(orient="records"),
             "rolling_returns": {
                 name: {
                     "36m": {
@@ -470,6 +475,7 @@ def analyze_prices(
         "monthly_return_series": monthly_table,
         "drawdowns": drawdowns,
         "drawdown_recovery_progress": recovery_progress,
+        "drawdown_resilience": drawdown_resilience,
         "return_decomposition": pd.DataFrame(return_decomp)
         .rename_axis("asset")
         .reset_index(),

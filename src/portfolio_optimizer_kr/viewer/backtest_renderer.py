@@ -360,6 +360,7 @@ def generate_backtest_report(run_dir: str | Path, *, output_path: str | Path | N
     drawdowns = artifact("drawdowns.csv")
     drawdown_series = artifact("drawdown_series.csv")
     recovery_progress = artifact("drawdown_recovery_progress.csv")
+    drawdown_resilience = artifact("drawdown_resilience.csv")
     rolling_summary = artifact("rolling_returns_summary.csv")
     rolling3 = artifact("rolling_returns_3y.csv")
     rolling5 = artifact("rolling_returns_5y.csv")
@@ -496,7 +497,7 @@ tbody tr:nth-child(even) {{ background:#fafbfc; }}
 <section id="metrics" class="result-section"><h2>Metrics</h2>{_metrics_matrix(portfolio_metrics, portfolio_order, benchmark_label, performance, currency)}</section>
 <section id="annualReturns" class="result-section"><h2>Annual Returns</h2>{_annual_returns_chart(annual, portfolio_order, benchmark_label)}{_friendly_table(annual, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
 <section id="monthlyReturns" class="result-section"><h2>Monthly Returns</h2>{_friendly_table(monthly, portfolio_order=portfolio_order, benchmark_label=benchmark_label)}</section>
-<section id="drawdowns" class="result-section"><h2>Drawdowns</h2>{_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, recovery_progress)}</section>
+<section id="drawdowns" class="result-section"><h2>Drawdowns</h2>{_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, drawdown_resilience)}</section>
 <section id="assets" class="result-section"><h2>Assets</h2>
 <h3>Portfolio Assets</h3>{_portfolio_assets_table(asset_performance)}
 <h3>Portfolio Asset Performance</h3>{_portfolio_asset_trailing_table(asset_performance)}{asset_note}

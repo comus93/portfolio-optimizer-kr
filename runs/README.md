@@ -1,9 +1,76 @@
 # Run Index
 
-This catalog is generated from persisted run artifacts for repository navigation. Canonical values remain inside each run directory.
+This is a navigation view of persisted research runs. Canonical values remain inside each run directory.
+
+## Latest by Experiment
+
+Use this first to understand the current research surface without opening individual run folders.
+
+| Product | Study / Experiment | Latest Run | Runs | Period | Summary |
+|---|---|---|---:|---|---|
+| Optimization | N/A | [example-max-sharpe](example-max-sharpe/) | 11 | 2019-01-01 ~ 2025-12-31 | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | [20260911-0004](20260911-0004/) | 6 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| Optimization | kaw-target-reconstruction / 009-direct-proxy-max-return-vol11_5 | [20260910-0015](20260910-0015/) | 2 | 2021-11-01 ~ 2026-08-31 | 009-direct-proxy-max-return-vol11_5 |
+| Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | [20260910-0014](20260910-0014/) | 7 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| Optimization | provided-portfolio-v1-optimization / 004-aia-schd-max-sharpe | [20260910-0007](20260910-0007/) | 1 | 2015-11-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe |
+| Optimization | provided-portfolio-v1-optimization / 001-max-sharpe | [20260910-0006](20260910-0006/) | 1 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - Maximum Sharpe |
+| Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | [20260910-0005](20260910-0005/) | 2 | 2014-07 ~ 2026-08 | 022-kaw-long-benchmark-smoke |
+| Backtest | kaw-target-reconstruction / 021-kaw-short-benchmark-smoke | [20260910-0004](20260910-0004/) | 2 | 2021-11 ~ 2026-08 | 021-kaw-short-benchmark-smoke |
+| Backtest | kaw-target-reconstruction / 020-kaw-native-vs-revised-core-backtest | [20260910-0001](20260910-0001/) | 1 | 2021-11 ~ 2026-08 | 020-kaw-native-vs-revised-core-backtest |
+| Backtest | kaw-target-reconstruction / 018-kaw-bond-usd-local-proxy-backtest | [20260909-0015](20260909-0015/) | 1 | 2021-11 ~ 2026-08 | 018-kaw-bond-usd-local-proxy-backtest |
+| Backtest | kaw-target-reconstruction / 017-kaw-bond-sleeve-proxy-backtest | [20260909-0014](20260909-0014/) | 1 | 2021-11 ~ 2026-08 | 017-kaw-bond-sleeve-proxy-backtest |
+| Backtest | kaw-target-reconstruction / 016-kaw-direct-v2-vs-core-backtest | [20260909-0013](20260909-0013/) | 1 | 2021-11 ~ 2026-08 | 016-kaw-direct-v2-vs-core-backtest |
+| Backtest | kaw-target-reconstruction / 015-tobe-nasdaq-proxy-comparison | [20260909-0012](20260909-0012/) | 1 | 2022-06 ~ 2026-08 | 015-tobe-nasdaq-proxy-comparison |
+| Backtest | kaw-target-reconstruction / 015-tobe-vs-kaw-direct-backtest | [20260909-0011](20260909-0011/) | 1 | 2022-06 ~ 2026-08 | 015-tobe-vs-kaw-direct-backtest |
+| Optimization | kaw-target-reconstruction / 007-core-max-return-vol11_5 | [20260909-0010](20260909-0010/) | 1 | 2021-11-01 ~ 2026-08-31 | 007-core-max-return-vol11_5 |
+| Optimization | kaw-target-reconstruction / 006-core-max-sharpe | [20260909-0009](20260909-0009/) | 2 | 2021-11-01 ~ 2026-08-31 | 006-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 014-decomp-japan-to-core-max-sharpe | [20260909-0008](20260909-0008/) | 1 | 2021-11-01 ~ 2026-08-31 | 014-decomp-japan-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 013-decomp-korea-to-core-max-sharpe | [20260909-0007](20260909-0007/) | 1 | 2021-11-01 ~ 2026-08-31 | 013-decomp-korea-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 012-decomp-dividend-to-core-max-sharpe | [20260909-0006](20260909-0006/) | 1 | 2021-11-01 ~ 2026-08-31 | 012-decomp-dividend-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 011-decomp-em-to-core-max-sharpe | [20260909-0005](20260909-0005/) | 1 | 2021-11-01 ~ 2026-08-31 | 011-decomp-em-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 010-decomp-bond-to-core-max-sharpe | [20260909-0004](20260909-0004/) | 1 | 2021-11-01 ~ 2026-08-31 | 010-decomp-bond-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 009-decomp-gold-to-core-max-sharpe | [20260909-0003](20260909-0003/) | 1 | 2021-11-01 ~ 2026-08-31 | 009-decomp-gold-to-core-max-sharpe |
+| Optimization | kaw-target-reconstruction / 008-core-max-return-vol12 | [20260909-0001](20260909-0001/) | 1 | 2021-11-01 ~ 2026-08-31 | 008-core-max-return-vol12 |
+| Optimization | kaw-target-reconstruction / 005-direct-proxy-max-return-vol11 | [20260908-0005](20260908-0005/) | 1 | 2021-11-01 ~ 2026-08-31 | 005-direct-proxy-max-return-vol11 |
+| Optimization | kaw-target-reconstruction / 004-direct-proxy-max-return-vol10_5 | [20260908-0004](20260908-0004/) | 1 | 2021-11-01 ~ 2026-08-31 | 004-direct-proxy-max-return-vol10_5 |
+| Optimization | kaw-target-reconstruction / 003-direct-proxy-max-return-vol13 | [20260908-0003](20260908-0003/) | 1 | 2021-11-01 ~ 2026-08-31 | 003-direct-proxy-max-return-vol13 |
+| Optimization | kaw-target-reconstruction / 002-direct-proxy-max-sharpe | [20260908-0002](20260908-0002/) | 1 | 2021-11-01 ~ 2026-08-31 | 002-direct-proxy-max-sharpe |
+| Backtest | kaw-target-reconstruction / 001-native-fdr-coverage | [20260908-0001](20260908-0001/) | 1 | N/A | 001-native-fdr-coverage |
+| Optimization | global-multi-asset-allocation / 001-spy-qqq-tlt-gld-cper-mchi-ewy | [20260904-0006](20260904-0006/) | 4 | N/A | 001-spy-qqq-tlt-gld-cper-mchi-ewy |
+| Backtest | qqq-spy-gld-ief-backtest / 001-qqq-spy-gld-ief | [20260904-0005](20260904-0005/) | 4 | N/A | 001-qqq-spy-gld-ief |
+| Backtest | N/A | [20260903-backtest-qqq-gld-spy-presentation-validation-v2](20260903-backtest-qqq-gld-spy-presentation-validation-v2/) | 13 | 2020-01 ~ 2025-12 | Backtest run: Growth 70/30 vs Balanced 50/50 |
+| Optimization | seven-asset-frontier-e2e / 001-base-r02 | [20260829-0004](20260829-0004/) | 5 | N/A | 001-base-r02 |
+
+## Recent Runs
 
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
-| --- | --- | --- | --- | --- | N/A | --- |
+| --- | --- | --- | --- | --- | --- | --- |
+| [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260911-0004](20260911-0004/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0004/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260911-0003](20260911-0003/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0003/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260911-0002](20260911-0002/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0002/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260911-0001](20260911-0001/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0001/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260910-0017](20260910-0017/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0017/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260910-0016](20260910-0016/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0016/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
+| [20260910-0015](20260910-0015/) | Optimization | kaw-target-reconstruction / 009-direct-proxy-max-return-vol11_5 | 2021-11-01 ~ 2026-08-31 | State Street SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0015/report.html) | 009-direct-proxy-max-return-vol11_5 |
+| [20260910-0014](20260910-0014/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0014/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0013](20260910-0013/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0013/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0012](20260910-0012/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0012/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0011](20260910-0011/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0011/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0010](20260910-0010/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0010/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0009](20260910-0009/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0009/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0008](20260910-0008/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0008/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
+| [20260910-0007](20260910-0007/) | Optimization | provided-portfolio-v1-optimization / 004-aia-schd-max-sharpe | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0007/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe |
+| [20260910-0006](20260910-0006/) | Optimization | provided-portfolio-v1-optimization / 001-max-sharpe | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0006/report.html) | Provided Portfolio v1 - Maximum Sharpe |
+| [20260910-0005](20260910-0005/) | Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | 2014-07 ~ 2026-08 | KAW Core Revised Internal | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0005/report.html) | 022-kaw-long-benchmark-smoke |
+| [20260910-0004](20260910-0004/) | Backtest | kaw-target-reconstruction / 021-kaw-short-benchmark-smoke | 2021-11 ~ 2026-08 | KAW Native Proxy | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0004/report.html) | 021-kaw-short-benchmark-smoke |
+| [20260910-0003](20260910-0003/) | Backtest | kaw-target-reconstruction / 022-kaw-long-benchmark-smoke | 2014-07 ~ 2026-08 | KAW Core Revised Internal | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0003/report.html) | 022-kaw-long-benchmark-smoke |
+
+<details>
+<summary>Full Run History (79 runs)</summary>
+
+| Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
+| --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
 | [20260911-0004](20260911-0004/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0004/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | [20260911-0003](20260911-0003/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0003/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
@@ -83,3 +150,5 @@ This catalog is generated from persisted run artifacts for repository navigation
 | [20260828-pv-maxretvol15](20260828-pv-maxretvol15/) | Optimization | N/A | 2016-08-01 ~ 2026-07-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
 | [20260828-0002](20260828-0002/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | N/A | 001-base-r02 |
 | [20260828-0001](20260828-0001/) | Optimization | seven-asset-frontier-e2e / 001-base-r02 | N/A | SPDR S&P 500 ETF Trust (SPY) | N/A | 001-base-r02 |
+
+</details>

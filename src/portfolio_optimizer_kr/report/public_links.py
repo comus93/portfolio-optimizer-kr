@@ -105,59 +105,46 @@ def _apply_runs_index(runs_root: Path) -> None:
     if not index_path.is_file():
         return
 
+    legacy_header = [
+        "Run", "Product", "Study / Experiment", "Period", "Benchmark", "Summary"
+    ]
+    enriched_header = [
+        "Run", "Product", "Study / Experiment", "Period", "Benchmark", "Report", "Summary"
+    ]
+
+    def is_separator(cells: list[str]) -> bool:
+        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+
     lines = index_path.read_text(encoding="utf-8").splitlines()
     output: list[str] = []
+    mode: str | None = None
     for line in lines:
         cells = _split_row(line)
-        if cells[:6] == [
-            "Run",
-            "Product",
-            "Study / Experiment",
-            "Period",
-            "Benchmark",
-            "Summary",
-        ]:
-            output.append(
-                _join_row(
-                    [
-                        "Run",
-                        "Product",
-                        "Study / Experiment",
-                        "Period",
-                        "Benchmark",
-                        "Report",
-                        "Summary",
-                    ]
-                )
-            )
+        if cells == legacy_header:
+            output.append(_join_row(enriched_header))
+            mode = "legacy"
             continue
-        if cells[:7] == [
-            "Run",
-            "Product",
-            "Study / Experiment",
-            "Period",
-            "Benchmark",
-            "Report",
-            "Summary",
-        ]:
+        if cells == enriched_header:
             output.append(line)
+            mode = "enriched"
             continue
-        if cells == ["---", "---", "---", "---", "---", "---"]:
+        if mode and is_separator(cells):
             output.append(_join_row(["---"] * 7))
             continue
-        if len(cells) == 6 and cells[0] != "Run":
+        if mode == "legacy" and len(cells) == 6 and _run_id_from_cell(cells[0]):
             output.append(
                 _join_row(cells[:5] + [_report_cell(runs_root, cells[0])] + [cells[5]])
             )
             continue
-        if len(cells) == 7 and cells[0] != "Run":
+        if mode == "enriched" and len(cells) == 7 and _run_id_from_cell(cells[0]):
             cells[5] = _report_cell(runs_root, cells[0])
             output.append(_join_row(cells))
             continue
+        if cells and not _run_id_from_cell(cells[0]):
+            mode = None
         output.append(line)
 
     index_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")
-
 
 def apply_public_report_links(
     run_dir: str | Path,

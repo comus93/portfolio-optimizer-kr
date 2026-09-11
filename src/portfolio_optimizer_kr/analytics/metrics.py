@@ -210,6 +210,55 @@ def drawdown_episodes(monthly_returns: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(ordered, columns=columns)
 
 
+def normalized_underwater_duration(
+    episodes: pd.DataFrame,
+    *,
+    limit: int = 10,
+) -> dict[str, float | int | None]:
+    """Median underwater months normalized to a 10% drawdown depth.
+
+    Only recovered episodes among the worst ``limit`` drawdowns are eligible.
+    Lower values indicate shorter time below the prior peak for the same
+    drawdown depth.
+    """
+    if episodes.empty or limit < 1:
+        return {
+            "normalized_underwater_duration_months_per_10pct": None,
+            "completed_episode_count": 0,
+            "episode_limit": int(limit),
+        }
+
+    shaped = episodes.copy()
+    if "rank" in shaped:
+        shaped["rank"] = pd.to_numeric(shaped["rank"], errors="coerce")
+        shaped = shaped[shaped["rank"].le(limit)]
+    else:
+        shaped = shaped.head(limit)
+
+    required = {"recovery", "underwater_months", "maximum_drawdown"}
+    if not required.issubset(shaped.columns):
+        return {
+            "normalized_underwater_duration_months_per_10pct": None,
+            "completed_episode_count": 0,
+            "episode_limit": int(limit),
+        }
+
+    shaped = shaped[shaped["recovery"].notna()].copy()
+    underwater = pd.to_numeric(shaped["underwater_months"], errors="coerce")
+    drawdown = pd.to_numeric(shaped["maximum_drawdown"], errors="coerce").abs()
+    eligible = underwater.notna() & drawdown.gt(0)
+    values = (underwater[eligible] * 0.10 / drawdown[eligible]).replace(
+        [np.inf, -np.inf], np.nan
+    ).dropna()
+    return {
+        "normalized_underwater_duration_months_per_10pct": (
+            float(values.median()) if not values.empty else None
+        ),
+        "completed_episode_count": int(len(values)),
+        "episode_limit": int(limit),
+    }
+
+
 def drawdown_recovery_progress(
     monthly_returns: pd.Series,
     episodes: pd.DataFrame | None = None,

@@ -511,26 +511,64 @@ def build_runs_index(runs_root: str | Path) -> str:
         else []
     )
 
+    def run_table(rows: list[dict[str, str]]) -> list[str]:
+        out = [
+            "| Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for record in rows:
+            out.append(
+                f"| [{_escape(record['run'])}]({_escape(record['run'])}/) | "
+                f"{_escape(record['product'])} | {_escape(record['study_experiment'])} | "
+                f"{_escape(record['period'])} | {_escape(record['benchmark'])} | N/A | "
+                f"{_escape(record['summary'])} |"
+            )
+        if not rows:
+            out.append("| N/A | N/A | N/A | N/A | N/A | N/A | No persisted runs found |")
+        return out
+
+    grouped: dict[tuple[str, str], dict[str, object]] = {}
+    for record in records:
+        key = (record["product"], record["study_experiment"])
+        if key not in grouped:
+            grouped[key] = {"latest": record, "count": 0}
+        grouped[key]["count"] = int(grouped[key]["count"]) + 1
+
     lines = [
         "# Run Index",
         "",
-        "This catalog is generated from persisted run artifacts for repository "
-        "navigation. Canonical values remain inside each run directory.",
+        "This is a navigation view of persisted research runs. Canonical values remain inside each run directory.",
         "",
-        "| Run | Product | Study / Experiment | Period | Benchmark | Summary |",
-        "|---|---|---|---|---|---|",
+        "## Latest by Experiment",
+        "",
+        "Use this first to understand the current research surface without opening individual run folders.",
+        "",
+        "| Product | Study / Experiment | Latest Run | Runs | Period | Summary |",
+        "|---|---|---|---:|---|---|",
     ]
-    for record in records:
+    for item in grouped.values():
+        record = item["latest"]
+        assert isinstance(record, dict)
         lines.append(
-            f"| [{_escape(record['run'])}]({_escape(record['run'])}/) | "
-            f"{_escape(record['product'])} | {_escape(record['study_experiment'])} | "
-            f"{_escape(record['period'])} | {_escape(record['benchmark'])} | "
-            f"{_escape(record['summary'])} |"
+            f"| {_escape(record['product'])} | {_escape(record['study_experiment'])} | "
+            f"[{_escape(record['run'])}]({_escape(record['run'])}/) | {int(item['count'])} | "
+            f"{_escape(record['period'])} | {_escape(record['summary'])} |"
         )
-    if not records:
-        lines.append("| N/A | N/A | N/A | N/A | N/A | No persisted runs found |")
-    return "\n".join(lines).rstrip() + "\n"
+    if not grouped:
+        lines.append("| N/A | N/A | N/A | 0 | N/A | No persisted runs found |")
 
+    recent = records[:20]
+    lines.extend(["", "## Recent Runs", ""])
+    lines.extend(run_table(recent))
+    lines.extend([
+        "",
+        "<details>",
+        f"<summary>Full Run History ({len(records)} runs)</summary>",
+        "",
+    ])
+    lines.extend(run_table(records))
+    lines.extend(["", "</details>"])
+    return "\n".join(lines).rstrip() + "\n"
 
 def write_runs_index(runs_root: str | Path) -> Path:
     root = Path(runs_root)

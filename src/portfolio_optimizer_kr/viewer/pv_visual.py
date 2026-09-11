@@ -989,12 +989,33 @@ def _drawdown_episode_table(part: pd.DataFrame) -> str:
 
 
 
+def _drawdown_resilience_kpi(part: pd.DataFrame) -> str:
+    if part.empty:
+        value_text = "N/A"
+        sample_text = ""
+    else:
+        row = part.iloc[0]
+        value = row.get("normalized_underwater_duration_months_per_10pct")
+        value_text = f"{float(value):.1f}개월 / 10% DD" if hc.finite(value) else "N/A"
+        count = row.get("completed_episode_count")
+        sample_text = (
+            f" · completed {int(float(count))}/10 episodes"
+            if hc.finite(count)
+            else ""
+        )
+    return (
+        '<p class="panel-subtitle drawdown-elasticity-kpi">'
+        '<strong>탄성회복도</strong> · '
+        f'{hc.esc(value_text)} · 낮을수록 좋음{hc.esc(sample_text)}</p>'
+    )
+
+
 def drawdown_presentation(
     series_frame: pd.DataFrame,
     episodes_frame: pd.DataFrame,
     portfolio_order: list[str],
     benchmark_label: str | None,
-    recovery_frame: pd.DataFrame | None = None,
+    resilience_frame: pd.DataFrame | None = None,
 ) -> str:
     blocks = []
     targets = [
@@ -1019,10 +1040,17 @@ def drawdown_presentation(
             ].copy()
         else:
             part = pd.DataFrame()
+        if resilience_frame is not None and not resilience_frame.empty and "portfolio" in resilience_frame:
+            resilience_part = resilience_frame[
+                resilience_frame["portfolio"].astype(str) == key
+            ].copy()
+        else:
+            resilience_part = pd.DataFrame()
         blocks.append(
             f'<div class="analysis-panel drawdown-panel" '
             f'data-portfolio="{hc.esc(key)}">'
             f"<h3>Drawdowns for {hc.esc(label)}</h3>"
+            f"{_drawdown_resilience_kpi(resilience_part)}"
             f'{_drawdown_chart(series_frame, column, label, f"drawdown-{key}")}'
             "<h4>Drawdown Episodes</h4>"
             f"{_drawdown_episode_table(part)}</div>"

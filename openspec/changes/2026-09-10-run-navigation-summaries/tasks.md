@@ -29,3 +29,6 @@
 - Existing persisted reports were backfilled and `runs/README.md` now exposes direct `Open` links.
 - Manual rebuild utility: `python scripts/rebuild_run_navigation.py`.
 - Exact URL registration utility: `python scripts/register_public_report_url.py <run_dir> <url>`.
+- [x] 이미 Report column이 있는 aggregate index 재처리 시 separator가 N/A data row로 오염되는 버그 수정
+- [x] `runs/README.md`를 Latest by Experiment / Recent Runs / collapsed Full Run History 구조로 재구성
+- [x] public report link refresh idempotency regression 추가
