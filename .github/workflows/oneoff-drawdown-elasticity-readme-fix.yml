@@ -26,14 +26,23 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('src/portfolio_optimizer_kr/report/navigation.py')
-          t = p.read_text(encoding='utf-8')
-          t = t.replace('return "\n".join(lines).rstrip() + "\n"', 'return "\\n".join(lines).rstrip() + "\\n"')
-          p.write_text(t, encoding='utf-8')
-          p = Path('src/portfolio_optimizer_kr/report/public_links.py')
-          t = p.read_text(encoding='utf-8')
-          t = t.replace('index_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")', 'index_path.write_text("\\n".join(output).rstrip() + "\\n", encoding="utf-8")')
-          p.write_text(t, encoding='utf-8')
+          fixes = {
+              'src/portfolio_optimizer_kr/report/navigation.py': [
+                  ('return "\n".join(lines).rstrip() + "\n"', 'return "\\n".join(lines).rstrip() + "\\n"'),
+              ],
+              'src/portfolio_optimizer_kr/report/public_links.py': [
+                  ('index_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")', 'index_path.write_text("\\n".join(output).rstrip() + "\\n", encoding="utf-8")'),
+              ],
+              'tests/test_run_index_readability.py': [
+                  ('write_text("product_mode: optimization\n", encoding="utf-8")', 'write_text("product_mode: optimization\\n", encoding="utf-8")'),
+              ],
+          }
+          for path, replacements in fixes.items():
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              for old, new in replacements:
+                  text = text.replace(old, new)
+              p.write_text(text, encoding='utf-8')
           PY
       - name: Install project
         run: |
@@ -41,7 +50,7 @@ jobs:
           python -m pip install -e . pytest
       - name: Run affected regression
         run: |
-          python -m compileall -q src/portfolio_optimizer_kr
+          python -m compileall -q src/portfolio_optimizer_kr tests/test_drawdown_elasticity.py tests/test_run_index_readability.py
           pytest -q tests/test_drawdown_elasticity.py tests/test_run_index_readability.py tests/test_analytics.py tests/test_backtest_report_content_contract.py tests/test_shared_historical_capabilities.py tests/test_optimizer_shared_historical_mount.py tests/test_backtest.py
       - name: Rebuild run index
         run: python scripts/rebuild_run_navigation.py --runs-root runs
