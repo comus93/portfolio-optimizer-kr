@@ -2,6 +2,24 @@
 
 Mean-variance portfolio research toolkit with first-class support for Korean investment assets such as individual stocks, ETFs, and ETNs. Portfolio Visualizer is a reference, not an implementation target.
 
+## Current baseline
+
+Milestone 2 was completed on 2026-09-11.
+
+```text
+tag: baseline-20260911-milestone-2
+representative run: 20260911-0007
+branch: main
+```
+
+The baseline pins the repository state after the shared Optimization/Backtest drawdown-recovery analytics and report-comparison work, including the current Drawdown overlay presentation, `탄성회복도` comparison, Worst Drawdowns presentation, run-index cleanup, affected regression, and representative published report.
+
+- Milestone manifest: [`docs/milestones/2026-09-11-milestone-2.md`](docs/milestones/2026-09-11-milestone-2.md)
+- Representative report: https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0007/report.html
+- Previous baseline: `baseline-20260910-pre-pain-metrics`
+
+The recovery-resilience aggregation / Sweet Spot rule remains follow-up research and is intentionally outside the Milestone 2 baseline.
+
 ## Development
 
 ```powershell
@@ -34,18 +52,9 @@ Shared
 - research-report
 ```
 
-Optimization 1차 baseline은 `migrate-optimizer-to-openspec` change를 통해 기존 `docs/` contract에서 OpenSpec으로 이관한다. Migration parity가 확인되기 전까지 기존 docs가 baseline이며, 이관 완료된 capability는 `openspec/specs/`가 normative source다.
+Optimization and Backtest are separate product capabilities. Shared market data, calculation, simulation, artifact, and presentation behavior is defined once in shared capabilities and validated across affected products.
 
-Backtest는 `bt-module` change에서 신규 capability로 정의한다. Shared capability를 변경하면 영향을 받는 기존 product capability의 regression 범위를 함께 관리한다.
-
-Current feature branch:
-
-```text
-branch: bt-module
-changes:
-- openspec/changes/migrate-optimizer-to-openspec/
-- openspec/changes/bt-module/
-```
+The default integration branch is `main`. Active work is represented by the current contents of `openspec/changes/`; completed capability requirements are carried by `openspec/specs/` and archived change history.
 
 Codex uses the OpenSpec skills installed by `openspec init --tools codex`; its workflow is invoked with names such as `$openspec-propose` and `$openspec-apply-change`.
 
@@ -64,9 +73,9 @@ User <-> ChatGPT
 
 Agent workflow rules are in `AGENTS.md` and ChatGPT/Codex handoff rules are in `ai-share/PROTOCOL.md`.
 
-## Current skeleton
+## Current capabilities
 
-The initial skeleton contains:
+The repository currently includes:
 
 - FinanceDataReader adapter boundary
 - canonical adjusted-price and FX normalization
@@ -74,6 +83,8 @@ The initial skeleton contains:
 - CVXPY optimization using OSQP for QP and CLARABEL for SOCP
 - efficient frontier generation
 - monthly/yearly historical rebalancing
-- basic performance, benchmark, and decomposition analytics
-- structured result model
-- synthetic pytest suite plus external-reference smoke tests
+- performance, benchmark, decomposition, pain, and drawdown-recovery analytics
+- shared Optimization/Backtest historical report components
+- structured result and persisted run-artifact model
+- synthetic regression plus browser-level report validation
+- GitHub Actions research execution and GitHub Pages report publishing
