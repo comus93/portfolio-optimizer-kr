@@ -1,0 +1,442 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+def replace_once(path: str, old: str, new: str) -> None:
+    p = Path(path)
+    text = p.read_text(encoding="utf-8")
+    if old not in text:
+        raise SystemExit(f"pattern not found in {path}: {old[:120]!r}")
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def replace_block(path: str, start_marker: str, end_marker: str, replacement: str) -> None:
+    p = Path(path)
+    text = p.read_text(encoding="utf-8")
+    start = text.index(start_marker)
+    end = text.index(end_marker, start)
+    p.write_text(text[:start] + replacement.rstrip() + "\n\n" + text[end:], encoding="utf-8")
+
+
+# 1) Canonical normalized underwater duration analytics.
+metrics = Path("src/portfolio_optimizer_kr/analytics/metrics.py")
+text = metrics.read_text(encoding="utf-8")
+marker = "\n\ndef drawdown_recovery_progress(\n"
+if marker not in text:
+    raise SystemExit("metrics insertion marker not found")
+fn = '''def normalized_underwater_duration(
+    episodes: pd.DataFrame,
+    *,
+    limit: int = 10,
+) -> dict[str, float | int | None]:
+    """Median underwater months normalized to a 10% drawdown depth.
+
+    Only recovered episodes among the worst ``limit`` drawdowns are eligible.
+    Lower values indicate shorter time below the prior peak for the same
+    drawdown depth.
+    """
+    if episodes.empty or limit < 1:
+        return {
+            "normalized_underwater_duration_months_per_10pct": None,
+            "completed_episode_count": 0,
+            "episode_limit": int(limit),
+        }
+
+    shaped = episodes.copy()
+    if "rank" in shaped:
+        shaped["rank"] = pd.to_numeric(shaped["rank"], errors="coerce")
+        shaped = shaped[shaped["rank"].le(limit)]
+    else:
+        shaped = shaped.head(limit)
+
+    required = {"recovery", "underwater_months", "maximum_drawdown"}
+    if not required.issubset(shaped.columns):
+        return {
+            "normalized_underwater_duration_months_per_10pct": None,
+            "completed_episode_count": 0,
+            "episode_limit": int(limit),
+        }
+
+    shaped = shaped[shaped["recovery"].notna()].copy()
+    underwater = pd.to_numeric(shaped["underwater_months"], errors="coerce")
+    drawdown = pd.to_numeric(shaped["maximum_drawdown"], errors="coerce").abs()
+    eligible = underwater.notna() & drawdown.gt(0)
+    values = (underwater[eligible] * 0.10 / drawdown[eligible]).replace(
+        [np.inf, -np.inf], np.nan
+    ).dropna()
+    return {
+        "normalized_underwater_duration_months_per_10pct": (
+            float(values.median()) if not values.empty else None
+        ),
+        "completed_episode_count": int(len(values)),
+        "episode_limit": int(limit),
+    }
+'''
+text = text.replace(marker, "\n\n" + fn + marker, 1)
+metrics.write_text(text, encoding="utf-8")
+
+replace_once(
+    "src/portfolio_optimizer_kr/analytics/__init__.py",
+    "    drawdown_recovery_progress,\n",
+    "    drawdown_recovery_progress,\n    normalized_underwater_duration,\n",
+)
+replace_once(
+    "src/portfolio_optimizer_kr/analytics/__init__.py",
+    '    "drawdown_recovery_progress",\n',
+    '    "drawdown_recovery_progress",\n    "normalized_underwater_duration",\n',
+)
+
+# 2) Persist portfolio-level resilience summary in both products.
+for path in ("src/portfolio_optimizer_kr/pipeline.py", "src/portfolio_optimizer_kr/backtest.py"):
+    replace_once(
+        path,
+        "    drawdown_recovery_progress,\n",
+        "    drawdown_recovery_progress,\n    normalized_underwater_duration,\n",
+    )
+    replace_once(
+        path,
+        "    recovery_progress_rows: list[pd.DataFrame] = []\n",
+        "    recovery_progress_rows: list[pd.DataFrame] = []\n    resilience_rows: list[dict[str, object]] = []\n",
+    )
+    replace_once(
+        path,
+        '        progress = drawdown_recovery_progress(path.returns, table).copy()\n        table.insert(0, "portfolio", name)\n',
+        '        progress = drawdown_recovery_progress(path.returns, table).copy()\n        resilience_rows.append({"portfolio": name, **normalized_underwater_duration(table)})\n        table.insert(0, "portfolio", name)\n',
+    )
+    replace_once(
+        path,
+        "    recovery_progress = (\n        pd.concat(recovery_progress_rows, ignore_index=True)\n        if recovery_progress_rows\n        else pd.DataFrame()\n    )\n",
+        "    recovery_progress = (\n        pd.concat(recovery_progress_rows, ignore_index=True)\n        if recovery_progress_rows\n        else pd.DataFrame()\n    )\n    drawdown_resilience = pd.DataFrame(resilience_rows)\n",
+    )
+    replace_once(
+        path,
+        '            "drawdown_recovery_progress": recovery_progress.to_dict(orient="records"),\n',
+        '            "drawdown_recovery_progress": recovery_progress.to_dict(orient="records"),\n            "drawdown_resilience": drawdown_resilience.to_dict(orient="records"),\n',
+    )
+    replace_once(
+        path,
+        '        "drawdown_recovery_progress": recovery_progress,\n',
+        '        "drawdown_recovery_progress": recovery_progress,\n        "drawdown_resilience": drawdown_resilience,\n',
+    )
+
+# 3) Render compact KPI above each Drawdown chart. Renderer only consumes canonical value.
+pv = Path("src/portfolio_optimizer_kr/viewer/pv_visual.py")
+text = pv.read_text(encoding="utf-8")
+insertion = '''def _drawdown_resilience_kpi(part: pd.DataFrame) -> str:
+    if part.empty:
+        value_text = "N/A"
+        sample_text = ""
+    else:
+        row = part.iloc[0]
+        value = row.get("normalized_underwater_duration_months_per_10pct")
+        value_text = f"{float(value):.1f}개월 / 10% DD" if hc.finite(value) else "N/A"
+        count = row.get("completed_episode_count")
+        sample_text = (
+            f" · completed {int(float(count))}/10 episodes"
+            if hc.finite(count)
+            else ""
+        )
+    return (
+        '<p class="panel-subtitle drawdown-elasticity-kpi">'
+        '<strong>탄성회복도</strong> · '
+        f'{hc.esc(value_text)} · 낮을수록 좋음{hc.esc(sample_text)}</p>'
+    )
+'''
+drawdown_marker = "\n\ndef drawdown_presentation(\n"
+if drawdown_marker not in text:
+    raise SystemExit("drawdown presentation marker not found")
+text = text.replace(drawdown_marker, "\n\n" + insertion + drawdown_marker, 1)
+text = text.replace(
+    "    recovery_frame: pd.DataFrame | None = None,\n",
+    "    resilience_frame: pd.DataFrame | None = None,\n",
+    1,
+)
+old = '''        blocks.append(
+            f'<div class="analysis-panel drawdown-panel" '
+            f'data-portfolio="{hc.esc(key)}">'
+            f"<h3>Drawdowns for {hc.esc(label)}</h3>"
+            f'{_drawdown_chart(series_frame, column, label, f"drawdown-{key}")}'
+            "<h4>Drawdown Episodes</h4>"
+            f"{_drawdown_episode_table(part)}</div>"
+        )'''
+new = '''        if resilience_frame is not None and not resilience_frame.empty and "portfolio" in resilience_frame:
+            resilience_part = resilience_frame[
+                resilience_frame["portfolio"].astype(str) == key
+            ].copy()
+        else:
+            resilience_part = pd.DataFrame()
+        blocks.append(
+            f'<div class="analysis-panel drawdown-panel" '
+            f'data-portfolio="{hc.esc(key)}">'
+            f"<h3>Drawdowns for {hc.esc(label)}</h3>"
+            f"{_drawdown_resilience_kpi(resilience_part)}"
+            f'{_drawdown_chart(series_frame, column, label, f"drawdown-{key}")}'
+            "<h4>Drawdown Episodes</h4>"
+            f"{_drawdown_episode_table(part)}</div>"
+        )'''
+if old not in text:
+    raise SystemExit("drawdown render block not found")
+text = text.replace(old, new, 1)
+pv.write_text(text, encoding="utf-8")
+
+replace_once(
+    "src/portfolio_optimizer_kr/viewer/shared_historical_overlay.py",
+    '    recovery_progress = _rename_identities(_artifact(root, "drawdown_recovery_progress.csv"), labels)\n',
+    '    recovery_progress = _rename_identities(_artifact(root, "drawdown_recovery_progress.csv"), labels)\n    drawdown_resilience = _rename_identities(_artifact(root, "drawdown_resilience.csv"), labels)\n',
+)
+replace_once(
+    "src/portfolio_optimizer_kr/viewer/shared_historical_overlay.py",
+    "_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, recovery_progress)",
+    "_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, drawdown_resilience)",
+)
+replace_once(
+    "src/portfolio_optimizer_kr/viewer/backtest_renderer.py",
+    '    recovery_progress = artifact("drawdown_recovery_progress.csv")\n',
+    '    recovery_progress = artifact("drawdown_recovery_progress.csv")\n    drawdown_resilience = artifact("drawdown_resilience.csv")\n',
+)
+replace_once(
+    "src/portfolio_optimizer_kr/viewer/backtest_renderer.py",
+    "_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, recovery_progress)",
+    "_drawdown_presentation(drawdown_series, drawdowns, portfolio_order, benchmark_label, drawdown_resilience)",
+)
+
+# 4) Restructure runs/README generation.
+navigation_fn = '''def build_runs_index(runs_root: str | Path) -> str:
+    root = Path(runs_root)
+    records = (
+        [
+            _index_record(path)
+            for path in sorted(
+                root.iterdir(), key=lambda item: item.name, reverse=True
+            )
+            if path.is_dir() and (path / "result.json").is_file()
+        ]
+        if root.is_dir()
+        else []
+    )
+
+    def run_table(rows: list[dict[str, str]]) -> list[str]:
+        out = [
+            "| Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for record in rows:
+            out.append(
+                f"| [{_escape(record['run'])}]({_escape(record['run'])}/) | "
+                f"{_escape(record['product'])} | {_escape(record['study_experiment'])} | "
+                f"{_escape(record['period'])} | {_escape(record['benchmark'])} | N/A | "
+                f"{_escape(record['summary'])} |"
+            )
+        if not rows:
+            out.append("| N/A | N/A | N/A | N/A | N/A | N/A | No persisted runs found |")
+        return out
+
+    grouped: dict[tuple[str, str], dict[str, object]] = {}
+    for record in records:
+        key = (record["product"], record["study_experiment"])
+        if key not in grouped:
+            grouped[key] = {"latest": record, "count": 0}
+        grouped[key]["count"] = int(grouped[key]["count"]) + 1
+
+    lines = [
+        "# Run Index",
+        "",
+        "This is a navigation view of persisted research runs. Canonical values remain inside each run directory.",
+        "",
+        "## Latest by Experiment",
+        "",
+        "Use this first to understand the current research surface without opening individual run folders.",
+        "",
+        "| Product | Study / Experiment | Latest Run | Runs | Period | Summary |",
+        "|---|---|---|---:|---|---|",
+    ]
+    for item in grouped.values():
+        record = item["latest"]
+        assert isinstance(record, dict)
+        lines.append(
+            f"| {_escape(record['product'])} | {_escape(record['study_experiment'])} | "
+            f"[{_escape(record['run'])}]({_escape(record['run'])}/) | {int(item['count'])} | "
+            f"{_escape(record['period'])} | {_escape(record['summary'])} |"
+        )
+    if not grouped:
+        lines.append("| N/A | N/A | N/A | 0 | N/A | No persisted runs found |")
+
+    recent = records[:20]
+    lines.extend(["", "## Recent Runs", ""])
+    lines.extend(run_table(recent))
+    lines.extend([
+        "",
+        "<details>",
+        f"<summary>Full Run History ({len(records)} runs)</summary>",
+        "",
+    ])
+    lines.extend(run_table(records))
+    lines.extend(["", "</details>"])
+    return "\n".join(lines).rstrip() + "\n"
+'''
+replace_block(
+    "src/portfolio_optimizer_kr/report/navigation.py",
+    "def build_runs_index(",
+    "def write_runs_index(",
+    navigation_fn,
+)
+
+public_links_fn = '''def _apply_runs_index(runs_root: Path) -> None:
+    index_path = runs_root / "README.md"
+    if not index_path.is_file():
+        return
+
+    legacy_header = [
+        "Run", "Product", "Study / Experiment", "Period", "Benchmark", "Summary"
+    ]
+    enriched_header = [
+        "Run", "Product", "Study / Experiment", "Period", "Benchmark", "Report", "Summary"
+    ]
+
+    def is_separator(cells: list[str]) -> bool:
+        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+
+    lines = index_path.read_text(encoding="utf-8").splitlines()
+    output: list[str] = []
+    mode: str | None = None
+    for line in lines:
+        cells = _split_row(line)
+        if cells == legacy_header:
+            output.append(_join_row(enriched_header))
+            mode = "legacy"
+            continue
+        if cells == enriched_header:
+            output.append(line)
+            mode = "enriched"
+            continue
+        if mode and is_separator(cells):
+            output.append(_join_row(["---"] * 7))
+            continue
+        if mode == "legacy" and len(cells) == 6 and _run_id_from_cell(cells[0]):
+            output.append(
+                _join_row(cells[:5] + [_report_cell(runs_root, cells[0])] + [cells[5]])
+            )
+            continue
+        if mode == "enriched" and len(cells) == 7 and _run_id_from_cell(cells[0]):
+            cells[5] = _report_cell(runs_root, cells[0])
+            output.append(_join_row(cells))
+            continue
+        if cells and not _run_id_from_cell(cells[0]):
+            mode = None
+        output.append(line)
+
+    index_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")
+'''
+replace_block(
+    "src/portfolio_optimizer_kr/report/public_links.py",
+    "def _apply_runs_index(",
+    "def apply_public_report_links(",
+    public_links_fn,
+)
+
+# 5) Focused regression tests.
+Path("tests/test_drawdown_elasticity.py").write_text('''from __future__ import annotations
+
+import pandas as pd
+import pytest
+
+from portfolio_optimizer_kr.analytics import normalized_underwater_duration
+from portfolio_optimizer_kr.viewer.pv_visual import drawdown_presentation
+
+
+def test_normalized_underwater_duration_uses_recovered_worst10_median() -> None:
+    episodes = pd.DataFrame([
+        {"rank": 1, "recovery": "2021-05-31", "underwater_months": 4, "maximum_drawdown": -0.10},
+        {"rank": 2, "recovery": "2022-06-30", "underwater_months": 6, "maximum_drawdown": -0.20},
+        {"rank": 3, "recovery": None, "underwater_months": 12, "maximum_drawdown": -0.30},
+        {"rank": 11, "recovery": "2023-01-31", "underwater_months": 1, "maximum_drawdown": -0.10},
+    ])
+    summary = normalized_underwater_duration(episodes)
+    assert summary["completed_episode_count"] == 2
+    assert summary["episode_limit"] == 10
+    assert summary["normalized_underwater_duration_months_per_10pct"] == pytest.approx(3.5)
+
+
+def test_drawdown_presentation_displays_canonical_elasticity_kpi() -> None:
+    dates = pd.to_datetime(["2020-01-31", "2020-02-29", "2020-03-31"])
+    series = pd.DataFrame({"date": dates, "Portfolio A_drawdown_pct": [0.0, -10.0, 0.0]})
+    episodes = pd.DataFrame([{
+        "portfolio": "Portfolio A", "rank": 1, "start": dates[1], "bottom": dates[1],
+        "recovery": dates[2], "maximum_drawdown_pct": -10.0, "decline_months": 1,
+        "recovery_months": 1, "underwater_months": 2, "annualized_recovery_rate_pct": 213.8,
+    }])
+    resilience = pd.DataFrame([{
+        "portfolio": "Portfolio A",
+        "normalized_underwater_duration_months_per_10pct": 3.14,
+        "completed_episode_count": 7,
+        "episode_limit": 10,
+    }])
+    rendered = drawdown_presentation(series, episodes, ["Portfolio A"], None, resilience)
+    assert "탄성회복도" in rendered
+    assert "3.1개월 / 10% DD" in rendered
+    assert "낮을수록 좋음" in rendered
+    assert "completed 7/10 episodes" in rendered
+''', encoding="utf-8")
+
+Path("tests/test_run_index_readability.py").write_text('''from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import yaml
+
+from portfolio_optimizer_kr.report.navigation import write_runs_index
+from portfolio_optimizer_kr.report.public_links import apply_public_report_links
+
+
+def _run(root: Path, run_id: str, experiment: str, url: str | None = None) -> Path:
+    run = root / run_id
+    run.mkdir(parents=True)
+    (run / "result.json").write_text(json.dumps({"configuration": {"run_id": run_id, "product_mode": "optimization", "analysis_period": {"start": "2020-01-01", "end": "2026-08-31"}, "benchmark": {"symbol": "SPY", "name": "SPY"}}}), encoding="utf-8")
+    (run / "input.yaml").write_text("product_mode: optimization\n", encoding="utf-8")
+    (run / "context.yaml").write_text(yaml.safe_dump({"study": "studies/demo", "experiment": f"studies/demo/experiments/{experiment}.yaml"}), encoding="utf-8")
+    if url:
+        (run / "links.yaml").write_text(yaml.safe_dump({"public_report_url": url}), encoding="utf-8")
+    return run
+
+
+def test_runs_index_is_readable_and_public_link_refresh_is_idempotent(tmp_path: Path) -> None:
+    _run(tmp_path, "20260910-0001", "001-alpha")
+    latest = _run(tmp_path, "20260911-0001", "001-alpha", "https://reports.example/a.html")
+    _run(tmp_path, "20260911-0002", "002-beta")
+
+    index = write_runs_index(tmp_path)
+    apply_public_report_links(latest, update_index=True)
+    apply_public_report_links(latest, update_index=True)
+    text = index.read_text(encoding="utf-8")
+
+    assert "## Latest by Experiment" in text
+    assert "## Recent Runs" in text
+    assert "Full Run History (3 runs)" in text
+    assert "| Optimization | demo / 001-alpha | [20260911-0001]" in text
+    assert "| 2 | 2020-01-01 ~ 2026-08-31 |" in text
+    assert "[Open](https://reports.example/a.html)" in text
+    assert "|---|---|---|---|---|N/A|---|" not in text.replace(" ", "")
+    assert text.count("|---|---|---|---|---|---|---|") == 2
+''', encoding="utf-8")
+
+# 6) Mark OpenSpec tasks.
+for task_path, additions in {
+    "openspec/changes/2026-09-11-drawdown-recovery-episodes/tasks.md": [
+        "- [x] Worst 10 recovered drawdowns 기반 Normalized Underwater Duration canonical summary 추가",
+        "- [x] Drawdowns 제목 아래 `탄성회복도 x.x개월 / 10% DD` compact KPI 표시",
+        "- [x] Optimization/Backtest affected regression에서 elasticity artifact/report 확인",
+    ],
+    "openspec/changes/2026-09-10-run-navigation-summaries/tasks.md": [
+        "- [x] 이미 Report column이 있는 aggregate index 재처리 시 separator가 N/A data row로 오염되는 버그 수정",
+        "- [x] `runs/README.md`를 Latest by Experiment / Recent Runs / collapsed Full Run History 구조로 재구성",
+        "- [x] public report link refresh idempotency regression 추가",
+    ],
+}.items():
+    p = Path(task_path)
+    task_text = p.read_text(encoding="utf-8")
+    for line in additions:
+        if line not in task_text:
+            task_text = task_text.rstrip() + "\n" + line + "\n"
+    p.write_text(task_text, encoding="utf-8")
