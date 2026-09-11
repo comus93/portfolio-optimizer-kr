@@ -15,7 +15,7 @@
 - [x] Worst 10 recovered drawdowns 기반 Normalized Underwater Duration canonical summary 추가
 - [x] Drawdowns 제목 아래 `탄성회복도 x.x개월 / 10% DD` compact KPI 표시
 - [x] Optimization/Backtest affected regression에서 elasticity artifact/report 확인
-- [ ] shared Drawdowns를 single overlay chart + selectable foreground series 구조로 변경
-- [ ] 선택 portfolio 기준 탄성회복도 + Worst Drawdowns detail 전환 검증
-- [ ] Optimization/Backtest unit/browser affected regression 실행
+- [x] shared Drawdowns를 single overlay chart + selectable foreground series 구조로 변경
+- [x] 선택 portfolio 기준 탄성회복도 + Worst Drawdowns detail 전환 검증
+- [x] Optimization/Backtest unit/browser affected regression 실행
 - [ ] 동일 Maximum Return 11.5% 대표 Optimization report 재생성 및 overlay UX 확인

@@ -126,9 +126,11 @@ def test_pv_round1_artifacts_and_report_contract(tmp_path):
     assert '<th rowspan="2">Asset B<br>(B)</th>' in html
     assert 'Asset A (A)' not in html
     assert 'Asset B (B)' not in html
-    assert 'data-chart="drawdown-combined"' in html
-    assert "drawdown-panel" not in html
-    assert "drawdown-episodes-panel" in html
+    assert html.count('data-chart="drawdown-comparison"') == 1
+    assert html.count('class="drawdown-choice"') == 3
+    assert html.count('class="drawdown-detail"') == 3
+    assert "drawdown-comparison-panel" in html
+    assert "drawdown-episodes-panel" not in html
     assert html.index("Portfolio Risk Decomposition") < html.index("Annual Asset Returns")
     assert "tipWidth" in html and "pointerX - tipWidth - 12" in html
 

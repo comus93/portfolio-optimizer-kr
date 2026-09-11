@@ -825,26 +825,39 @@ def _duration_label(months: int | None) -> str:
     return " ".join(parts)
 
 
-def _drawdown_chart(
+def _drawdown_overlay_chart(
     frame: pd.DataFrame,
-    column: str,
-    label: str,
-    chart_id: str,
+    targets: list[tuple[str, str, str]],
+    chart_id: str = "drawdown-comparison",
 ) -> str:
-    if frame.empty or "date" not in frame or column not in frame:
+    available = [target for target in targets if target[1] in frame.columns]
+    if frame.empty or "date" not in frame or not available:
         return '<p class="muted">N/A</p>'
-    shaped = frame[["date", column]].copy()
+
+    shaped = frame[["date"] + [column for _, column, _ in available]].copy()
     shaped["date"] = pd.to_datetime(shaped["date"], errors="coerce")
-    shaped[column] = pd.to_numeric(shaped[column], errors="coerce")
-    shaped = shaped.dropna().sort_values("date")
+    for _, column, _ in available:
+        shaped[column] = pd.to_numeric(shaped[column], errors="coerce")
+    shaped = shaped.dropna(subset=["date"]).sort_values("date")
+    shaped = shaped[
+        shaped[[column for _, column, _ in available]].notna().any(axis=1)
+    ]
     if shaped.empty:
+        return '<p class="muted">N/A</p>'
+
+    values = [
+        float(value)
+        for _, column, _ in available
+        for value in shaped[column]
+        if hc.finite(value)
+    ]
+    if not values:
         return '<p class="muted">N/A</p>'
 
     left, right, top, bottom = 78, 24, 24, 70
     plot_width = hc.WIDTH - left - right
     plot_height = hc.HEIGHT - top - bottom
-
-    y_min = min(float(shaped[column].min()), -1.0)
+    y_min = min(min(values), -1.0)
     step = hc.nice_step(abs(y_min), 5)
     y_min = math.floor(y_min / step) * step
     y_max = 0.0
@@ -871,21 +884,36 @@ def _drawdown_chart(
         )
         tick += step
 
-    coords = [
-        (
-            x_for(pd.Timestamp(row["date"])),
-            y_for(float(row[column])),
+    base_paths: list[str] = []
+    focus_paths: list[str] = []
+    colors: list[str] = []
+    for index, (_, column, label) in enumerate(available):
+        color = hc.PALETTE[index % len(hc.PALETTE)]
+        colors.append(color)
+        part = shaped[["date", column]].dropna()
+        coords = [
+            (
+                x_for(pd.Timestamp(row["date"])),
+                y_for(float(row[column])),
+            )
+            for _, row in part.iterrows()
+        ]
+        points = " ".join(f"{x:.2f},{y:.2f}" for x, y in coords)
+        if not points:
+            continue
+        base_paths.append(
+            f'<polyline points="{points}" fill="none" stroke="{color}" '
+            f'data-series-index="{index}" data-series-label="{hc.esc(label)}" '
+            'class="drawdown-base-series" />'
         )
-        for _, row in shaped.iterrows()
-    ]
-    path = (
-        f'<polyline points="{" ".join(f"{x:.2f},{y:.2f}" for x, y in coords)}" '
-        f'fill="none" stroke="{hc.PALETTE[0]}" stroke-width="2.2" '
-        'class="drawdown-series" />'
-    )
+        focus_paths.append(
+            f'<polyline points="{points}" fill="none" stroke="{color}" '
+            f'data-series-index="{index}" data-series-label="{hc.esc(label)}" '
+            'class="drawdown-focus-series" pointer-events="none" />'
+        )
 
     rows = list(shaped.iterrows())
-    zones = []
+    zones: list[str] = []
     for position, (_, row) in enumerate(rows):
         date = pd.Timestamp(row["date"])
         x = x_for(date)
@@ -906,8 +934,12 @@ def _drawdown_chart(
             else left + plot_width
         )
         items = [
-            (label, hc.pct(row[column]), hc.PALETTE[0])
+            (label, hc.pct(row[column]), colors[index])
+            for index, (_, column, label) in enumerate(available)
+            if hc.finite(row.get(column))
         ]
+        if not items:
+            continue
         legacy = _legacy_tooltip(date.strftime("%Y-%m-%d"), items)
         zones.append(
             f'<rect x="{x0:.2f}" y="{top}" '
@@ -927,11 +959,11 @@ def _drawdown_chart(
         for date in hc.calendar_ticks(shaped["date"])
     )
 
-    svg = f"""<svg class="analysis-chart drawdown-chart" viewBox="0 0 {hc.WIDTH} {hc.HEIGHT}" role="img" aria-label="{hc.esc(label)} drawdown">
+    svg = f"""<svg class="analysis-chart drawdown-chart drawdown-comparison-chart" viewBox="0 0 {hc.WIDTH} {hc.HEIGHT}" role="img" aria-label="Drawdown comparison">
       {''.join(grid)}
       <line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_height}" class="axis y-axis-line" />
       <line x1="{left}" y1="{y_for(0):.2f}" x2="{left + plot_width}" y2="{y_for(0):.2f}" class="axis zero-axis" />
-      {path}{''.join(zones)}{x_ticks}
+      {''.join(base_paths)}{''.join(focus_paths)}{''.join(zones)}{x_ticks}
       <line x1="{left}" y1="{top + plot_height}" x2="{left + plot_width}" y2="{top + plot_height}" class="axis x-axis-line" />
       <text x="{left + plot_width / 2:.2f}" y="{hc.HEIGHT - 14}" text-anchor="middle" class="axis-title">Month / Year</text>
       <text x="20" y="{top + plot_height / 2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 20 {top + plot_height / 2:.2f})">Drawdown %</text>
@@ -1017,10 +1049,10 @@ def drawdown_presentation(
     benchmark_label: str | None,
     resilience_frame: pd.DataFrame | None = None,
 ) -> str:
-    blocks = []
     targets = [
         (name, f"{name}_drawdown_pct", name)
         for name in portfolio_order
+        if f"{name}_drawdown_pct" in series_frame
     ]
     if "benchmark_drawdown_pct" in series_frame:
         targets.append(
@@ -1030,32 +1062,96 @@ def drawdown_presentation(
                 benchmark_label or "Benchmark",
             )
         )
+    if not targets:
+        return '<p class="muted">N/A</p>'
 
-    for key, column, label in targets:
-        if column not in series_frame:
-            continue
+    selector_inputs: list[str] = []
+    selector_labels: list[str] = []
+    detail_blocks: list[str] = []
+    selector_rules: list[str] = []
+
+    for index, (key, _column, label) in enumerate(targets):
+        control_id = f"drawdown-select-{index}"
+        color = hc.PALETTE[index % len(hc.PALETTE)]
+        selector_inputs.append(
+            f'<input class="drawdown-choice" type="radio" name="drawdown-selected-series" '
+            f'id="{control_id}" value="{hc.esc(key)}" '
+            + ("checked " if index == 0 else "")
+            + '/>'
+        )
+        selector_labels.append(
+            f'<label class="drawdown-selector-label" for="{control_id}" '
+            f'data-series-index="{index}" style="--color:{color}">'
+            '<span class="drawdown-selector-dot" aria-hidden="true"></span>'
+            f'{hc.esc(label)}</label>'
+        )
+
         if not episodes_frame.empty and "portfolio" in episodes_frame:
             part = episodes_frame[
                 episodes_frame["portfolio"].astype(str) == key
             ].copy()
         else:
             part = pd.DataFrame()
-        if resilience_frame is not None and not resilience_frame.empty and "portfolio" in resilience_frame:
+        if (
+            resilience_frame is not None
+            and not resilience_frame.empty
+            and "portfolio" in resilience_frame
+        ):
             resilience_part = resilience_frame[
                 resilience_frame["portfolio"].astype(str) == key
             ].copy()
         else:
             resilience_part = pd.DataFrame()
-        blocks.append(
-            f'<div class="analysis-panel drawdown-panel" '
-            f'data-portfolio="{hc.esc(key)}">'
-            f"<h3>Drawdowns for {hc.esc(label)}</h3>"
-            f"{_drawdown_resilience_kpi(resilience_part)}"
-            f'{_drawdown_chart(series_frame, column, label, f"drawdown-{key}")}'
-            "<h4>Drawdown Episodes</h4>"
-            f"{_drawdown_episode_table(part)}</div>"
+
+        detail_blocks.append(
+            f'<div class="drawdown-detail" data-portfolio="{hc.esc(key)}" '
+            f'data-series-index="{index}">'
+            f'<h3>Drawdowns for {hc.esc(label)}</h3>'
+            f'{_drawdown_resilience_kpi(resilience_part)}'
+            '<h4>Drawdown Episodes</h4>'
+            f'{_drawdown_episode_table(part)}</div>'
         )
-    return "".join(blocks) if blocks else '<p class="muted">N/A</p>'
+        selector_rules.extend(
+            [
+                f'#{control_id}:checked ~ .drawdown-selector label[for="{control_id}"]'
+                '{background:#eef4ff;border-color:var(--color);color:#0f172a;font-weight:700}',
+                f'#{control_id}:checked ~ .drawdown-chart-host '
+                f'.drawdown-focus-series[data-series-index="{index}"]'
+                '{opacity:1;stroke-width:3.6}',
+                f'#{control_id}:checked ~ .drawdown-details '
+                f'.drawdown-detail[data-series-index="{index}"]'
+                '{display:block}',
+            ]
+        )
+
+    style = (
+        '<style class="drawdown-comparison-style">'
+        '.drawdown-comparison-panel{border-top:1px solid #eef1f5;padding-top:8px;margin-top:18px}'
+        '.drawdown-comparison-panel>.panel-subtitle{margin-bottom:10px}'
+        '.drawdown-choice{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}'
+        '.drawdown-selector{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0 10px}'
+        '.drawdown-selector-label{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid #d7dee8;border-radius:999px;background:#fff;color:#475569;font-size:12px;cursor:pointer;user-select:none;transition:background .15s,border-color .15s,color .15s}'
+        '.drawdown-selector-label:hover{background:#f8fafc}'
+        '.drawdown-selector-label:focus-visible{outline:2px solid #2563eb;outline-offset:2px}'
+        '.drawdown-selector-dot{width:12px;height:3px;border-radius:99px;background:var(--color);display:inline-block}'
+        '.drawdown-base-series{opacity:.34;stroke-width:1.6;transition:opacity .15s,stroke-width .15s}'
+        '.drawdown-focus-series{opacity:0;stroke-width:3.6;transition:opacity .15s}'
+        '.drawdown-details{margin-top:16px}'
+        '.drawdown-detail{display:none}'
+        + ''.join(selector_rules)
+        + '</style>'
+    )
+    chart = _drawdown_overlay_chart(series_frame, targets)
+    return (
+        '<div class="analysis-panel drawdown-comparison-panel">'
+        '<h3>Drawdown Comparison</h3>'
+        '<p class="panel-subtitle">Select a portfolio to foreground its drawdown path and review its recovery details.</p>'
+        f'{style}{"".join(selector_inputs)}'
+        f'<div class="drawdown-selector" role="radiogroup" aria-label="Drawdown portfolio selection">{"".join(selector_labels)}</div>'
+        f'<div class="drawdown-chart-host">{chart}</div>'
+        f'<div class="drawdown-details">{"".join(detail_blocks)}</div>'
+        '</div>'
+    )
 
 
 def rolling_summary_table(

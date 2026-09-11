@@ -48,7 +48,7 @@ _SERIES_CONTRAST_SCRIPT = r"""
         if (fill === SECONDARY_OLD) node.setAttribute('fill', SECONDARY_GREEN);
       });
 
-      host.querySelectorAll('.legend span').forEach(span => {
+      host.querySelectorAll('.legend span, .drawdown-selector-label').forEach(span => {
         const color = span.style.getPropertyValue('--color').trim().toLowerCase();
         if (color === SECONDARY_OLD) {
           span.style.setProperty('--color', SECONDARY_GREEN);

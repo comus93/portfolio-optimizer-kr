@@ -90,11 +90,12 @@ def test_backtest_full_path_uses_shared_outputs_and_renders_complete_report(tmp_
         'id="portfolio-risk-decomposition"',
         'data-chart="rolling-3y-annualized-return"',
         'data-chart="rolling-5y-annualized-return"',
-        'data-chart="drawdown-combined"',
+        'data-chart="drawdown-comparison"',
     ]:
         assert marker in html
-    assert "drawdown-panel" not in html
-    assert html.count("drawdown-episodes-panel") >= 3
+    assert "drawdown-comparison-panel" in html
+    assert html.count('class="drawdown-choice"') == 3
+    assert html.count('class="drawdown-detail"') == 3
     assert html.count("active-contribution-panel") == 2
     assert html.count("rolling-active-risk-panel") == 2
     assert html.count("up-down-panel") == 2

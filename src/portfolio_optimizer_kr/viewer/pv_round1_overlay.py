@@ -317,38 +317,15 @@ def _combined_drawdowns(
     episodes_frame: pd.DataFrame,
     portfolio_order: list[str],
     benchmark_label: str | None,
+    resilience_frame: pd.DataFrame | None = None,
 ) -> str:
-    if series_frame.empty:
-        return '<p class="muted">N/A</p>'
-    series: list[tuple[str, str]] = []
-    targets: list[tuple[str, str]] = []
-    for name in portfolio_order:
-        column = f"{name}_drawdown_pct"
-        if column in series_frame:
-            series.append((column, name))
-            targets.append((name, name))
-    if "benchmark_drawdown_pct" in series_frame:
-        series.append(("benchmark_drawdown_pct", benchmark_label or "Benchmark"))
-        targets.append(("benchmark", benchmark_label or "Benchmark"))
-    chart = pv.time_line_chart(
+    return pv.drawdown_presentation(
         series_frame,
-        series,
-        chart_id="drawdown-combined",
-        y_title="Drawdown %",
-        value_scale=1.0,
+        episodes_frame,
+        portfolio_order,
+        benchmark_label,
+        resilience_frame,
     )
-    tables: list[str] = []
-    for key, label in targets:
-        part = (
-            episodes_frame[episodes_frame["portfolio"].astype(str) == key].copy()
-            if not episodes_frame.empty and "portfolio" in episodes_frame
-            else pd.DataFrame()
-        )
-        tables.append(
-            f'<div class="analysis-panel drawdown-episodes-panel" data-portfolio="{hc.esc(key)}">'
-            f'<h3>Drawdowns for {hc.esc(label)}</h3>{pv._drawdown_episode_table(part)}</div>'
-        )
-    return chart + "".join(tables)
 
 
 def _assets_section(
@@ -514,7 +491,7 @@ def apply_backtest_round1_overlay(
         html,
         "drawdowns",
         '<section id="drawdowns" class="result-section"><h2>Drawdowns</h2>'
-        f'{_combined_drawdowns(_artifact(root, "drawdown_series.csv"), _artifact(root, "drawdowns.csv"), portfolio_order, benchmark_label)}'
+        f'{_combined_drawdowns(_artifact(root, "drawdown_series.csv"), _artifact(root, "drawdowns.csv"), portfolio_order, benchmark_label, _artifact(root, "drawdown_resilience.csv"))}'
         '</section>',
     )
     html = _replace_section(
@@ -532,7 +509,6 @@ def apply_backtest_round1_overlay(
     )
     html = _active_fixes(html, benchmark_label)
     html = _move_chart_legend_after(html, "annual-returns-chart")
-    html = _move_chart_legend_after(html, "drawdown-combined")
     html = _fix_tooltip_positioning(html)
     html = html.replace(
         "</head>",
