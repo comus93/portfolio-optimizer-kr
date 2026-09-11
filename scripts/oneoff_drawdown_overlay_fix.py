@@ -307,8 +307,8 @@ def drawdown_presentation(
 
 replace_block(
     "src/portfolio_optimizer_kr/viewer/pv_visual.py",
-    "def _drawdown_resilience_kpi(\n",
-    "def rolling_summary_table(\n",
+    "def _drawdown_resilience_kpi(",
+    "def rolling_summary_table(",
     pv_presentation,
 )
 
