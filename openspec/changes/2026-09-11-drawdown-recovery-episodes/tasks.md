@@ -18,4 +18,4 @@
 - [x] shared Drawdowns를 single overlay chart + selectable foreground series 구조로 변경
 - [x] 선택 portfolio 기준 탄성회복도 + Worst Drawdowns detail 전환 검증
 - [x] Optimization/Backtest unit/browser affected regression 실행
-- [ ] 동일 Maximum Return 11.5% 대표 Optimization report 재생성 및 overlay UX 확인
+- [x] 동일 Maximum Return 11.5% 대표 Optimization report 재생성 및 overlay UX 확인 (`20260911-0006`)
