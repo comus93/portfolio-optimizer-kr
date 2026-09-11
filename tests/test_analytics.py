@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from portfolio_optimizer_kr.analytics import active_analytics, active_return_metrics, drawdown_episodes, monthly_returns_table, performance_summary, return_decomposition, risk_contribution, trailing_returns
+from portfolio_optimizer_kr.analytics import active_analytics, active_return_metrics, drawdown_episodes, drawdown_recovery_progress, monthly_returns_table, performance_summary, return_decomposition, risk_contribution, trailing_returns
 from portfolio_optimizer_kr.portfolio import build_portfolio_path
 
 
@@ -53,3 +53,33 @@ def test_trailing_table_drawdown_and_compounded_active_conventions():
     assert episode["start"] == idx[1] and episode["bottom"] == idx[1] and episode["recovery"] == idx[2]
     active = active_analytics(portfolio, benchmark, window=2)
     assert active.iloc[-1]["cumulative_active_return"] == pytest.approx((1.1 * .8 * 1.3) - (1 * .9 * 1.1))
+
+
+def test_drawdown_recovery_timing_rate_and_progress():
+    idx = pd.date_range("2024-01-31", periods=5, freq="ME")
+    returns = pd.Series([0.10, -0.20, 0.125, 0.11111111111111116, 0.0], index=idx)
+    episode = drawdown_episodes(returns).iloc[0]
+    assert episode["start"] == idx[1]
+    assert episode["bottom"] == idx[1]
+    assert episode["recovery"] == idx[3]
+    assert episode["decline_months"] == 1
+    assert episode["recovery_months"] == 2
+    assert episode["underwater_months"] == 3
+    assert episode["annualized_recovery_rate"] == pytest.approx((1 / 0.8) ** 6 - 1)
+    progress = drawdown_recovery_progress(returns, drawdown_episodes(returns))
+    assert list(progress["month_since_bottom"]) == [0, 1, 2]
+    assert progress.iloc[0]["recovery_progress_pct"] == pytest.approx(0.0)
+    assert progress.iloc[1]["recovery_progress_pct"] == pytest.approx(50.0)
+    assert progress.iloc[2]["recovery_progress_pct"] == pytest.approx(100.0)
+
+
+def test_ongoing_drawdown_keeps_recovery_metrics_unavailable():
+    idx = pd.date_range("2024-01-31", periods=3, freq="ME")
+    returns = pd.Series([0.10, -0.20, 0.05], index=idx)
+    episode = drawdown_episodes(returns).iloc[0]
+    assert pd.isna(episode["recovery"])
+    assert pd.isna(episode["recovery_months"])
+    assert pd.isna(episode["annualized_recovery_rate"])
+    assert episode["underwater_months"] == 2
+    progress = drawdown_recovery_progress(returns, drawdown_episodes(returns))
+    assert bool(progress["recovered"].iloc[0]) is False

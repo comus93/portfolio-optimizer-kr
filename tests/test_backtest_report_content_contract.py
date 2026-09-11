@@ -63,16 +63,27 @@ def test_drawdowns_have_axes_calendar_ticks_and_recovery_episode_fields():
             {"portfolio": "benchmark", "rank": 1, "start": "2024-01-31", "bottom": "2024-02-29", "recovery": None, "maximum_drawdown_pct": -5.0},
         ]
     )
-    rendered = _drawdown_presentation(series, episodes, PORTFOLIOS, BENCHMARK)
+    recovery = pd.DataFrame([
+        {"portfolio":"Growth 70/30","rank":1,"date":"2024-02-29","month_since_bottom":0,"recovery_progress_pct":0.0,"maximum_drawdown_pct":-4.0,"recovered":True},
+        {"portfolio":"Growth 70/30","rank":1,"date":"2024-03-31","month_since_bottom":1,"recovery_progress_pct":100.0,"maximum_drawdown_pct":-4.0,"recovered":True},
+    ])
+    episodes["decline_months"] = 2
+    episodes["recovery_months"] = [1, 1, None]
+    episodes["underwater_months"] = [3, 3, 3]
+    episodes["annualized_recovery_rate_pct"] = [63.2, 26.8, None]
+    rendered = _drawdown_presentation(series, episodes, PORTFOLIOS, BENCHMARK, recovery)
     assert rendered.count("drawdown-panel") == 3
     assert 'data-chart="drawdown-Growth 70/30"' in rendered
     assert "Drawdown %" in rendered
     assert "Month / Year" in rendered
     assert "drawdown-hover-zone" in rendered
-    for header in ["Start", "End", "Length", "Recovery By", "Recovery Time", "Underwater Period", "Drawdown"]:
+    for header in ["Start", "End", "Length", "Recovery By", "Recovery Time", "Underwater Period", "Recovery Rate", "Drawdown"]:
         assert header in rendered
     assert "Mar 2024" in rendered
     assert "Worst 10 drawdowns" in rendered
+    assert "Recovery Progress from Bottom" in rendered
+    assert "Months Since Bottom" in rendered
+    assert "Recovery Progress %" in rendered
 
 
 def test_annual_asset_returns_preserve_ticker_series_and_shared_year_hover():

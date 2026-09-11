@@ -128,9 +128,51 @@ def monthly_returns_table(monthly_returns: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _month_delta(start: object, end: object) -> int | None:
+    if start is None or end is None or pd.isna(start) or pd.isna(end):
+        return None
+    start_ts = pd.Timestamp(start)
+    end_ts = pd.Timestamp(end)
+    return (end_ts.year - start_ts.year) * 12 + end_ts.month - start_ts.month
+
+
+def _decorate_drawdown_episode(
+    row: dict[str, object],
+    *,
+    latest: pd.Timestamp,
+) -> dict[str, object]:
+    start = pd.Timestamp(row["start"])
+    bottom = pd.Timestamp(row["bottom"])
+    recovery_value = row.get("recovery")
+    recovery = None if recovery_value is None or pd.isna(recovery_value) else pd.Timestamp(recovery_value)
+    decline_delta = _month_delta(start, bottom)
+    recovery_months = _month_delta(bottom, recovery) if recovery is not None else None
+    underwater_end = recovery if recovery is not None else latest
+    underwater_delta = _month_delta(start, underwater_end)
+    maximum_drawdown = float(row["maximum_drawdown"])
+    recovery_rate = None
+    if recovery_months is not None and recovery_months > 0 and -1.0 < maximum_drawdown < 0.0:
+        recovery_rate = (1.0 / (1.0 + maximum_drawdown)) ** (12.0 / recovery_months) - 1.0
+    row.update(
+        {
+            "decline_months": None if decline_delta is None else decline_delta + 1,
+            "recovery_months": recovery_months,
+            "underwater_months": None if underwater_delta is None else underwater_delta + 1,
+            "annualized_recovery_rate": recovery_rate,
+        }
+    )
+    return row
+
+
 def drawdown_episodes(monthly_returns: pd.Series) -> pd.DataFrame:
     wealth = (1.0 + monthly_returns).cumprod()
     drawdown = wealth / wealth.cummax() - 1.0
+    columns = [
+        "rank", "start", "bottom", "recovery", "maximum_drawdown", "duration_months",
+        "decline_months", "recovery_months", "underwater_months", "annualized_recovery_rate",
+    ]
+    if drawdown.empty:
+        return pd.DataFrame(columns=columns)
     episodes: list[dict[str, object]] = []
     start = None
     for when, value in drawdown.items():
@@ -139,16 +181,81 @@ def drawdown_episodes(monthly_returns: pd.Series) -> pd.DataFrame:
         if start is not None and value >= -1e-12:
             segment = drawdown.loc[start:when]
             bottom = segment.idxmin()
-            episodes.append({"start": start, "bottom": bottom, "recovery": when, "maximum_drawdown": float(segment.min()), "duration_months": len(segment)})
+            episodes.append(
+                {
+                    "start": start,
+                    "bottom": bottom,
+                    "recovery": when,
+                    "maximum_drawdown": float(segment.min()),
+                    "duration_months": len(segment),
+                }
+            )
             start = None
     if start is not None:
         segment = drawdown.loc[start:]
-        episodes.append({"start": start, "bottom": segment.idxmin(), "recovery": None, "maximum_drawdown": float(segment.min()), "duration_months": len(segment)})
+        episodes.append(
+            {
+                "start": start,
+                "bottom": segment.idxmin(),
+                "recovery": None,
+                "maximum_drawdown": float(segment.min()),
+                "duration_months": len(segment),
+            }
+        )
+    latest = pd.Timestamp(drawdown.index[-1])
     ordered = sorted(episodes, key=lambda row: row["maximum_drawdown"])
     for rank, row in enumerate(ordered, start=1):
         row["rank"] = rank
-    return pd.DataFrame(ordered, columns=["rank", "start", "bottom", "recovery", "maximum_drawdown", "duration_months"])
+        _decorate_drawdown_episode(row, latest=latest)
+    return pd.DataFrame(ordered, columns=columns)
 
+
+def drawdown_recovery_progress(
+    monthly_returns: pd.Series,
+    episodes: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    columns = [
+        "rank", "date", "month_since_bottom", "recovery_progress_pct", "drawdown",
+        "maximum_drawdown", "recovered",
+    ]
+    if monthly_returns.empty:
+        return pd.DataFrame(columns=columns)
+    drawdown = drawdown_series(monthly_returns)
+    source = drawdown_episodes(monthly_returns) if episodes is None else episodes
+    if source.empty:
+        return pd.DataFrame(columns=columns)
+    latest = pd.Timestamp(drawdown.index[-1])
+    rows: list[dict[str, object]] = []
+    for _, episode in source.iterrows():
+        bottom = pd.to_datetime(episode.get("bottom"), errors="coerce")
+        recovery = pd.to_datetime(episode.get("recovery"), errors="coerce")
+        if pd.isna(bottom):
+            continue
+        end = latest if pd.isna(recovery) else pd.Timestamp(recovery)
+        bottom = pd.Timestamp(bottom)
+        bottom_drawdown = float(episode.get("maximum_drawdown"))
+        if not (-1.0 < bottom_drawdown < 0.0):
+            continue
+        segment = drawdown.loc[bottom:end]
+        for when, value in segment.items():
+            months = _month_delta(bottom, when)
+            progress = (float(value) - bottom_drawdown) / (-bottom_drawdown) * 100.0
+            if abs(progress) < 1e-10:
+                progress = 0.0
+            if abs(progress - 100.0) < 1e-8:
+                progress = 100.0
+            rows.append(
+                {
+                    "rank": int(episode.get("rank")),
+                    "date": when,
+                    "month_since_bottom": int(months or 0),
+                    "recovery_progress_pct": float(progress),
+                    "drawdown": float(value),
+                    "maximum_drawdown": bottom_drawdown,
+                    "recovered": not pd.isna(recovery),
+                }
+            )
+    return pd.DataFrame(rows, columns=columns)
 
 def rolling_returns(monthly_returns: pd.Series, months: int) -> pd.Series:
     if months < 1:

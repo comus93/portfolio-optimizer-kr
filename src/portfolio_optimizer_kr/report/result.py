@@ -160,6 +160,7 @@ def _review_table(table: pd.DataFrame) -> pd.DataFrame:
                 "cagr",
                 "tracking_error",
                 "contribution",
+                "recovery_rate",
             )
         ):
             numeric = pd.to_numeric(out[column], errors="coerce")
