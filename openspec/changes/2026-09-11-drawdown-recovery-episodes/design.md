@@ -46,15 +46,11 @@ Canonical artifact는 최소 `portfolio`, `rank`, `date`, `month_since_bottom`, 
 기존 shared Drawdowns component를 재사용한다. Browser는 recovery formula를 다시 계산하지 않는다.
 
 - episode table: 기존 PV-style recovery columns 유지 + `Recovery Rate` 추가
-- portfolio별 Recovery Progress panel: worst 5 episodes를 rank 순으로 표시
-- X = Months Since Bottom
-- Y = Recovery Progress %
-- 100% recovery reference line 표시
-- ongoing episode는 마지막 canonical observation에서 끊고 legend/tooltip에서 ongoing임을 구분한다.
+- `Recovery Progress from Bottom` chart는 user-facing report에서 표시하지 않는다.
 
 ## Validation
 
 - synthetic episode에서 timing, recovery rate, progress path를 독립 검증한다.
-- Optimization/Backtest 양쪽에서 새 artifact가 생성되는지 확인한다.
-- shared report component가 canonical value를 소비하는지 확인한다.
+- Optimization/Backtest 양쪽에서 recovery artifact가 생성되는지 확인한다.
+- shared report component가 canonical episode value를 소비하는지 확인한다.
 - 대표 Optimization run을 재생성해 user-facing 결과를 검토한다.
