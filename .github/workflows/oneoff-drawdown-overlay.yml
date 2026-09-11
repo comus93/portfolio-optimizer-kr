@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/oneoff-drawdown-overlay.yml'
+      - 'scripts/oneoff_drawdown_overlay_fix.py'
 
 permissions:
   contents: write
