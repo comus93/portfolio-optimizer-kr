@@ -46,14 +46,13 @@ jobs:
         run: |
           mkdir -p .tmp-validation
           python - <<'PY'
+          from pathlib import Path
           from portfolio_optimizer_kr.viewer import generate_report
-          generate_report('runs/20260911-0005', output_path='.tmp-validation/optimization-report.html')
-          generate_report('runs/20260910-0004', output_path='.tmp-validation/backtest-report.html')
+          opt = generate_report('runs/20260911-0005', output_path='.tmp-validation/optimization-report.html')
+          bt = generate_report('runs/20260910-0004', output_path='.tmp-validation/backtest-report.html')
+          assert 'drawdown-comparison' in Path(opt).read_text(encoding='utf-8')
+          assert 'data-chart="drawdown-comparison"' in Path(bt).read_text(encoding='utf-8')
           PY
-          grep -q 'data-chart="drawdown-comparison"' .tmp-validation/optimization-report.html
-          grep -q 'data-chart="drawdown-comparison"' .tmp-validation/backtest-report.html
-          test "$(grep -o 'data-chart="drawdown-comparison"' .tmp-validation/optimization-report.html | wc -l)" -eq 1
-          test "$(grep -o 'data-chart="drawdown-comparison"' .tmp-validation/backtest-report.html | wc -l)" -eq 1
 
       - name: Install browser validation dependencies
         run: |
