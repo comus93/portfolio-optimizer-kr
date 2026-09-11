@@ -1,0 +1,107 @@
+name: One-off remove Recovery Progress chart
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-remove-recovery-progress-chart.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Remove Recovery Progress chart from shared Drawdowns report
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          pv_path = Path('src/portfolio_optimizer_kr/viewer/pv_visual.py')
+          pv = pv_path.read_text(encoding='utf-8')
+
+          helper_start = pv.index('\ndef _recovery_progress_chart(')
+          presentation_start = pv.index('\ndef drawdown_presentation(', helper_start)
+          pv = pv[:helper_start] + '\n' + pv[presentation_start:]
+
+          presentation_start = pv.index('def drawdown_presentation(')
+          recovery_filter_start = pv.index('        if recovery_frame is not None', presentation_start)
+          blocks_start = pv.index('        blocks.append(', recovery_filter_start)
+          pv = pv[:recovery_filter_start] + pv[blocks_start:]
+
+          old_render = '''            f"{_drawdown_episode_table(part)}"
+            "<h4>Recovery Progress from Bottom</h4>"
+            f"{_recovery_progress_chart(recovery_part, label)}</div>"
+'''
+          new_render = '''            f"{_drawdown_episode_table(part)}</div>"
+'''
+          if old_render not in pv:
+              raise SystemExit('recovery progress render block not found')
+          pv = pv.replace(old_render, new_render, 1)
+          pv_path.write_text(pv, encoding='utf-8')
+
+          test_path = Path('tests/test_backtest_report_content_contract.py')
+          test = test_path.read_text(encoding='utf-8')
+          old_asserts = '''    assert "Recovery Progress from Bottom" in rendered
+    assert "Months Since Bottom" in rendered
+    assert "Recovery Progress %" in rendered
+'''
+          new_asserts = '''    assert "Recovery Progress from Bottom" not in rendered
+    assert "Months Since Bottom" not in rendered
+    assert "Recovery Progress %" not in rendered
+'''
+          if old_asserts not in test:
+              raise SystemExit('recovery progress assertions not found')
+          test = test.replace(old_asserts, new_asserts, 1)
+          test_path.write_text(test, encoding='utf-8')
+
+          tasks_path = Path('openspec/changes/2026-09-11-drawdown-recovery-episodes/tasks.md')
+          tasks = tasks_path.read_text(encoding='utf-8')
+          tasks = tasks.replace(
+              '- [ ] user-facing `Recovery Progress from Bottom` chart 제거 및 affected report regression 확인',
+              '- [x] user-facing `Recovery Progress from Bottom` chart 제거 및 affected report regression 확인',
+              1,
+          )
+          tasks_path.write_text(tasks, encoding='utf-8')
+          PY
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run affected report regression
+        run: |
+          python -m compileall -q src/portfolio_optimizer_kr
+          pytest -q \
+            tests/test_backtest_report_content_contract.py \
+            tests/test_shared_historical_capabilities.py \
+            tests/test_optimizer_shared_historical_mount.py
+
+      - name: Commit removal
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/oneoff-remove-recovery-progress-chart.yml
+          git add src/portfolio_optimizer_kr/viewer/pv_visual.py \
+                  tests/test_backtest_report_content_contract.py \
+                  openspec/changes/2026-09-11-drawdown-recovery-episodes/tasks.md \
+                  .github/workflows/oneoff-remove-recovery-progress-chart.yml
+          git commit -m 'fix: remove recovery progress chart from reports'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Regenerate Maximum Return report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run run-optimization.yml --ref main
