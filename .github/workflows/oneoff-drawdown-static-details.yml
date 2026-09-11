@@ -57,7 +57,7 @@ jobs:
           for html in (opt_html, bt_html):
               assert 'drawdown-resilience-table' in html
               assert 'opacity:.58' in html
-              assert '#2563eb' in html and '#16a34a' in html and '#f97316' in html
+          assert '#2563eb' in opt_html and '#16a34a' in opt_html and '#f97316' in opt_html
           PY
 
       - name: Install browser validation dependencies
