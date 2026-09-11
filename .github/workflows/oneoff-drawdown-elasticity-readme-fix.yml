@@ -22,7 +22,7 @@ jobs:
           python-version: '3.11'
       - name: Apply implementation
         run: python scripts/oneoff_drawdown_elasticity_readme_fix.py
-      - name: Repair generated newline escapes
+      - name: Repair generated patch escapes and assertion
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -35,6 +35,7 @@ jobs:
               ],
               'tests/test_run_index_readability.py': [
                   ('write_text("product_mode: optimization\n", encoding="utf-8")', 'write_text("product_mode: optimization\\n", encoding="utf-8")'),
+                  ('assert text.count("|---|---|---|---|---|---|---|") == 2', 'assert text.replace(" ", "").count("|---|---|---|---|---|---|---|") == 2'),
               ],
           }
           for path, replacements in fixes.items():
