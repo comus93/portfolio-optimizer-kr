@@ -30,17 +30,33 @@ Run README는 discovery/navigation projection이며 `input.yaml`, `context.yaml`
 ### Requirement: Aggregate run catalog
 Repository의 `runs/README.md`는 persisted run을 탐색할 수 있는 aggregate catalog를 제공해야 한다(MUST).
 
-Catalog는 최소 다음 열을 유지해야 한다(MUST).
+Catalog는 repository navigation만으로 연구 흐름을 판단할 수 있도록 다음 3단계 구조를 제공해야 한다(MUST).
 
 ```text
-Run | Product | Study / Experiment | Period | Benchmark | Report | Summary
+Latest by Experiment
+Recent Runs
+Full Run History (collapsed)
 ```
 
+`Latest by Experiment`는 Product + Study / Experiment 조합별 latest run 한 건과 run count를 제공해야 한다(MUST). `Recent Runs`는 최신 run들을 시간 역순으로 제공해야 한다(MUST). `Full Run History`는 모든 persisted run을 유지하되 기본 화면의 정보 밀도를 낮추기 위해 접힌 `<details>` 영역으로 제공할 수 있다(MAY).
+
+각 run row는 최소 Run, Product, Study / Experiment, Period, Benchmark, Report, Summary 정보를 보존해야 한다(MUST).
+
 #### Scenario: multiple run discovery
-- GIVEN `runs/` 아래 여러 persisted run이 있다
-- WHEN aggregate catalog를 생성한다
-- THEN 각 run directory를 개별 탐색하지 않고 run identity와 대략적인 실험 목적을 비교할 수 있다
-- AND public report URL이 등록된 run은 `Report` 열에서 바로 열 수 있다
+- GIVEN 동일 experiment의 반복 run과 여러 다른 experiment가 공존한다
+- WHEN `runs/README.md`를 연다
+- THEN 하위 run directory를 개별 탐색하지 않고 각 experiment의 최신 결과와 반복 횟수를 먼저 판단할 수 있다
+- AND 최근 개별 실행 이력도 바로 확인할 수 있다
+- AND 전체 persisted run history는 유실되지 않는다
+
+### Requirement: Aggregate catalog Markdown remains structurally valid
+Public report link enrichment 또는 navigation 재생성을 반복해도 `runs/README.md`의 Markdown table header separator는 유효해야 한다(MUST). Separator row를 일반 data row로 처리해 `N/A` 또는 report link를 삽입해서는 안 된다(MUST NOT).
+
+#### Scenario: public link refresh on already enriched index
+- GIVEN `Report` column이 이미 포함된 aggregate catalog가 있다
+- WHEN public report link refresh를 다시 실행한다
+- THEN separator row는 모든 cell이 Markdown separator syntax를 유지한다
+- AND catalog table은 GitHub에서 정상 렌더링된다
 
 ### Requirement: Public report URL is passed through, not derived by navigation
 Public report URL은 실행 또는 publication orchestration이 exact URL로 제공하고 run publication metadata에 저장해야 한다(MUST). Navigation layer는 repository owner, Pages domain, run path 규칙을 조합하여 public URL을 자체 계산해서는 안 된다(MUST NOT).
