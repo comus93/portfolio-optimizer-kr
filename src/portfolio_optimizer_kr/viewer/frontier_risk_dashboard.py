@@ -209,13 +209,13 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     template = r'''
 <style id="frontier-risk-dashboard-style">
 #frontier-risk-dashboard .fr-note{margin:-4px 0 14px;color:#65748b;font-size:13px;line-height:1.55}
-#frontier-risk-dashboard .fr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+#frontier-risk-dashboard .fr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
 #frontier-risk-dashboard .fr-card{position:relative;border:1px solid #e2e8f2;border-radius:9px;padding:11px;background:#fbfdff;cursor:crosshair}
 #frontier-risk-dashboard .fr-card-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 #frontier-risk-dashboard .fr-label{font-size:12px;font-weight:700;color:#334155}
 #frontier-risk-dashboard .fr-value{font-size:18px;font-weight:750;color:#172033}
 #frontier-risk-dashboard .fr-help{min-height:44px;margin:4px 0 4px;color:#5f6f84;font-size:11px;line-height:1.42}
-#frontier-risk-dashboard .fr-spark{width:100%;height:158px;display:block;background:#fff;touch-action:pan-y}
+#frontier-risk-dashboard .fr-spark{width:100%;height:220px;display:block;background:#fff;touch-action:pan-y}
 #frontier-risk-dashboard .fr-tooltip{position:absolute;z-index:4;display:none;pointer-events:none;padding:5px 7px;border:1px solid #cbd5e1;border-radius:6px;background:rgba(255,255,255,.97);box-shadow:0 2px 8px rgba(15,23,42,.12);font-size:10px;line-height:1.35;color:#334155;white-space:nowrap}
 #frontier-risk-dashboard .fr-selected{display:grid;grid-template-columns:minmax(300px,.95fr) minmax(420px,1.4fr);gap:16px;margin-top:18px}
 #frontier-risk-dashboard .fr-panel{border:1px solid #e2e8f2;border-radius:9px;padding:13px;background:#fff}
@@ -228,7 +228,7 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 #frontier-risk-dashboard .fr-weight-table td:last-child,#frontier-risk-dashboard .fr-weight-table th:last-child{text-align:right;white-space:nowrap}
 #frontier-risk-dashboard .fr-dd{width:100%;height:250px;display:block;background:#fff}
 #frontier-risk-dashboard .fr-foot{margin-top:8px;color:#718096;font-size:11px;line-height:1.45}
-@media(max-width:780px){#frontier-risk-dashboard .fr-selected{grid-template-columns:1fr}}
+@media(max-width:780px){#frontier-risk-dashboard .fr-grid{grid-template-columns:1fr}#frontier-risk-dashboard .fr-spark{height:auto}#frontier-risk-dashboard .fr-selected{grid-template-columns:1fr}}
 </style>
 <section id="frontier-risk-dashboard">
   <h2>리스크·성과 균형 분석</h2>
@@ -312,7 +312,9 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     return [min - pad, max + pad];
   };
 
-  const xDomain = extentWithPadding(volatility);
+  const targetVolatility = Number(data.target_volatility_pct);
+  const hasTargetVolatility = data.objective === 'target_volatility' && Number.isFinite(targetVolatility);
+  const xDomain = extentWithPadding(hasTargetVolatility ? [...volatility, targetVolatility] : volatility);
 
   const pointerXInSvg = (event, svg, width) => {
     const ctm = svg.getScreenCTM();
@@ -367,7 +369,7 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
     if (!valid.length) return card;
 
     const [yMin,yMax] = extentWithPadding(valid);
-    const w=360,h=158,left=48,right=12,top=18,bottom=38;
+    const w=360,h=220,left=48,right=12,top=18,bottom=42;
     const plotW=w-left-right, plotH=h-top-bottom;
     const x=v=>left+(Number(v)-xDomain[0])*plotW/Math.max(xDomain[1]-xDomain[0],1e-12);
     const y=v=>top+(yMax-Number(v))*plotH/Math.max(yMax-yMin,1e-12);
@@ -397,6 +399,15 @@ def inject_frontier_risk_dashboard(report_path: Path, payload: dict[str, Any]) -
 
     svg.appendChild(svgText(ns,left,10,yLabel,{'font-size':'9','fill':'#64748b'}));
     svg.appendChild(svgText(ns,left+plotW/2,h-5,'연환산 변동성 (%)',{'font-size':'9','fill':'#64748b','text-anchor':'middle'}));
+
+    if (hasTargetVolatility) {
+      const guideX=x(targetVolatility);
+      const guide=document.createElementNS(ns,'line');
+      guide.setAttribute('x1',guideX);guide.setAttribute('x2',guideX);guide.setAttribute('y1',top);guide.setAttribute('y2',h-bottom);
+      guide.setAttribute('stroke','#f59e0b');guide.setAttribute('stroke-width','1.4');guide.setAttribute('stroke-dasharray','5 4');guide.setAttribute('opacity','.95');
+      svg.appendChild(guide);
+      svg.appendChild(svgText(ns,Math.min(guideX+4,w-right-2),top+10,`Target ${targetVolatility.toFixed(2)}%`,{'font-size':'9','fill':'#b45309','text-anchor':guideX>w-right-82?'end':'start'}));
+    }
 
     const pts=[];
     values.forEach((v,i)=>{

@@ -133,6 +133,8 @@ Y display domain은 observed frontier metric range를 사용하고 curve shape�
 
 `target_volatility` dashboard에서 Maximum Sharpe point를 별도 보조 marker로 추가하지 않는다(MUST NOT). 사용자는 동일한 8개 curve를 탐색하되 이번 optimization objective가 선택한 point 하나만 강조해서 볼 수 있어야 한다.
 
+`target_volatility` dashboard의 8개 metric chart는 `target_volatility_pct`를 공통 X축의 고정 세로 점선 guideline으로 표시해야 한다(MUST). Guideline은 selected point와 구분되고 다른 point를 선택해도 이동하지 않는다(MUST). `max_sharpe`에서는 표시하지 않는다(MUST NOT).
+
 #### Scenario: Maximum Return run reuses the same dashboard
 - GIVEN `objective: target_volatility`와 유효한 `target_volatility_pct`를 가진 optimization run이 있다
 - WHEN 리스크·성과 균형 분석 dashboard를 생성한다
@@ -169,3 +171,8 @@ pain_cost_per_0_10_sharpe = delta_pain_index_pct / delta_sharpe * 0.10
 - GIVEN frontier point 순서상 ex-post Sharpe가 이전 point보다 감소한다
 - WHEN marginal diagnostics를 생성한다
 - THEN raw deltas는 보존하되 Sharpe +0.10 cost ratio는 unavailable로 처리한다
+### Requirement: 리스크·성과 균형 분석 responsive size
+PC Web에서 metric card는 최소 폭 360px, chart 기준 높이 220px로 반응형 배치해야 한다(MUST). 780px 이하에서는 1열로 배치하고 SVG 비율을 유지하며 축소한다(MUST).
+
+### Requirement: Optimization overview visibility
+상단 objective와 benchmark pill은 기존 배경 효과를 유지하면서 `Provided Portfolio` heading과 동등한 19px bold typography로 표시해야 한다(MUST).

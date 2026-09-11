@@ -37,3 +37,7 @@
 - [ ] 새 axis/설명/edge interaction/persistent tooltip/Maximum Return objective marker/Ticker-Name-Allocation 표 및 Rolling 5Y 표시 정상 여부에 대한 사용자 visual acceptance 확인
 - [ ] 기존 Efficient Frontier numerical regression을 baseline tag와 frozen-input 기준으로 별도 비교 검증
 - [x] Sweet spot 자동 판정은 이번 change에 포함하지 않고 실제 curve 검토 이후 별도 결정
+
+- [x] Maximum Return metric chart에 고정 Target Volatility guideline 표시
+- [x] PC metric card 360px / chart 220px 및 mobile 1열 반응형 적용
+- [x] 상단 objective / benchmark pill 19px bold 가시성 강화
