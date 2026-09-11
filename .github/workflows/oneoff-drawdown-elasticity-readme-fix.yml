@@ -22,6 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Apply implementation
         run: python scripts/oneoff_drawdown_elasticity_readme_fix.py
+      - name: Repair generated newline escapes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/portfolio_optimizer_kr/report/navigation.py')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace('return "\n".join(lines).rstrip() + "\n"', 'return "\\n".join(lines).rstrip() + "\\n"')
+          p.write_text(t, encoding='utf-8')
+          p = Path('src/portfolio_optimizer_kr/report/public_links.py')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace('index_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")', 'index_path.write_text("\\n".join(output).rstrip() + "\\n", encoding="utf-8")')
+          p.write_text(t, encoding='utf-8')
+          PY
       - name: Install project
         run: |
           python -m pip install --upgrade pip
