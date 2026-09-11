@@ -14,7 +14,7 @@ function servedPath(value) {
 test.describe('shared drawdown overlay interaction', () => {
   test.skip(!reportPath, 'set DRAWDOWN_REPORT_PATH to a generated report');
 
-  test('keeps context lines and foregrounds the selected portfolio', async ({ page }) => {
+  test('keeps all comparison details visible while foregrounding one line', async ({ page }) => {
     await page.goto(servedPath(reportPath));
     const section = page.locator(sectionSelector);
     await expect(section).toBeVisible();
@@ -23,28 +23,41 @@ test.describe('shared drawdown overlay interaction', () => {
     const choices = section.locator('.drawdown-choice');
     const labels = section.locator('.drawdown-selector-label');
     const details = section.locator('.drawdown-detail');
+    const resilienceRows = section.locator('.drawdown-resilience-table tbody tr');
     const baseLines = section.locator('.drawdown-base-series');
     const focusLines = section.locator('.drawdown-focus-series');
     const count = await choices.count();
     expect(count).toBeGreaterThanOrEqual(2);
     await expect(labels).toHaveCount(count);
     await expect(details).toHaveCount(count);
+    await expect(resilienceRows).toHaveCount(count);
     await expect(baseLines).toHaveCount(count);
     await expect(focusLines).toHaveCount(count);
 
+    for (let index = 0; index < count; index += 1) {
+      await expect(details.nth(index)).toBeVisible();
+    }
+
+    if (count >= 3) {
+      expect(await baseLines.nth(0).getAttribute('stroke')).toBe('#2563eb');
+      expect(await baseLines.nth(1).getAttribute('stroke')).toBe('#16a34a');
+      expect(await baseLines.nth(2).getAttribute('stroke')).toBe('#f97316');
+    }
+
     await expect(choices.first()).toBeChecked();
-    await expect(details.first()).toBeVisible();
     await expect(focusLines.first()).toHaveCSS('opacity', '1');
-    await expect(baseLines.first()).toHaveCSS('opacity', '0.34');
+    await expect(baseLines.first()).toHaveCSS('opacity', '0.58');
 
     await labels.nth(1).click();
     await expect(choices.nth(1)).toBeChecked();
-    await expect(details.first()).toBeHidden();
-    await expect(details.nth(1)).toBeVisible();
     await expect(focusLines.first()).toHaveCSS('opacity', '0');
     await expect(focusLines.nth(1)).toHaveCSS('opacity', '1');
-    await expect(baseLines.first()).toHaveCSS('opacity', '0.34');
-    await expect(details.nth(1).getByText('탄성회복도', { exact: true })).toBeVisible();
+    await expect(baseLines.first()).toHaveCSS('opacity', '0.58');
+
+    for (let index = 0; index < count; index += 1) {
+      await expect(details.nth(index)).toBeVisible();
+      await expect(resilienceRows.nth(index)).toBeVisible();
+    }
     await expect(details.nth(1).getByText('Recovery By', { exact: true })).toBeVisible();
   });
 });
