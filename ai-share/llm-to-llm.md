@@ -1,12 +1,12 @@
 # Session Handover
 
-created_at: 2026-09-11T12:35:00+09:00
+created_at: 2026-09-12T10:58:00+09:00
 project: `comus93/portfolio-optimizer-kr`
 branch: `main`
 
 ## Current State
 
-The current working thread is no longer KAW proxy reconstruction. It is the **Provided Portfolio optimization report + frontier risk/recovery analysis** work.
+The current working thread is the **Provided Portfolio optimization report + frontier risk/recovery analysis** work.
 
 Most recent user-facing Maximum Return report:
 
@@ -17,20 +17,20 @@ https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0002/report.html
 
 The user visually confirmed the previously broken **5Y Rolling Returns chart now works**.
 
-Recent report/UI work already completed before this handover:
+Recent report/UI work already completed:
 
 - Frontier risk dashboard title is `리스크·성과 균형 분석`.
 - Maximum Return report uses the same 8 frontier metrics as Maximum Sharpe.
 - Maximum Return target-vol run carries an objective marker/label.
-- The risk dashboard was enlarged for desktop:
-  - minimum card width roughly `360px`
-  - chart height roughly `220px`
+- Risk dashboard enlarged for desktop:
+  - minimum card width about `360px`
+  - chart height about `220px`
   - typically 3 columns on desktop, responsive to 1 column on mobile
-- For `target_volatility` runs, a fixed **Target Volatility guideline** was added to the frontier risk charts. It is distinct from the movable selected-point line.
+- For `target_volatility` runs, a fixed **Target Volatility guideline** was added to frontier risk charts, distinct from the movable selected-point line.
 - Report header objective/benchmark pills were made more visible while preserving the existing background treatment.
 - 5Y rolling report rendering was fixed by removing the fragile delayed/double-render timing and using the shared historical renderer as the final mount path.
 
-Latest same-universe Maximum Return experiment remains:
+Latest same-universe Maximum Return experiment:
 
 ```text
 studies/provided-portfolio-v1-optimization/experiments/006-aia-schd-max-return-vol11_5-same-period.yaml
@@ -38,7 +38,7 @@ studies/provided-portfolio-v1-optimization/experiments/006-aia-schd-max-return-v
 
 Same assets / same period as the AIA+SCHD Maximum Sharpe comparison, target volatility 11.5%.
 
-Latest exact Maximum Return optimizer weights from the prior validated run family:
+Latest exact Maximum Return optimizer weights from the validated run family:
 
 ```text
 QQQ      15.8052%
@@ -54,15 +54,43 @@ The frontier dashboard still has **no automatic Sweet Spot rule**. This is delib
 
 ---
 
+## User Workflow Rule for Future Analysis Runs
+
+This is an explicit user preference and should be followed going forward:
+
+> When doing a normal portfolio analysis / optimization run with **no new feature development**, do **not** spend time on regression-test suites or Playwright/browser validation.
+
+For those pure research/analysis runs:
+
+```text
+NO feature code change
+=> skip broad regression tests
+=> skip Playwright/browser validation
+=> DO run the GitHub Actions research/optimization workflow
+=> DO generate and publish the normal report artifact
+=> inspect the generated run/report numbers before reporting success
+```
+
+This does **not** waive tests/Playwright when actual feature code, finance semantics, renderer behavior, or report interaction is being changed. For real feature development, continue to follow AGENTS/OpenSpec affected-scope validation as appropriate.
+
+The key distinction is:
+
+```text
+Research/optimization execution only  -> GitHub Action + report generation, no regression/Playwright overhead
+Feature/behavior implementation       -> affected tests/validation still apply
+```
+
+---
+
 ## Recovery Resilience Discussion — IMPORTANT
 
-The current open work is to make **recovery resilience / rebound strength** an explicit part of drawdown episode analytics.
+The current open feature work is to make **recovery resilience / rebound strength** an explicit part of drawdown episode analytics.
 
 The user's question is not merely "how long was the portfolio underwater?" but:
 
 > When an asset or portfolio hits a trough, how quickly and strongly does it spring back toward the previous peak?
 
-The user specifically wants to distinguish assets/portfolios that may suffer a deep drawdown but recover sharply, from assets that fall less but remain weak for a long time.
+The user wants to distinguish assets/portfolios that may suffer a deep drawdown but recover sharply from assets that fall less but remain weak for a long time.
 
 ### Existing metrics are not enough
 
@@ -109,10 +137,10 @@ runs/20260911-0002/review/drawdowns.csv
 Optimized 2020-09 -> 2021-05 episode has:
 
 ```text
-start          2020-09-30
-bottom         2020-10-31
-recovery       2021-05-31
-duration_months 9
+start            2020-09-30
+bottom           2020-10-31
+recovery         2021-05-31
+duration_months  9
 ```
 
 Calendar difference is 8 months, but `duration_months=9` because both endpoint observations are counted.
@@ -222,7 +250,7 @@ Never fabricate a future recovery date.
 
 ### Recovery Rate
 
-Second metric, meant to account for how deep the trough was.
+Second metric, intended to account for how deep the trough was.
 
 For a completed episode:
 
@@ -230,7 +258,7 @@ For a completed episode:
 Recovery Rate = (Peak / Trough)^(12 / RecoveryMonths) - 1
 ```
 
-Equivalent interpretation:
+Interpretation:
 
 > Annualized compound rate achieved from the trough back to the previous peak.
 
@@ -271,9 +299,9 @@ RecoveryProgress_t = (Value_t - Trough) / (Peak - Trough) * 100
 So:
 
 ```text
-Trough        = 0%
-Half recovered = 50%
-Prior peak    = 100%
+Trough           = 0%
+Half recovered   = 50%
+Prior peak       = 100%
 ```
 
 Potential chart:
@@ -289,7 +317,7 @@ However, this chart is **not yet implemented and should not be forced into v1 be
 
 ### Asset-level vs portfolio-level recovery
 
-Important interpretation rule:
+Interpretation rule:
 
 - Asset recovery curves explain *why* a portfolio may recover well.
 - Portfolio recovery episodes are the actual realized portfolio outcome.
@@ -313,9 +341,9 @@ The user was interested in asset-by-asset monthly recovery curves, but the agree
 
 **No new canonical recovery-resilience code was completed yet.**
 
-The previous chat was interrupted while inspecting repository governance/specs and existing drawdown implementation.
+The prior chat was interrupted while inspecting repository governance/specs and existing drawdown implementation.
 
-Spec/code investigation completed:
+Investigation completed:
 
 - `AGENTS.md` read.
 - `openspec/config.yaml` read.
@@ -332,19 +360,19 @@ Spec/code investigation completed:
 
 No recovery-specific OpenSpec delta, source change, test change, run, or Pages publication has been completed yet.
 
-Do **not** tell the user that Recovery Months/Recovery Rate is implemented until source + tests + real run have actually been completed and inspected.
+Do **not** tell the user that Recovery Months/Recovery Rate is implemented until source + affected tests + a real generated run have actually been completed and inspected.
 
 ---
 
 ## Relevant Canonical Specs / Existing Contracts
 
-Current shared analytics spec already requires drawdown episode fields:
+Current shared analytics spec:
 
 ```text
 openspec/specs/portfolio-analytics/spec.md
 ```
 
-Current baseline requirement is roughly:
+Current baseline drawdown requirement is roughly:
 
 ```text
 Rank, Start, Bottom, Recovery, Maximum Drawdown, Duration Months
@@ -373,11 +401,11 @@ Shared report architecture already requires Optimization and Backtest to reuse t
 
 Therefore this is a **shared portfolio-analytics change affecting both portfolio-optimization and portfolio-backtest**.
 
-Per AGENTS.md, implementation should:
+Per AGENTS.md, feature implementation should:
 
 1. create/update an OpenSpec change first
 2. document affected products
-3. add affected regressions for both Optimization and Backtest
+3. add affected regressions for both Optimization and Backtest as appropriate
 4. keep finance calculation upstream of the viewer
 
 The existing active change `2026-09-10-frontier-risk-tradeoff` is about frontier risk tradeoff and may not be the cleanest ownership boundary for canonical drawdown episode semantics. Evaluate whether to extend it or create a focused new change such as `2026-09-11-drawdown-recovery-resilience`. Do not create duplicate formulas in product-specific specs.
@@ -473,24 +501,26 @@ Recovery Rate
 
 Do not redesign the whole Drawdowns section before seeing the first output.
 
-### 5. Tests
+### 5. Feature-development validation
 
-Add synthetic analytics tests proving:
+Because this is actual shared analytics feature work, add focused synthetic tests proving:
 
 - Bottom -> Recovery month count
 - unrecovered episode returns N/A for recovery fields
 - Recovery Rate formula matches independent calculation
 - legacy `duration_months` behavior is intentionally preserved if kept
 
-Update shared report contract test so the renderer uses canonical recovery values.
+Update the shared report contract test so the renderer consumes canonical recovery values rather than recalculating them.
 
-Because this is shared analytics, run both Optimization and Backtest affected regressions.
+This feature work is one of the cases where affected tests are appropriate despite the user's separate preference to skip regression/Playwright for normal analysis-only runs.
 
 ### 6. Real research run
 
 Regenerate the same Provided Portfolio / Maximum Return 11.5% experiment used for `20260911-0002` so the user can compare the recovery metrics without changing the investment universe/period/objective.
 
-Then inspect actual major episodes such as COVID and 2022 rather than immediately inventing a portfolio-level aggregate score.
+Use the GitHub Actions workflow to generate and publish the report, then inspect the generated artifacts/numbers.
+
+Review major episodes such as COVID and 2022 rather than immediately inventing a portfolio-level aggregate score.
 
 ### 7. Only after viewing results
 
@@ -520,6 +550,4 @@ Recovery Months  = once bottomed, how long to regain the peak?
 Recovery Rate    = how forcefully did it compound from trough back to peak?
 ```
 
-This is the clean conceptual family the user approved.
-
-The immediate next step is implementation + same-condition report regeneration, then review actual results together before adding any aggregate recovery score or automatic rule.
+Immediate next step: implement canonical recovery episode metrics, generate the same-condition report via GitHub Actions, inspect real results together, and only then decide whether any portfolio-level aggregation or recovery-progress visualization is useful.
