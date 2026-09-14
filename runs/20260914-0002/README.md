@@ -37,6 +37,8 @@ Evaluate the eight-asset TOBE portfolio from 2015-11 through 2026-08 with KODEX 
 
 Generated from persisted run artifacts for human/LLM navigation. Canonical values remain in `result.json` and `raw/`.
 
+Pages publication was explicitly refreshed after the run artifact was persisted so this run is included in the deployed report set.
+
 ## Artifacts
 
 - [Public Report](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0002/report.html)
