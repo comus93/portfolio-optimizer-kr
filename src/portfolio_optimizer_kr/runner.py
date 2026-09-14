@@ -11,7 +11,11 @@ from portfolio_optimizer_kr.backtest_pv import analyze_backtest_prices
 from portfolio_optimizer_kr.benchmark_presets import materialize_benchmark_preset
 from portfolio_optimizer_kr.config import RunConfig, load_run_config
 from portfolio_optimizer_kr.data import FDRLoader
-from portfolio_optimizer_kr.data.preparation import prepare_monthly_returns
+from portfolio_optimizer_kr.data.preparation import (
+    PreparedOptimizationData,
+    prepare_monthly_returns,
+    prepare_optimization_data,
+)
 from portfolio_optimizer_kr.errors import DataValidationError
 from portfolio_optimizer_kr.models import AssetSpec, ProductMode, RiskFreeMode
 from portfolio_optimizer_kr.pipeline import analyze_prices
@@ -80,6 +84,8 @@ def _resolve_annual_rf(
     prices: dict[str, pd.Series],
     usdkrw: pd.Series | None,
     supplied_annual_rf: float | None,
+    *,
+    observation_index: pd.Index | None = None,
 ) -> float | None:
     request = spec.request
     if request.risk_free.mode is RiskFreeMode.FIXED:
@@ -94,10 +100,11 @@ def _resolve_annual_rf(
     if supplied_annual_rf is not None:
         return float(supplied_annual_rf)
 
-    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
-    observation_index = monthly_returns.index
-    start = observation_index.min().to_period("M").start_time.date().isoformat()
-    end = observation_index.max().to_period("M").end_time.date().isoformat()
+    if observation_index is None:
+        observation_index = prepare_monthly_returns(request, prices, usdkrw).index
+
+    start = pd.DatetimeIndex(observation_index).min().to_period("M").start_time.date().isoformat()
+    end = pd.DatetimeIndex(observation_index).max().to_period("M").end_time.date().isoformat()
     tbill = loader.load_economic_series(US_3M_TBILL_SERIES, start=start, end=end)
     return _tbill_effective_annual_rate(tbill, observation_index)
 
@@ -193,8 +200,21 @@ def execute_run(
             )
         usdkrw = loader.load_series(spec.usdkrw_symbol, start=load_start, end=request.end)
 
+    prepared_optimization: PreparedOptimizationData | None = None
+    if using_default_analyzer and spec.product_mode is ProductMode.OPTIMIZATION:
+        prepared_optimization = prepare_optimization_data(request, prices, usdkrw)
+
     effective_annual_rf = _resolve_annual_rf(
-        spec, loader, prices, usdkrw, annual_rf
+        spec,
+        loader,
+        prices,
+        usdkrw,
+        annual_rf,
+        observation_index=(
+            prepared_optimization.monthly_returns.index
+            if prepared_optimization is not None
+            else None
+        ),
     )
     if using_default_analyzer and spec.product_mode is ProductMode.BACKTEST:
         result = analyze_fn(
@@ -203,6 +223,14 @@ def execute_run(
             usdkrw=usdkrw,
             annual_rf=effective_annual_rf,
             inflation_series=_load_inflation_series(spec, loader),
+        )
+    elif using_default_analyzer and spec.product_mode is ProductMode.OPTIMIZATION:
+        result = analyze_fn(
+            request,
+            prices,
+            usdkrw=usdkrw,
+            annual_rf=effective_annual_rf,
+            prepared_data=prepared_optimization,
         )
     else:
         result = analyze_fn(
