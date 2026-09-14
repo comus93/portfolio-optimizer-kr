@@ -18,6 +18,7 @@ from portfolio_optimizer_kr.analytics import historical
 from portfolio_optimizer_kr.data.preparation import (
     PreparedOptimizationData,
     asset_price_coverage as _asset_price_coverage,
+    prepare_benchmark_returns as _benchmark_returns,
     prepare_monthly_returns,
     prepare_optimization_data,
     resolve_annual_rf as _annual_rf,
