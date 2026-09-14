@@ -9,6 +9,7 @@ Use this first to understand the current research surface without opening indivi
 | Product | Study / Experiment | Latest Run | Runs | Period | Summary |
 |---|---|---|---:|---|---|
 | Optimization | N/A | [example-max-sharpe](example-max-sharpe/) | 11 | 2019-01-01 ~ 2025-12-31 | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | [20260914-0001](20260914-0001/) | 1 | 2015-11-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | [20260911-0007](20260911-0007/) | 9 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | Optimization | kaw-target-reconstruction / 009-direct-proxy-max-return-vol11_5 | [20260910-0015](20260910-0015/) | 2 | 2021-11-01 ~ 2026-08-31 | 009-direct-proxy-max-return-vol11_5 |
 | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | [20260910-0014](20260910-0014/) | 7 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
@@ -46,6 +47,7 @@ Use this first to understand the current research surface without opening indivi
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260914-0001](20260914-0001/) | Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | [20260911-0007](20260911-0007/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0007/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | [20260911-0006](20260911-0006/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0006/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | [20260911-0005](20260911-0005/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0005/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
@@ -64,14 +66,14 @@ Use this first to understand the current research surface without opening indivi
 | [20260910-0009](20260910-0009/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0009/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
 | [20260910-0008](20260910-0008/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0008/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
 | [20260910-0007](20260910-0007/) | Optimization | provided-portfolio-v1-optimization / 004-aia-schd-max-sharpe | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0007/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe |
-| [20260910-0006](20260910-0006/) | Optimization | provided-portfolio-v1-optimization / 001-max-sharpe | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0006/report.html) | Provided Portfolio v1 - Maximum Sharpe |
 
 <details>
-<summary>Full Run History (82 runs)</summary>
+<summary>Full Run History (83 runs)</summary>
 
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260914-0001](20260914-0001/) | Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | [20260911-0007](20260911-0007/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0007/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | [20260911-0006](20260911-0006/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0006/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
 | [20260911-0005](20260911-0005/) | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260911-0005/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
