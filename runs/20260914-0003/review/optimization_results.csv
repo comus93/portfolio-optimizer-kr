@@ -1,0 +1,9 @@
+ticker,name,min_weight_pct,max_weight_pct,provided_weight_pct,optimized_weight_pct
+QQQ,Invesco QQQ Trust,0.0,100.0,20.0,31.06283464337882
+SPMO,Invesco S&P 500 Momentum ETF,0.0,100.0,20.0,19.81717931761466
+AIA,iShares Asia 50 ETF,0.0,100.0,15.0,4.508414936205738
+GLD,SPDR Gold Shares,0.0,100.0,15.0,39.48449304671397
+XLE,State Street Energy Select Sector SPDR ETF,0.0,100.0,15.0,2.7333081711022382
+144600,KODEX 은선물(H),0.0,100.0,5.0,0.0
+SCHD,Schwab U.S. Dividend Equity ETF,0.0,100.0,5.0,2.3937657705376685
+138920,KODEX 콩선물(H),0.0,100.0,5.0,0.0
