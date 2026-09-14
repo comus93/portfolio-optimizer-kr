@@ -1,16 +1,16 @@
-name: Temporary refresh uv lock
+name: Temporary apply uv CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "pyproject.toml"
+      - ".github/workflows/tmp-refresh-uv-lock.yml"
 
 permissions:
   contents: write
 
 jobs:
-  refresh-lock:
+  apply-and-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,20 +22,70 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.1.0
         with:
-          enable-cache: false
-      - name: Refresh lockfile
-        run: uv lock
-      - name: Commit refreshed lockfile
+          enable-cache: true
+          activate-environment: true
+      - name: Smoke test locked environment
+        run: |
+          uv sync --frozen --extra dev
+          python - <<'PY'
+          import cvxpy as cp
+          import clarabel
+          import osqp
+          print("cvxpy", cp.__version__)
+          print("installed_solvers", cp.installed_solvers())
+          assert "OSQP" in cp.installed_solvers()
+          assert "CLARABEL" in cp.installed_solvers()
+          PY
+          python -m pytest -q \
+            tests/test_optimizer.py \
+            tests/test_target_volatility_contract.py \
+            tests/test_optimization_engine.py
+      - name: Switch research workflow to uv
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- uv.lock; then
-            echo "uv.lock already current"
-            exit 0
-          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/run-optimization.yml')
+          text = path.read_text(encoding='utf-8')
+          old = '''      - name: Set up Python
+        if: steps.gate.outputs.should_run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project
+        if: steps.gate.outputs.should_run == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+'''
+          new = '''      - name: Set up Python
+        if: steps.gate.outputs.should_run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        if: steps.gate.outputs.should_run == 'true'
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          activate-environment: true
+
+      - name: Sync project
+        if: steps.gate.outputs.should_run == 'true'
+        run: uv sync --frozen
+'''
+          if old not in text:
+              raise SystemExit('expected pip install block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add uv.lock
-          git commit -m "build: refresh uv lock"
+          git add .github/workflows/run-optimization.yml
+          git commit -m "ci: use uv for research execution"
           git pull --rebase origin main
           git push origin HEAD:main
