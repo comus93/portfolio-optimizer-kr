@@ -19,6 +19,7 @@ from portfolio_optimizer_kr.data.preparation import (
 from portfolio_optimizer_kr.errors import DataValidationError
 from portfolio_optimizer_kr.models import AssetSpec, ProductMode, RiskFreeMode
 from portfolio_optimizer_kr.pipeline import analyze_prices
+from portfolio_optimizer_kr.optimize.robustness import attach_loyo_robustness
 from portfolio_optimizer_kr.report import write_analysis_run
 
 
@@ -231,6 +232,14 @@ def execute_run(
             usdkrw=usdkrw,
             annual_rf=effective_annual_rf,
             prepared_data=prepared_optimization,
+        )
+        if prepared_optimization is None or effective_annual_rf is None:
+            raise RuntimeError("default Optimization execution requires prepared data and risk-free rate")
+        result = attach_loyo_robustness(
+            result,
+            request,
+            prepared_optimization.monthly_returns,
+            annual_rf=float(effective_annual_rf),
         )
     else:
         result = analyze_fn(
