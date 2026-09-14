@@ -1,0 +1,97 @@
+name: Temporary complete soybean LOYO report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/tmp-complete-soybean-loyo-report.yml"
+
+permissions:
+  contents: write
+  actions: write
+  pages: read
+
+jobs:
+  complete-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          activate-environment: true
+      - name: Sync project
+        run: uv sync --frozen
+      - name: Execute research and generate report
+        id: execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          START_NS=$(date +%s%N)
+          portfolio-optimizer execute \
+            --repo-root . \
+            --control control/execute.yaml \
+            --output-root runs | tee /tmp/portfolio-run.log
+          END_NS=$(date +%s%N)
+          RUN_PATH="$(tail -n 1 /tmp/portfolio-run.log | tr -d '\r')"
+          test -d "$RUN_PATH"
+          test -f "$RUN_PATH/result.json"
+          test -f "$RUN_PATH/report.html"
+          test -f "$RUN_PATH/review/loyo_robustness.csv"
+          RUN_ID="$(basename "$RUN_PATH")"
+          python - "$START_NS" "$END_NS" <<'PY'
+          import sys
+          print(f"core_elapsed_seconds={(int(sys.argv[2])-int(sys.argv[1]))/1e9:.3f}")
+          PY
+          echo "run_path=$RUN_PATH" >> "$GITHUB_OUTPUT"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+      - name: Register public report URL
+        id: public_report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          PAGE_BASE_URL="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url')"
+          REPORT_RELATIVE_PATH="$(realpath --relative-to="$GITHUB_WORKSPACE" "$RUN_PATH/report.html")"
+          PUBLIC_REPORT_URL="${PAGE_BASE_URL%/}/${REPORT_RELATIVE_PATH}"
+          python scripts/register_public_report_url.py "$RUN_PATH" "$PUBLIC_REPORT_URL"
+          echo "url=$PUBLIC_REPORT_URL" >> "$GITHUB_OUTPUT"
+      - name: Commit artifacts, consume request, remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          RUN_ID="${{ steps.execute.outputs.run_id }}"
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          path = Path('control/execute.yaml')
+          payload = yaml.safe_load(path.read_text(encoding='utf-8')) or {}
+          payload['run'] = False
+          path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding='utf-8')
+          PY
+          rm .github/workflows/tmp-complete-soybean-loyo-report.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RUN_PATH" runs/README.md control/execute.yaml .github/workflows/tmp-complete-soybean-loyo-report.yml
+          git commit -m "runs: add $RUN_ID with LOYO report"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Publish report to GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-reports.yml --ref main
+      - name: Summary
+        run: |
+          echo "Run ID: ${{ steps.execute.outputs.run_id }}"
+          echo "Pages URL: ${{ steps.public_report.outputs.url }}"
