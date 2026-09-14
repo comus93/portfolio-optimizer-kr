@@ -16,16 +16,15 @@ from portfolio_optimizer_kr.analytics import (
 )
 from portfolio_optimizer_kr.analytics import historical
 from portfolio_optimizer_kr.data.preparation import (
+    PreparedOptimizationData,
     asset_price_coverage as _asset_price_coverage,
-    prepare_benchmark_returns as _benchmark_returns,
-    prepare_monthly_returns,
+    prepare_optimization_data,
     resolve_annual_rf as _annual_rf,
 )
-from portfolio_optimizer_kr.models import OptimizationObjective, OptimizationRequest
+from portfolio_optimizer_kr.models import OptimizationRequest
 from portfolio_optimizer_kr.optimize import (
     build_efficient_frontier,
-    maximum_sharpe,
-    target_volatility,
+    solve_optimization,
 )
 from portfolio_optimizer_kr.portfolio import build_portfolio_path
 from portfolio_optimizer_kr.report import CanonicalResult
@@ -140,9 +139,11 @@ def analyze_prices(
     prices: Mapping[str, pd.Series],
     usdkrw: pd.Series | None = None,
     annual_rf: float | None = None,
+    prepared_data: PreparedOptimizationData | None = None,
 ) -> dict:
     """Optimization product orchestration over shared data/simulation/analytics."""
-    monthly_returns = prepare_monthly_returns(request, prices, usdkrw)
+    prepared = prepared_data or prepare_optimization_data(request, prices, usdkrw)
+    monthly_returns = prepared.monthly_returns
     stats = annualized_statistics(monthly_returns)
     bounds = {
         asset.symbol: (asset.min_weight, asset.max_weight)
@@ -150,24 +151,13 @@ def analyze_prices(
     }
     rf = _annual_rf(request, annual_rf)
 
-    if (
-        request.objective is OptimizationObjective.TARGET_VOLATILITY
-        and request.target_volatility is None
-    ):
-        raise ValueError("target-volatility objective requires target_volatility")
-
-    optimized = (
-        maximum_sharpe(
-            stats.expected_returns, stats.covariance, bounds, rf
-        )
-        if request.objective is OptimizationObjective.MAX_SHARPE
-        else target_volatility(
-            stats.expected_returns,
-            stats.covariance,
-            request.target_volatility,
-            bounds,
-            rf,
-        )
+    optimized = solve_optimization(
+        request.objective,
+        stats.expected_returns,
+        stats.covariance,
+        bounds=bounds,
+        annual_rf=rf,
+        target_volatility=request.target_volatility,
     )
     frontier = build_efficient_frontier(
         stats.expected_returns,
@@ -196,7 +186,7 @@ def analyze_prices(
             stats.expected_returns,
         )
 
-    benchmark_returns = _benchmark_returns(request, prices, usdkrw)
+    benchmark_returns = prepared.benchmark_returns
     if benchmark_returns is not None:
         benchmark_returns = benchmark_returns.loc[
             monthly_returns.index.min() : monthly_returns.index.max()
