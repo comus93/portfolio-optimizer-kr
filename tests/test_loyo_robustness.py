@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,6 +12,8 @@ from portfolio_optimizer_kr.config import RunConfig
 from portfolio_optimizer_kr.errors import InfeasibleOptimizationError
 from portfolio_optimizer_kr.models import (
     AssetSpec,
+    BacktestPortfolio,
+    BacktestRequest,
     OptimizationObjective,
     OptimizationRequest,
     OptimizationResult,
@@ -127,22 +131,38 @@ def test_loyo_records_partial_calendar_year_observation_count():
     assert table.iloc[0]["removed_end"] == "2020-12-31"
 
 
-def test_loyo_infeasible_scenario_is_recorded_without_failing_run(monkeypatch):
+def test_target_vol_loyo_infeasible_scenario_is_diagnostic_and_baseline_is_not_resolved(
+    monkeypatch,
+):
     returns = _monthly_returns(periods=24)
-    request = _request()
-    baseline = _baseline_result(request, returns)
+    request = OptimizationRequest(
+        assets=(AssetSpec("A", "Asset A"), AssetSpec("B", "Asset B")),
+        objective=OptimizationObjective.TARGET_VOLATILITY,
+        target_volatility=0.10,
+        risk_free=RiskFreeConfig(RiskFreeMode.FIXED, 0.0),
+    )
+    baseline = {
+        "optimization_result": {
+            "weights": {"A": 0.5, "B": 0.5},
+            "expected_return": 0.12,
+            "volatility": 0.09,
+            "sharpe": 1.3333333333333333,
+            "solver": "CLARABEL",
+            "status": "optimal",
+        }
+    }
     calls = []
 
-    def fake_solve(*args, **kwargs):
-        calls.append(1)
+    def fake_solve(objective, *args, **kwargs):
+        calls.append((objective, kwargs.get("target_volatility")))
         if len(calls) == 1:
-            raise InfeasibleOptimizationError("synthetic infeasible scenario")
+            raise InfeasibleOptimizationError("target volatility below synthetic GMV")
         return OptimizationResult(
             weights=pd.Series({"A": 0.6, "B": 0.4}),
-            expected_return=0.1,
-            volatility=0.12,
-            sharpe=0.8,
-            solver="OSQP",
+            expected_return=0.11,
+            volatility=0.095,
+            sharpe=1.1578947368421053,
+            solver="CLARABEL",
             status="optimal",
         )
 
@@ -158,18 +178,22 @@ def test_loyo_infeasible_scenario_is_recorded_without_failing_run(monkeypatch):
         annual_rf=0.0,
     )
 
-    assert len(calls) == 2  # one solve per year; baseline is not re-solved
+    assert len(calls) == 2  # one solve per year; baseline is never re-solved
+    assert all(call == (OptimizationObjective.TARGET_VOLATILITY, 0.10) for call in calls)
     assert table.iloc[0]["feasible"] == False  # noqa: E712
     assert table.iloc[0]["status"] == "infeasible"
-    assert "synthetic infeasible" in table.iloc[0]["message"]
+    assert "synthetic GMV" in table.iloc[0]["message"]
     assert table.iloc[1]["feasible"] == True  # noqa: E712
     assert robustness["infeasible_years"] == [2020]
 
 
-def test_attach_loyo_persists_canonical_and_csv_artifacts(tmp_path):
+def test_attach_loyo_preserves_baseline_optimization_result_and_persists_artifacts(
+    tmp_path,
+):
     returns = _monthly_returns()
     request = _request()
     result = _baseline_result(request, returns)
+    baseline_optimization_result = deepcopy(result["optimization_result"])
     result.update(
         {
             "configuration": {"run_id": "loyo-artifact", "assets": []},
@@ -190,6 +214,7 @@ def test_attach_loyo_persists_canonical_and_csv_artifacts(tmp_path):
         returns,
         annual_rf=0.0,
     )
+    assert result["optimization_result"] == baseline_optimization_result
     write_analysis_run(result, tmp_path)
 
     payload = json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))
@@ -206,16 +231,24 @@ class _PriceLoader:
         return {asset.symbol: self.prices[asset.symbol] for asset in assets}
 
 
-def test_default_optimization_execute_run_attaches_loyo(tmp_path):
-    returns = _monthly_returns(start="2020-01-31", periods=36)
-    price_index = pd.date_range("2019-12-31", periods=37, freq="ME")
-    prices = {}
+def _prices_from_returns(returns: pd.DataFrame) -> dict[str, pd.Series]:
+    price_index = pd.date_range(
+        returns.index.min() - pd.offsets.MonthEnd(1),
+        periods=len(returns) + 1,
+        freq="ME",
+    )
+    prices: dict[str, pd.Series] = {}
     for symbol in returns.columns:
         values = np.concatenate(
             [[100.0], 100.0 * np.cumprod(1.0 + returns[symbol].to_numpy())]
         )
         prices[symbol] = pd.Series(values, index=price_index, name=symbol)
+    return prices
 
+
+def test_default_optimization_execute_run_attaches_loyo(tmp_path):
+    returns = _monthly_returns(start="2020-01-31", periods=36)
+    prices = _prices_from_returns(returns)
     request = _request(
         run_id="loyo-runner",
         start="2020-01-01",
@@ -232,3 +265,44 @@ def test_default_optimization_execute_run_attaches_loyo(tmp_path):
     payload = json.loads((output / "result.json").read_text(encoding="utf-8"))
     assert payload["optimization_robustness"]["loyo"]["scenario_count"] == 3
     assert (output / "raw" / "loyo_robustness.csv").is_file()
+
+
+def test_default_backtest_execution_does_not_invoke_loyo(monkeypatch, tmp_path):
+    returns = _monthly_returns(start="2020-01-31", periods=12)
+    prices = _prices_from_returns(returns)
+    request = BacktestRequest(
+        assets=(AssetSpec("A", "Asset A"), AssetSpec("B", "Asset B")),
+        portfolios=(BacktestPortfolio("Balanced", {"A": 0.5, "B": 0.5}),),
+        run_id="backtest-no-loyo",
+        start="2020-01-01",
+        end="2020-12-31",
+        risk_free=RiskFreeConfig(RiskFreeMode.FIXED, 0.0),
+    )
+    spec = RunConfig(request=request, product_mode=ProductMode.BACKTEST)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("LOYO must not run for Backtest")
+
+    def fake_backtest_analyzer(*args, **kwargs):
+        return {"configuration": {"run_id": request.run_id, "product_mode": "backtest"}}
+
+    def fake_writer(result, output_dir):
+        Path(output_dir, "backtest-marker.txt").write_text("ok", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "portfolio_optimizer_kr.runner.attach_loyo_robustness",
+        fail_if_called,
+    )
+    monkeypatch.setattr(
+        "portfolio_optimizer_kr.runner.analyze_backtest_prices",
+        fake_backtest_analyzer,
+    )
+
+    output = execute_run(
+        spec,
+        tmp_path,
+        loader=_PriceLoader(prices),
+        writer=fake_writer,
+    )
+
+    assert (output / "backtest-marker.txt").read_text(encoding="utf-8") == "ok"
