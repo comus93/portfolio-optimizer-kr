@@ -67,6 +67,61 @@ def _validated_result(
     )
 
 
+class MinimumVarianceForReturnSolver:
+    """Reusable frontier-point QP with a parameterized target return.
+
+    The covariance, expected-return vector and weight bounds stay fixed across
+    one frontier build. Reusing the CVXPY problem avoids rebuilding and
+    canonicalizing the same QP for every frontier point, while preserving the
+    existing solver and residual-validation semantics.
+    """
+
+    def __init__(
+        self,
+        expected_returns: pd.Series,
+        covariance: pd.DataFrame,
+        bounds: Mapping[str, tuple[float, float]] | None = None,
+        annual_rf: float = 0.0,
+    ) -> None:
+        symbols, mu, sigma, lo, hi = _arrays(
+            expected_returns, covariance, bounds
+        )
+        self.symbols = symbols
+        self.mu = mu
+        self.sigma = sigma
+        self.lo = lo
+        self.hi = hi
+        self.annual_rf = float(annual_rf)
+
+        self.weights = cp.Variable(len(symbols))
+        self.target_return = cp.Parameter()
+        self.problem = cp.Problem(
+            cp.Minimize(cp.quad_form(self.weights, cp.psd_wrap(sigma))),
+            [
+                cp.sum(self.weights) == 1,
+                mu @ self.weights == self.target_return,
+                self.weights >= lo,
+                self.weights <= hi,
+            ],
+        )
+
+    def solve(self, target_return: float) -> OptimizationResult:
+        self.target_return.value = float(target_return)
+        self.problem.solve(solver=cp.OSQP, warm_start=True)
+        _status(self.problem)
+        return _validated_result(
+            self.symbols,
+            self.weights.value,
+            self.mu,
+            self.sigma,
+            self.lo,
+            self.hi,
+            self.annual_rf,
+            "OSQP",
+            self.problem.status,
+        )
+
+
 def minimum_variance(expected_returns, covariance, bounds=None, annual_rf=0.0):
     symbols, mu, sigma, lo, hi = _arrays(expected_returns, covariance, bounds)
     w = cp.Variable(len(symbols))
@@ -82,15 +137,10 @@ def minimum_variance(expected_returns, covariance, bounds=None, annual_rf=0.0):
 def minimum_variance_for_return(
     expected_returns, covariance, target_return, bounds=None, annual_rf=0.0
 ):
-    symbols, mu, sigma, lo, hi = _arrays(expected_returns, covariance, bounds)
-    w = cp.Variable(len(symbols))
-    problem = cp.Problem(
-        cp.Minimize(cp.quad_form(w, cp.psd_wrap(sigma))),
-        [cp.sum(w) == 1, mu @ w == float(target_return), w >= lo, w <= hi],
+    solver = MinimumVarianceForReturnSolver(
+        expected_returns, covariance, bounds, annual_rf
     )
-    problem.solve(solver=cp.OSQP)
-    _status(problem)
-    return _validated_result(symbols, w.value, mu, sigma, lo, hi, annual_rf, "OSQP", problem.status)
+    return solver.solve(target_return)
 
 
 def maximum_return(expected_returns, covariance, bounds=None, annual_rf=0.0):
