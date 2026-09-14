@@ -59,6 +59,50 @@ def test_active_contribution_is_portfolio_stacked_bar_with_axis_and_shared_month
     assert '<polyline' not in rendered
 
 
+def test_active_contribution_legend_matches_latest_stack_top_to_bottom():
+    dates = pd.date_range("2025-01-31", periods=2, freq="ME")
+    rows = []
+    for date in dates:
+        rows.extend(
+            [
+                {
+                    "date": date,
+                    "portfolio": PORTFOLIO,
+                    "ticker": "QQQ",
+                    "cumulative_active_contribution_pct": 2.0,
+                },
+                {
+                    "date": date,
+                    "portfolio": PORTFOLIO,
+                    "ticker": "GLD",
+                    "cumulative_active_contribution_pct": -1.0,
+                },
+                {
+                    "date": date,
+                    "portfolio": PORTFOLIO,
+                    "ticker": "AIA",
+                    "cumulative_active_contribution_pct": 3.0,
+                },
+            ]
+        )
+    rendered = active.active_contribution(
+        pd.DataFrame(rows),
+        [PORTFOLIO],
+        {
+            "QQQ": "Invesco QQQ Trust",
+            "GLD": "SPDR Gold Shares",
+            "AIA": "iShares Asia 50 ETF",
+        },
+    )
+
+    # Positive stack is QQQ then AIA from zero upward, so visually the latest
+    # bar is AIA above QQQ, followed by GLD below zero. Legend follows that.
+    aia = rendered.index("iShares Asia 50 ETF")
+    qqq = rendered.index("Invesco QQQ Trust")
+    gld = rendered.index("SPDR Gold Shares")
+    assert aia < qqq < gld
+
+
 def test_rolling_active_risk_has_dual_scales_bar_line_and_shared_month_hover():
     dates = pd.date_range("2024-01-31", periods=4, freq="ME")
     frame = pd.DataFrame(

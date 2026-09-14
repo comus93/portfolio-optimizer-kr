@@ -181,10 +181,39 @@ def _stacked_contribution_chart(
       <text x="{left + plot_width / 2:.2f}" y="{height - 10}" text-anchor="middle" class="axis-title">Month / Year</text>
       <text x="20" y="{top + plot_height / 2:.2f}" text-anchor="middle" class="axis-title" transform="rotate(-90 20 {top + plot_height / 2:.2f})">Cumulative Active Return %</text>
     </svg>'''
+    # The stacked chart renders positive values from zero upward and negative
+    # values from zero downward. Order the legend to match the visible stack
+    # at the right edge (latest observation), top to bottom.
+    latest = shaped.iloc[-1]
+    positive = [
+        item
+        for item in series
+        if hc.finite(latest.get(item[0])) and float(latest[item[0]]) > 0
+    ]
+    negative = [
+        item
+        for item in series
+        if hc.finite(latest.get(item[0])) and float(latest[item[0]]) < 0
+    ]
+    neutral = [
+        item
+        for item in series
+        if not hc.finite(latest.get(item[0])) or float(latest[item[0]]) == 0
+    ]
+    legend_series = [*reversed(positive), *negative, *neutral]
+    color_by_column = {
+        column: (color_map or {}).get(
+            column, hc.PALETTE[index % len(hc.PALETTE)]
+        )
+        for index, (column, _) in enumerate(series)
+    }
     return hc.chart_shell(
         chart_id,
         svg,
-        hc.legend((label, (color_map or {}).get(column, hc.PALETTE[index % len(hc.PALETTE)])) for index, (column, label) in enumerate(series)),
+        hc.legend(
+            (label, color_by_column[column])
+            for column, label in legend_series
+        ),
     )
 
 
