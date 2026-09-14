@@ -5,6 +5,8 @@ on:
     branches: [feature/loyo-robustness-20260914]
     paths:
       - ".github/workflows/tmp-integrate-loyo.yml"
+      - "tests/test_loyo_robustness.py"
+      - "src/portfolio_optimizer_kr/optimize/robustness.py"
 
 permissions:
   contents: write
