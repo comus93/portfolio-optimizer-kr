@@ -1,8 +1,12 @@
+import numpy as np
 import pytest
 
 from portfolio_optimizer_kr.models import OptimizationObjective
 from portfolio_optimizer_kr.optimize import (
+    maximum_return,
     maximum_sharpe,
+    minimum_variance,
+    minimum_variance_for_return,
     solve_optimization,
     target_volatility,
 )
@@ -87,3 +91,32 @@ def test_frontier_reuses_one_parameterized_qp(diagonal_moments, monkeypatch):
 
     assert len(result) == 7
     assert calls == {"init": 1, "solve": 7}
+
+
+def test_reused_frontier_matches_cold_point_solves(diagonal_moments):
+    mu, covariance = diagonal_moments
+    rf = 0.01
+    points = 7
+
+    reused = frontier_module.build_efficient_frontier(
+        mu,
+        covariance,
+        annual_rf=rf,
+        points=points,
+    )
+    gmv = minimum_variance(mu, covariance, annual_rf=rf)
+    max_ret = maximum_return(mu, covariance, annual_rf=rf)
+    targets = np.linspace(gmv.expected_return, max_ret.expected_return, points)
+
+    for row, target in zip(reused.to_dict(orient="records"), targets):
+        cold = minimum_variance_for_return(
+            mu,
+            covariance,
+            float(target),
+            annual_rf=rf,
+        )
+        assert row["expected_return"] == pytest.approx(cold.expected_return, abs=2e-6)
+        assert row["volatility"] == pytest.approx(cold.volatility, abs=2e-6)
+        assert row["sharpe"] == pytest.approx(cold.sharpe, abs=2e-5)
+        for symbol, weight in cold.weights.items():
+            assert row[f"weight_{symbol}"] == pytest.approx(weight, abs=2e-5)
