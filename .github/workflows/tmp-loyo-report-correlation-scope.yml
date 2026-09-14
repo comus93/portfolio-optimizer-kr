@@ -1,0 +1,111 @@
+name: Temporary LOYO report and correlation scope fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-loyo-report-correlation-scope.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Apply scoped changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'expected text not found in {path}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Optimization correlations: reuse the existing canonical asset-only
+          # stats.correlation. Do not recompute portfolio/benchmark correlations.
+          replace_once(
+              'src/portfolio_optimizer_kr/pipeline.py',
+              '    correlation = historical.correlations_table(\n        monthly_returns, paths, benchmark_returns\n    )\n',
+              '    # Asset Correlations already exist in annualized_statistics().\n'
+              '    # Reuse that canonical matrix; do not add portfolio/benchmark series.\n'
+              '    correlation = stats.correlation\n',
+          )
+
+          # Report: LOYO is a default section; the erroneous portfolio/asset
+          # correlation section is removed. Asset Correlations remains.
+          template = Path('site/report-template.html')
+          text = template.read_text(encoding='utf-8')
+          optimized = '    <section id="optimized-portfolio"><h2>Optimized Portfolio</h2><div class="table-slot"></div></section>\n'
+          loyo = optimized + '    <section id="loyo-robustness"><h2>Leave-One-Year-Out Robustness</h2><div class="table-slot"></div></section>\n'
+          if 'id="loyo-robustness"' not in text:
+              if optimized not in text:
+                  raise SystemExit('optimized portfolio section anchor missing')
+              text = text.replace(optimized, loyo, 1)
+          text = text.replace('    <section id="portfolio-asset-correlations"><h2>Portfolio / Asset Correlations</h2><div class="table-slot"></div></section>\n', '')
+          if "['portfolio-asset-correlations','correlations']" not in text:
+              raise SystemExit('portfolio-asset correlation table mapping missing')
+          text = text.replace("['portfolio-asset-correlations','correlations']", "['loyo-robustness','loyo_robustness']", 1)
+          template.write_text(text, encoding='utf-8')
+
+          # UI spec: only the existing asset-only matrix belongs in Optimization reports.
+          p = Path('docs/report-ui-specification.md')
+          text = p.read_text(encoding='utf-8')
+          old = '''## 14. Correlations\n\n### Asset Correlations\n\nOptimization universe monthly return correlation matrix.\n\n### Portfolio / Asset Correlations\n\n다음을 함께 포함한다.\n\n```text\nOptimization Assets\nProvided Portfolio\nOptimized Portfolio\nBenchmark\n```\n\nUI row identity는 asset의 경우 `Name + Ticker`, portfolio/benchmark는 human-readable identity를 사용한다.\n\nHeatmap은 numeric coefficient를 읽을 수 있어야 하고 color는 보조 의미다.\n'''
+          new = '''## 14. Correlations\n\n### Asset Correlations\n\nOptimization universe의 canonical monthly asset returns로 계산한 **asset-only Pearson correlation matrix**를 표시한다.\n\n- row/column은 Optimization asset만 포함한다.\n- Provided Portfolio, Optimized Portfolio, Benchmark series를 추가하지 않는다.\n- UI asset identity는 `Name + Ticker`를 사용한다.\n- Heatmap은 numeric coefficient를 읽을 수 있어야 하고 color는 보조 의미다.\n'''
+          if old not in text:
+              raise SystemExit('report UI correlation section did not match expected text')
+          text = text.replace(old, new, 1)
+          if '## 24. Leave-One-Year-Out Robustness' not in text:
+              text += '''\n\n---\n\n## 24. Leave-One-Year-Out Robustness\n\nOptimization report는 canonical `optimization_robustness.loyo` / persisted `loyo_robustness.csv`가 존재하면 기본 report section으로 표시한다.\n\n최소 다음 evidence를 사용자가 report에서 바로 inspect할 수 있어야 한다.\n\n```text\nExcluded Year\nRemoved Observations\nExpected Return\nVolatility\nSharpe\nDelta Sharpe\nAllocation Turnover\nMost Changed Asset\nMaximum Absolute Weight Change\nPer-asset optimized weights / weight deltas\n```\n\nLOYO report는 persisted canonical/review 값을 표시하는 presentation layer이며 browser에서 optimization을 다시 계산하지 않는다.\n'''
+          p.write_text(text, encoding='utf-8')
+
+          # Canonical analytics spec correction.
+          p = Path('openspec/specs/portfolio-analytics/spec.md')
+          text = p.read_text(encoding='utf-8')
+          pattern = re.compile(r'''### Requirement: Optimization correlation scopes\n.*?(?=\n### Requirement: Return decomposition)''', re.S)
+          replacement = '''### Requirement: Optimization correlations are asset-only\nOptimization의 canonical correlation matrix는 Optimization universe asset의 aligned monthly simple returns 사이 Pearson correlation만 포함해야 한다(MUST). Provided Portfolio, Optimized Portfolio 또는 별도 Benchmark return series를 row/column으로 추가해서는 안 된다(MUST NOT).\n\n동일 matrix는 기존 `annualized_statistics()`가 생성한 asset correlation을 재사용해야 하며 report용 별도 portfolio/asset correlation 계산 경로를 만들지 않는다(MUST NOT).\n\n#### Scenario: optimization asset correlation matrix\n- GIVEN Optimization assets와 Provided/Optimized/Benchmark return series가 있다\n- WHEN canonical Asset Correlations를 생성한다\n- THEN row/column은 Optimization asset만 포함하고 Provided/Optimized/Benchmark series는 포함하지 않는다\n\n#### Scenario: shared asset correlation source\n- GIVEN annualized statistics가 canonical asset correlation matrix를 이미 생성했다\n- WHEN run artifact와 report를 만든다\n- THEN 동일 matrix를 재사용하고 별도 portfolio/asset correlation matrix를 다시 계산하지 않는다\n'''
+          text2, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'optimization correlation spec replacement count={count}')
+          p.write_text(text2, encoding='utf-8')
+
+          # New OpenSpec delta documenting both requested changes before/with implementation.
+          base = Path('openspec/changes/2026-09-14-loyo-report-correlation-scope')
+          (base / 'specs/portfolio-analytics').mkdir(parents=True, exist_ok=True)
+          (base / 'specs/research-report').mkdir(parents=True, exist_ok=True)
+          (base / 'proposal.md').write_text('''# Change: LOYO report integration and Optimization correlation scope correction\n\n## Why\nLOYO is canonical analysis evidence but was not visible in the default HTML report. Separately, an earlier report requirement incorrectly expanded Optimization correlations to include Provided/Optimized/Benchmark series even though Asset Correlations already has a canonical asset-only matrix.\n\n## What changes\n- Make LOYO a default Optimization report section when LOYO artifacts exist.\n- Keep Optimization Asset Correlations asset-only and preserve Name + Ticker presentation.\n- Remove Portfolio / Asset Correlations from HTML and Optimization run semantics.\n- Reuse the existing canonical asset correlation matrix; do not introduce a second calculation.\n''', encoding='utf-8')
+          (base / 'design.md').write_text('''# Design\n\n## LOYO reporting\nThe report reads the existing persisted `loyo_robustness.csv`; no optimization is rerun in the browser or renderer.\n\n## Correlations\n`annualized_statistics(monthly_returns).correlation` remains the single Optimization asset-correlation source. The previous `historical.correlations_table(monthly_returns, paths, benchmark_returns)` call is removed from Optimization because it expanded the matrix with portfolio and benchmark series. Persisted/report correlation tables are presentation views of the existing asset-only matrix.\n\nBacktest correlation behavior is unchanged.\n''', encoding='utf-8')
+          (base / 'tasks.md').write_text('''# Tasks\n\n- [x] Add LOYO to the default Optimization HTML report.\n- [x] Remove Portfolio / Asset Correlations from the HTML report.\n- [x] Correct Optimization correlation spec to asset-only.\n- [x] Reuse existing asset correlation instead of calculating a second matrix.\n- [x] Add regression coverage for report scope and run correlation scope.\n''', encoding='utf-8')
+          (base / 'specs/portfolio-analytics/spec.md').write_text('''## MODIFIED Requirements\n\n### Requirement: Optimization correlations are asset-only\nOptimization correlation output MUST contain only Optimization asset monthly-return Pearson correlations and MUST NOT add Provided Portfolio, Optimized Portfolio, or Benchmark series. Existing canonical asset correlation MUST be reused rather than recomputed through a separate portfolio/asset correlation path.\n''', encoding='utf-8')
+          (base / 'specs/research-report/spec.md').write_text('''## ADDED Requirements\n\n### Requirement: LOYO is visible in the default Optimization report\nWhen canonical LOYO robustness output exists, the default Optimization HTML report MUST render it from persisted artifacts without recomputing optimization in the browser.\n\n## REMOVED Requirements\n\n### Requirement: Portfolio / Asset Correlations\nOptimization reports MUST NOT expose a separate portfolio/asset/benchmark correlation matrix. Asset Correlations remains the supported correlation view.\n''', encoding='utf-8')
+
+          # Regression tests. Uses existing analytics and committed LOYO run fixture.
+          Path('tests/test_loyo_report_correlation_scope.py').write_text('''from pathlib import Path\n\nimport pandas as pd\n\nfrom portfolio_optimizer_kr.models import AssetSpec, OptimizationRequest, RiskFreeConfig, RiskFreeMode\nfrom portfolio_optimizer_kr.pipeline import analyze_prices\nfrom portfolio_optimizer_kr.viewer import generate_report\n\n\ndef _price(start: float, slope: float) -> pd.Series:\n    index = pd.date_range("2020-01-01", periods=1100, freq="D")\n    return pd.Series(start + slope * pd.RangeIndex(len(index)), index=index)\n\n\ndef test_optimization_correlation_scope_reuses_asset_only_matrix():\n    request = OptimizationRequest(\n        assets=(AssetSpec("A"), AssetSpec("B")),\n        benchmark=AssetSpec("BM"),\n        provided_weights={"A": 0.5, "B": 0.5},\n        risk_free=RiskFreeConfig(mode=RiskFreeMode.FIXED, annual_rate=0.02),\n        frontier_points=3,\n    )\n    result = analyze_prices(\n        request,\n        {"A": _price(100, 0.12), "B": _price(100, 0.07), "BM": _price(100, 0.09)},\n    )\n\n    assert set(result["correlations"]) == {"A", "B"}\n    table = result["_tables"]["correlations"]\n    assert list(table.columns) == ["series", "A", "B"]\n    assert set(table["series"]) == {"A", "B"}\n    assert not {"provided", "optimized", "benchmark"} & set(table.columns)\n\n\ndef test_default_optimization_report_includes_loyo_and_no_portfolio_asset_correlations(tmp_path):\n    run_dir = Path("runs/20260914-0003")\n    target = tmp_path / "report.html"\n    generate_report(run_dir, output_path=target)\n    html = target.read_text(encoding="utf-8")\n\n    assert "Leave-One-Year-Out Robustness" in html\n    assert 'id="loyo-robustness"' in html\n    assert "Portfolio / Asset Correlations" not in html\n    assert 'id="portfolio-asset-correlations"' not in html\n''', encoding='utf-8')
+          PY
+      - name: Sync dependencies
+        run: uv sync --frozen --extra dev
+      - name: Run targeted regression
+        run: uv run pytest -q tests/test_loyo_report_correlation_scope.py tests/test_reporting.py tests/test_loyo_robustness.py
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/portfolio_optimizer_kr/pipeline.py site/report-template.html docs/report-ui-specification.md openspec/specs/portfolio-analytics/spec.md openspec/changes/2026-09-14-loyo-report-correlation-scope tests/test_loyo_report_correlation_scope.py
+          git commit -m "fix: report LOYO and keep optimization correlations asset-only"
+          git push origin HEAD:main
