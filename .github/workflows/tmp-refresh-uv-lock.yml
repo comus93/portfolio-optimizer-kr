@@ -46,43 +46,14 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-
           path = Path('.github/workflows/run-optimization.yml')
           text = path.read_text(encoding='utf-8')
-          old = '''      - name: Set up Python
-        if: steps.gate.outputs.should_run == 'true'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install project
-        if: steps.gate.outputs.should_run == 'true'
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
-'''
-          new = '''      - name: Set up Python
-        if: steps.gate.outputs.should_run == 'true'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        if: steps.gate.outputs.should_run == 'true'
-        uses: astral-sh/setup-uv@v10.1.0
-        with:
-          enable-cache: true
-          activate-environment: true
-
-      - name: Sync project
-        if: steps.gate.outputs.should_run == 'true'
-        run: uv sync --frozen
-'''
+          old = "      - name: Set up Python\n        if: steps.gate.outputs.should_run == 'true'\n        uses: actions/setup-python@v5\n        with:\n          python-version: \"3.11\"\n\n      - name: Install project\n        if: steps.gate.outputs.should_run == 'true'\n        run: |\n          python -m pip install --upgrade pip\n          python -m pip install -e .\n"
+          new = "      - name: Set up Python\n        if: steps.gate.outputs.should_run == 'true'\n        uses: actions/setup-python@v5\n        with:\n          python-version: \"3.11\"\n\n      - name: Install uv\n        if: steps.gate.outputs.should_run == 'true'\n        uses: astral-sh/setup-uv@v10.1.0\n        with:\n          enable-cache: true\n          activate-environment: true\n\n      - name: Sync project\n        if: steps.gate.outputs.should_run == 'true'\n        run: uv sync --frozen\n"
           if old not in text:
               raise SystemExit('expected pip install block not found')
           path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .github/workflows/run-optimization.yml
