@@ -30,8 +30,8 @@ from portfolio_optimizer_kr.stats import annualized_statistics
 def _monthly_returns(start: str = "2020-01-31", periods: int = 36) -> pd.DataFrame:
     rng = np.random.default_rng(20260914)
     values = rng.normal(
-        loc=np.array([0.011, 0.007]),
-        scale=np.array([0.035, 0.02]),
+        loc=np.array([0.020, 0.012]),
+        scale=np.array([0.015, 0.010]),
         size=(periods, 2),
     )
     return pd.DataFrame(
@@ -211,7 +211,9 @@ def test_default_optimization_execute_run_attaches_loyo(tmp_path):
     price_index = pd.date_range("2019-12-31", periods=37, freq="ME")
     prices = {}
     for symbol in returns.columns:
-        values = np.concatenate([[100.0], 100.0 * np.cumprod(1.0 + returns[symbol].to_numpy())])
+        values = np.concatenate(
+            [[100.0], 100.0 * np.cumprod(1.0 + returns[symbol].to_numpy())]
+        )
         prices[symbol] = pd.Series(values, index=price_index, name=symbol)
 
     request = _request(
