@@ -23,6 +23,7 @@
     <section id="results-overview"><h1>Portfolio Optimization</h1></section>
     <section id="provided-portfolio"><h2>Provided Portfolio</h2><div class="table-slot"></div></section>
     <section id="optimized-portfolio"><h2>Optimized Portfolio</h2><div class="table-slot"></div></section>
+    <section id="loyo-robustness"><h2>Leave-One-Year-Out Robustness</h2><div class="table-slot"></div></section>
     <section id="performance-summary"><h2>Performance Summary</h2><div class="table-slot"></div></section>
     <section id="portfolio-growth"><h2>Portfolio Growth</h2><div class="chart"></div></section>
     <section id="annual-returns"><h2>Annual Returns</h2><div class="chart"></div></section>
@@ -42,7 +43,6 @@
     <section id="stress-periods"><h2>Historical Market Stress Periods</h2><div class="table-slot"></div></section>
     <section id="worst-drawdowns"><h2>Worst Drawdowns</h2><div class="table-slot"></div></section>
     <section id="asset-performance"><h2>Portfolio Asset Performance</h2><div class="table-slot"></div></section>
-    <section id="portfolio-asset-correlations"><h2>Portfolio / Asset Correlations</h2><div class="table-slot"></div></section>
     <section id="return-decomposition"><h2>Return Decomposition</h2><div class="table-slot"></div></section>
     <section id="risk-decomposition"><h2>Risk Decomposition</h2><div class="table-slot"></div></section>
     <section id="annual-asset-returns"><h2>Annual Asset Returns</h2><div class="chart"></div></section>
@@ -83,7 +83,7 @@
     section('results-overview').querySelector('h1').textContent=`Portfolio Optimization · ${data.run_id}`; section('results-overview').insertAdjacentHTML('beforeend',`<div class="overview"><span class="pill">${esc(data.objective_name)}</span>${data.benchmark_symbol?`<span class="pill">Benchmark: ${esc(data.benchmark_symbol)}</span>`:''}<span class="muted">Self-contained interactive research report</span></div>`);
     table('provided-portfolio',records('optimization_results').map(r=>({ticker:r.ticker,name:r.name,allocation_pct:r.provided_weight_pct,min_pct:r.min_weight_pct,max_pct:r.max_weight_pct})));
     table('optimized-portfolio',records('optimization_results').map(r=>({ticker:r.ticker,name:r.name,allocation_pct:r.optimized_weight_pct,min_pct:r.min_weight_pct,max_pct:r.max_weight_pct})));
-    [['performance-summary','performance_summary'],['trailing-returns','trailing_returns'],['efficient-frontier-assets','asset_statistics'],['asset-correlations','correlations'],['frontier-portfolios','efficient_frontier'],['portfolio-metrics','portfolio_metrics'],['monthly-returns','monthly_returns_calendar'],['stress-periods','stress_periods'],['worst-drawdowns','drawdowns'],['asset-performance','asset_statistics'],['portfolio-asset-correlations','correlations'],['return-decomposition','return_decomposition'],['risk-decomposition','risk_decomposition'],['rolling-returns-summary','rolling_returns_summary']].forEach(([id,name])=>table(id,records(name)));
+    [['performance-summary','performance_summary'],['trailing-returns','trailing_returns'],['efficient-frontier-assets','asset_statistics'],['asset-correlations','correlations'],['frontier-portfolios','efficient_frontier'],['portfolio-metrics','portfolio_metrics'],['monthly-returns','monthly_returns_calendar'],['stress-periods','stress_periods'],['worst-drawdowns','drawdowns'],['asset-performance','asset_statistics'],['loyo-robustness','loyo_robustness'],['return-decomposition','return_decomposition'],['risk-decomposition','risk_decomposition'],['rolling-returns-summary','rolling_returns_summary']].forEach(([id,name])=>table(id,records(name)));
     growthChart(growth);
     bars('annual-returns',annual,['provided_return_pct','optimized_return_pct','benchmark_return_pct'].filter(k=>annual.some(r=>finite(r[k]))),r=>`<b>Year: ${r.year}</b><br>Provided annual return: ${pct(r.provided_return_pct)}<br>Optimized annual return: ${pct(r.optimized_return_pct)}<br>Benchmark annual return: ${pct(r.benchmark_return_pct)}`);
     const ftip=r=>`<b>${esc(r.label||'Efficient Frontier')}</b><br>Std Dev: ${pct(r.volatility_pct)}<br>Expected Return: ${pct(r.expected_return_pct)}<br>Sharpe: ${num(r.sharpe_ratio)}<br>${Object.entries(r.weights_pct||{}).filter(([,v])=>finite(v)).map(([k,v])=>`${esc(k)}: ${pct(v)}`).join('<br>')}`;

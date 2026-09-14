@@ -421,22 +421,12 @@ Identity 또는 새 metric을 추가하면서 기존 required trailing column을
 
 ### Asset Correlations
 
-Optimization universe monthly return correlation matrix.
+Optimization universe의 canonical monthly asset returns로 계산한 **asset-only Pearson correlation matrix**를 표시한다.
 
-### Portfolio / Asset Correlations
-
-다음을 함께 포함한다.
-
-```text
-Optimization Assets
-Provided Portfolio
-Optimized Portfolio
-Benchmark
-```
-
-UI row identity는 asset의 경우 `Name + Ticker`, portfolio/benchmark는 human-readable identity를 사용한다.
-
-Heatmap은 numeric coefficient를 읽을 수 있어야 하고 color는 보조 의미다.
+- row/column은 Optimization asset만 포함한다.
+- Provided Portfolio, Optimized Portfolio, Benchmark series를 추가하지 않는다.
+- UI asset identity는 `Name + Ticker`를 사용한다.
+- Heatmap은 numeric coefficient를 읽을 수 있어야 하고 color는 보조 의미다.
 
 ---
 
@@ -675,3 +665,27 @@ Mobile:
 3. 외부 서비스가 달라졌다는 이유만으로 구현을 변경하지 않는다.
 4. 새로운 외부 reference가 더 좋은 UX 아이디어를 제공하면 별도 개선 제안으로 검토한다.
 5. 구현 완료 판정은 `docs/visual-acceptance-contract.md`의 validation procedure를 따른다.
+
+
+---
+
+## 24. Leave-One-Year-Out Robustness
+
+Optimization report는 canonical `optimization_robustness.loyo` / persisted `loyo_robustness.csv`가 존재하면 기본 report section으로 표시한다.
+
+최소 다음 evidence를 사용자가 report에서 바로 inspect할 수 있어야 한다.
+
+```text
+Excluded Year
+Removed Observations
+Expected Return
+Volatility
+Sharpe
+Delta Sharpe
+Allocation Turnover
+Most Changed Asset
+Maximum Absolute Weight Change
+Per-asset optimized weights / weight deltas
+```
+
+LOYO report는 persisted canonical/review 값을 표시하는 presentation layer이며 browser에서 optimization을 다시 계산하지 않는다.

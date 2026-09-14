@@ -267,16 +267,20 @@ Portfolio별 drawdown episode는 최소 Rank, Start, Bottom, Recovery, Maximum D
 - WHEN episode를 저장한다
 - THEN recovery date를 fabricated future date로 채우지 않는다
 
-### Requirement: Optimization correlation scopes
-기존 Optimization analytics는 두 correlation scope를 지원한다(MUST).
+### Requirement: Optimization correlations are asset-only
+Optimization의 canonical correlation matrix는 Optimization universe asset의 aligned monthly simple returns 사이 Pearson correlation만 포함해야 한다(MUST). Provided Portfolio, Optimized Portfolio 또는 별도 Benchmark return series를 row/column으로 추가해서는 안 된다(MUST NOT).
 
-1. Optimization asset monthly-return Pearson correlation matrix
-2. Optimization Assets + Provided Portfolio + Optimized Portfolio + Benchmark를 포함하는 monthly-return correlation matrix
+동일 matrix는 기존 `annualized_statistics()`가 생성한 asset correlation을 재사용해야 하며 report용 별도 portfolio/asset correlation 계산 경로를 만들지 않는다(MUST NOT).
 
-#### Scenario: portfolio/asset correlation matrix
-- GIVEN Optimization assets와 Provided/Optimized/Benchmark monthly return series가 있다
-- WHEN portfolio/asset correlation artifact를 생성한다
-- THEN 각 series identity를 구분해 동일 aligned monthly basis에서 correlation을 계산한다
+#### Scenario: optimization asset correlation matrix
+- GIVEN Optimization assets와 Provided/Optimized/Benchmark return series가 있다
+- WHEN canonical Asset Correlations를 생성한다
+- THEN row/column은 Optimization asset만 포함하고 Provided/Optimized/Benchmark series는 포함하지 않는다
+
+#### Scenario: shared asset correlation source
+- GIVEN annualized statistics가 canonical asset correlation matrix를 이미 생성했다
+- WHEN run artifact와 report를 만든다
+- THEN 동일 matrix를 재사용하고 별도 portfolio/asset correlation matrix를 다시 계산하지 않는다
 
 ### Requirement: Return decomposition
 Historical rebalancing schedule의 period-start weights를 사용해 asset return contribution과 terminal-wealth monetary contribution을 계산해야 한다(MUST).

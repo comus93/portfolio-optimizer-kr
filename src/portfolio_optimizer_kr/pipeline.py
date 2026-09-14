@@ -299,9 +299,9 @@ def analyze_prices(
         for name, path in investable_paths.items()
     }
 
-    correlation = historical.correlations_table(
-        monthly_returns, paths, benchmark_returns
-    )
+    # Asset Correlations already exist in annualized_statistics().
+    # Reuse that canonical matrix; do not add portfolio/benchmark series.
+    correlation = stats.correlation
     growth = historical.growth_table(paths)
     drawdown_series_output = historical.drawdown_series_table(paths)
     annual_assets = historical.annual_asset_returns_table(monthly_returns)
