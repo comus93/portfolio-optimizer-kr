@@ -1,0 +1,47 @@
+name: Temporary validate optimization core
+
+on:
+  push:
+    branches: [refactor/optimization-core-20260914]
+    paths:
+      - "src/portfolio_optimizer_kr/optimize/**"
+      - "src/portfolio_optimizer_kr/data/preparation.py"
+      - "src/portfolio_optimizer_kr/pipeline.py"
+      - "src/portfolio_optimizer_kr/runner.py"
+      - "tests/test_optimizer.py"
+      - "tests/test_target_volatility_contract.py"
+      - "tests/test_optimization_engine.py"
+      - "tests/test_prepared_optimization_data.py"
+      - "tests/test_pipeline.py"
+      - "tests/test_runner.py"
+      - "tests/test_shared_market_data_preparation.py"
+      - ".github/workflows/tmp-validate-optimization-core.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targeted-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install project test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Compile runtime
+        run: python -m compileall -q src/portfolio_optimizer_kr
+      - name: Run affected regression
+        run: |
+          python -m pytest -q \
+            tests/test_optimizer.py \
+            tests/test_target_volatility_contract.py \
+            tests/test_optimization_engine.py \
+            tests/test_prepared_optimization_data.py \
+            tests/test_pipeline.py \
+            tests/test_runner.py \
+            tests/test_shared_market_data_preparation.py
