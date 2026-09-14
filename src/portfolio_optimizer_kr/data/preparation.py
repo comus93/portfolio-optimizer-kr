@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Protocol
 
 import pandas as pd
@@ -24,6 +25,14 @@ class HistoricalDataRequest(Protocol):
     start: str | pd.Timestamp | None
     end: str | pd.Timestamp | None
     risk_free: RiskFreeConfig
+
+
+@dataclass(frozen=True)
+class PreparedOptimizationData:
+    """Canonical prepared return data shared inside one Optimization execution."""
+
+    monthly_returns: pd.DataFrame
+    benchmark_returns: pd.Series | None
 
 
 def resolve_annual_rf(
@@ -166,3 +175,20 @@ def prepare_benchmark_returns(
     if request.start is not None:
         returns = returns.loc[pd.Timestamp(request.start) :]
     return returns.iloc[:, 0].rename(benchmark.symbol)
+
+
+def prepare_optimization_data(
+    request: HistoricalDataRequest,
+    prices: Mapping[str, pd.Series],
+    usdkrw: pd.Series | None = None,
+) -> PreparedOptimizationData:
+    """Prepare the canonical returns once for one Optimization execution.
+
+    The returned object is deliberately independent of solver/objective state so
+    the normal Optimization product and lightweight repeated analyses can share
+    exactly the same prepared data without repeating market-data transforms.
+    """
+    return PreparedOptimizationData(
+        monthly_returns=prepare_monthly_returns(request, prices, usdkrw),
+        benchmark_returns=prepare_benchmark_returns(request, prices, usdkrw),
+    )
