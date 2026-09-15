@@ -1,0 +1,66 @@
+name: Regenerate run 0003 LOYO report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/regenerate-run-0003-loyo-report.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          activate-environment: true
+
+      - name: Sync project
+        run: uv sync --frozen
+
+      - name: Regenerate existing report only
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python - <<'PY'
+          from pathlib import Path
+          from portfolio_optimizer_kr.viewer import generate_report
+
+          run_dir = Path("runs/20260914-0003")
+          generate_report(run_dir, run_dir / "report.html")
+          PY
+
+          grep -q 'Leave-One-Year-Out Robustness' runs/20260914-0003/report.html
+          grep -q 'id="loyo-robustness"' runs/20260914-0003/report.html
+          if grep -q 'Portfolio / Asset Correlations' runs/20260914-0003/report.html; then
+            echo 'stale Portfolio / Asset Correlations section still present' >&2
+            exit 1
+          fi
+
+      - name: Commit regenerated report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f runs/20260914-0003/report.html
+          if git diff --cached --quiet; then
+            echo "Report already current; no commit needed."
+            exit 0
+          fi
+          git commit -m "docs: regenerate run 20260914-0003 report with LOYO"
+          git push
