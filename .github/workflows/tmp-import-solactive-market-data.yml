@@ -22,7 +22,11 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="data/market_data/solactive"
-          base64 -d "$ROOT/.import-DE000SL0JKC0.b64" | gzip -dc > "$ROOT/DE000SL0JKC0.raw.csv"
+          cat "$ROOT/.import-DE000SL0JKC0.part1" "$ROOT/.import-DE000SL0JKC0.part2" "$ROOT/.import-DE000SL0JKC0.part3" "$ROOT/.import-DE000SL0JKC0.part4" "$ROOT/.import-DE000SL0JKC0.part5" > /tmp/raw.b64
+          test "$(wc -c < /tmp/raw.b64)" -eq 16436
+          base64 -d /tmp/raw.b64 > /tmp/raw.csv.gz
+          gzip -t /tmp/raw.csv.gz
+          gzip -dc /tmp/raw.csv.gz > "$ROOT/DE000SL0JKC0.raw.csv"
           python - <<'PY'
           from pathlib import Path
           import csv
@@ -34,13 +38,17 @@ jobs:
           rows = []
           with raw_path.open(newline='', encoding='utf-8-sig') as f:
               reader = csv.DictReader(f)
-              if reader.fieldnames != ['date', 'level', 'isin']:
-                  raise SystemExit(f'unexpected columns: {reader.fieldnames}')
-              for row in reader:
-                  d = date.fromisoformat(row['date']) + timedelta(days=1)
-                  rows.append((d.isoformat(), row['level'], row['isin']))
+              assert reader.fieldnames == ['date', 'level', 'isin'], reader.fieldnames
+              raw_rows = list(reader)
 
-          assert len(rows) == 1920
+          assert len(raw_rows) == 1920
+          assert raw_rows[0] == {'date': '2019-05-06', 'level': '1000.00', 'isin': 'DE000SL0JKC0'}
+          assert raw_rows[-1] == {'date': '2026-09-13', 'level': '3679.87', 'isin': 'DE000SL0JKC0'}
+
+          for row in raw_rows:
+              d = date.fromisoformat(row['date']) + timedelta(days=1)
+              rows.append((d.isoformat(), row['level'], row['isin']))
+
           assert rows[0] == ('2019-05-07', '1000.00', 'DE000SL0JKC0')
           assert rows[-1] == ('2026-09-14', '3679.87', 'DE000SL0JKC0')
           assert len({d for d, _, _ in rows}) == len(rows)
@@ -53,7 +61,8 @@ jobs:
               writer.writerows(rows)
           PY
 
-          rm "$ROOT/.import-DE000SL0JKC0.b64"
+          rm -f "$ROOT/.import-DE000SL0JKC0.b64"
+          rm -f "$ROOT/.import-DE000SL0JKC0.part1" "$ROOT/.import-DE000SL0JKC0.part2" "$ROOT/.import-DE000SL0JKC0.part3" "$ROOT/.import-DE000SL0JKC0.part4" "$ROOT/.import-DE000SL0JKC0.part5"
           rm .github/workflows/tmp-import-solactive-market-data.yml
 
       - name: Commit imported data
