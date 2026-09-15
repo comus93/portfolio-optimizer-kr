@@ -1,4 +1,4 @@
-name: Regenerate run 0003 LOYO report
+name: Publish regenerated run 0003 LOYO report
 
 on:
   push:
@@ -7,43 +7,27 @@ on:
       - ".github/workflows/regenerate-run-0003-loyo-report.yml"
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  regenerate:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
-        with:
-          enable-cache: true
-          activate-environment: true
-
-      - name: Sync project
-        run: uv sync --frozen
-
-      - name: Regenerate existing report only
+      - name: Validate regenerated report
         shell: bash
         run: |
           set -euo pipefail
-          uv run python - <<'PY'
-          from pathlib import Path
-          from portfolio_optimizer_kr.viewer import generate_report
-
-          run_dir = Path("runs/20260914-0003")
-          generate_report(run_dir, output_path=run_dir / "report.html")
-          PY
-
           grep -q 'Leave-One-Year-Out Robustness' runs/20260914-0003/report.html
           grep -q 'id="loyo-robustness"' runs/20260914-0003/report.html
           if grep -q 'Portfolio / Asset Correlations' runs/20260914-0003/report.html; then
@@ -51,16 +35,44 @@ jobs:
             exit 1
           fi
 
-      - name: Commit regenerated report
+      - uses: actions/configure-pages@v5
+
+      - name: Assemble static report site
         shell: bash
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f runs/20260914-0003/report.html
-          if git diff --cached --quiet; then
-            echo "Report already current; no commit needed."
-            exit 0
-          fi
-          git commit -m "docs: regenerate run 20260914-0003 report with LOYO"
-          git push
+          mkdir -p _site/runs
+          cp -R runs/. _site/runs/
+          touch _site/.nojekyll
+          python - <<'PY'
+          from html import escape
+          from pathlib import Path
+
+          runs = Path("runs")
+          links = []
+          for report in sorted(runs.glob("*/report.html"), key=lambda p: p.parent.name, reverse=True):
+              run_id = report.parent.name
+              validation = (report.parent / "validation").is_dir()
+              badge = " · validation" if validation else ""
+              links.append(
+                  f'<li><a href="runs/{escape(run_id)}/report.html">{escape(run_id)}</a>{badge}</li>'
+              )
+          items = "\n".join(links) or "<li>No persisted reports found.</li>"
+          Path("_site/index.html").write_text(
+              "<!doctype html><html><head><meta charset='utf-8'>"
+              "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+              "<title>Portfolio research reports</title>"
+              "<style>body{font-family:system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 18px}"
+              "li{margin:10px 0}a{color:#185fa5}</style></head><body>"
+              "<h1>Portfolio research reports</h1>"
+              "<p>Persisted reports published from the repository. Validation runs are marked below.</p>"
+              f"<ul>{items}</ul></body></html>",
+              encoding="utf-8",
+          )
+          PY
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
