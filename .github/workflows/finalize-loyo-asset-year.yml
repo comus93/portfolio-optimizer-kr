@@ -1,0 +1,194 @@
+name: Finalize LOYO asset-year influence change
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/finalize-loyo-asset-year.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Promote specs, refresh UI contract and handover
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          change = Path("openspec/changes/2026-09-16-loyo-asset-year-influence-reporting")
+
+          promotions = [
+              (
+                  Path("openspec/specs/portfolio-optimization/spec.md"),
+                  change / "specs/portfolio-optimization/spec.md",
+                  "### Requirement: LOYO Asset-Year Influence projection reuses existing results",
+              ),
+              (
+                  Path("openspec/specs/research-report/spec.md"),
+                  change / "specs/research-report/spec.md",
+                  "### Requirement: Optimization LOYO report prioritizes Asset-Year Influence",
+              ),
+          ]
+          for target, delta, marker in promotions:
+              base = target.read_text(encoding="utf-8")
+              if marker not in base:
+                  addition = delta.read_text(encoding="utf-8")
+                  addition = addition.replace("## ADDED Requirements\n", "", 1).strip()
+                  target.write_text(base.rstrip() + "\n\n" + addition + "\n", encoding="utf-8")
+
+          ui = Path("docs/report-ui-specification.md")
+          text = ui.read_text(encoding="utf-8")
+          old_marker = "\n---\n\n## 24. Leave-One-Year-Out Robustness"
+          index = text.rfind(old_marker)
+          if index < 0:
+              raise SystemExit("legacy LOYO UI section not found")
+          replacement = r'''
+---
+
+## 26. Leave-One-Year-Out Robustness
+
+Optimization report는 persisted LOYO evidence가 존재하면 다음 순서로 기본 section을 표시한다.
+
+```text
+1. Asset-Year Influence
+2. LOYO Summary
+3. Allocation Changes
+```
+
+Browser는 persisted review artifact를 pivot/group/order/formatting/conditional-background에 사용할 수 있지만 annual return, optimization 또는 LOYO를 다시 계산하지 않는다.
+
+### 26.1 Asset-Year Influence
+
+Year를 row group, Optimization asset을 column으로 사용한다. 각 year는 다음 4개 metric row를 가진다.
+
+```text
+구성자산 해당년도 수익률
+전체기간 최적비중
+해당년도 제외 최적비중
+비중 변화
+```
+
+Year label은 4개 metric row를 묶어 표시한다. 하나의 `year × asset` cell을 내부에서 4분할하지 않는다.
+
+Numeric cell은 metric별 conditional background를 사용한다.
+
+- 구성자산 해당년도 수익률: 0 중심 diverging scale
+- 전체기간 최적비중: low-intensity sequential scale
+- 해당년도 제외 최적비중: low-intensity sequential scale
+- 비중 변화: 0 중심 diverging scale, 가장 강한 emphasis
+
+색은 보조 정보이며 숫자를 항상 함께 표시한다. 이 matrix는 influence candidate를 찾는 진단 evidence이며 causal attribution 또는 corner-solution 자동 판정이 아니다.
+
+### 26.2 LOYO Summary
+
+정상 feasible scenario의 primary columns:
+
+```text
+Excluded Year
+Δ Return
+Δ Sharpe
+Reallocation
+1st Allocation Shift
+2nd Allocation Shift
+3rd Allocation Shift
+```
+
+`Reallocation`은 canonical `allocation_turnover`의 user-facing label이다. Allocation Shift는 per-asset signed weight delta를 absolute magnitude 순으로 상위 3개 표시한다.
+
+다음 technical/debug field는 primary summary에서 표시하지 않는다.
+
+```text
+Removed Start
+Removed End
+Removed Observations
+Remaining Observations
+Solver
+```
+
+`Message`는 정상 scenario에서 빈 column으로 표시하지 않는다. Infeasible/insufficient-data scenario가 있을 때만 `Status / Reason`을 조건부 표시한다.
+
+### 26.3 Allocation Changes
+
+첫 row는 full-sample baseline optimized weights다. 이후 row는 excluded year별 LOYO optimized weights다.
+
+각 asset cell은 다음 의미를 함께 표시한다.
+
+```text
+LOYO optimized weight (signed delta vs full-sample baseline)
+```
+
+예:
+
+```text
+Full Sample   31.06%
+2022          56.93% (+25.87%p)
+```
+
+### 26.4 Precision and overflow
+
+- user-facing percentage / percentage-point / ratio는 원칙적으로 소수점 2자리
+- canonical/raw precision은 변경하지 않음
+- wide asset matrix는 horizontal scroll 허용
+- missing LOYO value는 `N/A`, 0으로 대체하지 않음
+'''.strip()
+          ui.write_text(text[:index].rstrip() + "\n\n" + replacement + "\n", encoding="utf-8")
+
+          tasks = change / "tasks.md"
+          task_text = tasks.read_text(encoding="utf-8").replace("- [ ]", "- [x]")
+          tasks.write_text(task_text, encoding="utf-8")
+
+          handover = Path("ai-share/llm-to-llm.md")
+          h = handover.read_text(encoding="utf-8")
+          start = "<!-- latest-loyo-asset-year:start -->"
+          end = "<!-- latest-loyo-asset-year:end -->"
+          block = f'''{start}
+## Latest Update — 2026-09-16 LOYO Asset-Year Influence
+
+- LOYO user-facing report hierarchy is now Asset-Year Influence → LOYO Summary → Allocation Changes.
+- New `asset_year_influence` is a projection only: existing annual asset returns + full-sample optimized weights + existing LOYO weights/deltas. It does not rerun annual-return calculations, baseline optimization, or LOYO optimization.
+- Raw/review artifacts are persisted as `asset_year_influence.csv`; review units are `%/%p`.
+- Asset-Year Influence matrix uses year groups with four metric rows: 구성자산 해당년도 수익률, 전체기간 최적비중, 해당년도 제외 최적비중, 비중 변화. Numeric cells retain values with metric-specific conditional backgrounds.
+- LOYO Summary uses `Reallocation` and top 3 signed Allocation Shifts; Removed Start/End, observation counts, Solver are not primary user-facing columns; Status/Reason is conditional on abnormal scenarios.
+- Allocation Changes shows full-sample baseline then excluded-year weights as `weight (delta)`.
+- Run `20260914-0003` was backfilled from persisted artifacts without reoptimization and its report regenerated/deployed.
+- Targeted LOYO regression passed in GitHub Actions run `35046139206`; backfill/source-equality/report/deploy validation passed in run `35046290432`.
+- Implementation commits include `f1f479b2` projection, `e59948d6` review persistence, `4b50b3ae` UI matrix renderer, `595d31d3` viewer integration, and `aec22756` run-0003 regenerated artifacts.
+{end}'''
+          if start in h and end in h:
+              left, rest = h.split(start, 1)
+              _, right = rest.split(end, 1)
+              h = left.rstrip() + "\n\n" + block + right
+          else:
+              first_break = h.find("\n")
+              if first_break >= 0:
+                  h = h[:first_break + 1] + "\n" + block + "\n\n" + h[first_break + 1:]
+              else:
+                  h = h + "\n\n" + block + "\n"
+          handover.write_text(h, encoding="utf-8")
+          PY
+
+      - name: Archive completed OpenSpec change and remove temporary workflows
+        run: |
+          mkdir -p openspec/changes/archive
+          git mv \
+            openspec/changes/2026-09-16-loyo-asset-year-influence-reporting \
+            openspec/changes/archive/2026-09-16-loyo-asset-year-influence-reporting
+          git rm \
+            .github/workflows/validate-loyo-asset-year.yml \
+            .github/workflows/backfill-run-0003-loyo-influence.yml \
+            .github/workflows/finalize-loyo-asset-year.yml
+
+      - name: Commit finalization
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/report-ui-specification.md openspec/specs ai-share/llm-to-llm.md openspec/changes/archive
+          git commit -m "spec: promote LOYO asset-year influence reporting"
+          git push origin HEAD:main
