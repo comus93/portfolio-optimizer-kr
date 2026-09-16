@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .backtest import write_backtest_analysis_run
+from .loyo import write_asset_year_influence_review
 from .navigation import try_refresh_run_navigation
 from .public_links import try_apply_public_report_links
 from .result import write_analysis_run as write_optimization_analysis_run
@@ -16,6 +17,7 @@ def write_analysis_run(result: dict[str, Any], output_dir: str | Path) -> None:
         write_backtest_analysis_run(result, output_dir)
     else:
         write_optimization_analysis_run(result, output_dir)
+        write_asset_year_influence_review(result, output_dir)
 
     # Product writers persist canonical artifacts first. Navigation files are
     # derived projections and may be regenerated after input/context/report are
