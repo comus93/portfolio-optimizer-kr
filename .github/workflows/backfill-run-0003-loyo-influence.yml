@@ -1,0 +1,128 @@
+name: Backfill run 0003 LOYO influence report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/backfill-run-0003-loyo-influence.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  backfill-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+
+      - name: Backfill Asset-Year Influence without reoptimization
+        run: uv run python scripts/backfill_asset_year_influence.py runs/20260914-0003
+
+      - name: Regenerate report from persisted artifacts
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          from portfolio_optimizer_kr.viewer import generate_report
+          generate_report(run_dir=Path("runs/20260914-0003"))
+          PY
+
+      - name: Validate projected values and report contract
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          run = Path("runs/20260914-0003")
+          raw = pd.read_csv(run / "raw" / "asset_year_influence.csv")
+          review = pd.read_csv(run / "review" / "asset_year_influence.csv")
+          qqq = review[(review.year == 2022) & (review.ticker == "QQQ")].iloc[0]
+          assert abs(qqq.asset_annual_return_pct - (-27.823430456676035)) < 1e-8
+          assert abs(qqq.baseline_weight_pct - 31.06281732225847) < 1e-8
+          assert abs(qqq.excluded_year_weight_pct - 56.93414604204183) < 1e-8
+          assert abs(qqq.delta_weight_pct - 25.87132871978336) < 1e-8
+          assert raw.loc[(raw.year == 2022) & (raw.ticker == "QQQ"), "baseline_weight"].iloc[0] < 1.0
+
+          html = (run / "report.html").read_text(encoding="utf-8")
+          for marker in (
+              'id="loyo-analysis-overlay"',
+              "Asset-Year Influence",
+              "구성자산 해당년도 수익률",
+              "전체기간 최적비중",
+              "해당년도 제외 최적비중",
+              "비중 변화",
+              "LOYO Summary",
+              "Reallocation",
+              "Allocation Changes",
+          ):
+              assert marker in html, marker
+          PY
+
+      - name: Commit regenerated run artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            runs/20260914-0003/asset_year_influence.csv \
+            runs/20260914-0003/raw/asset_year_influence.csv \
+            runs/20260914-0003/review/asset_year_influence.csv \
+            runs/20260914-0003/report.html
+          if git diff --cached --quiet; then
+            echo "No run artifact changes to commit"
+          else
+            git commit -m "docs: add run 0003 LOYO asset-year influence report"
+            git push origin HEAD:main
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - name: Assemble static report site
+        run: |
+          mkdir -p _site/runs
+          cp -R runs/. _site/runs/
+          touch _site/.nojekyll
+          python - <<'PY'
+          from html import escape
+          from pathlib import Path
+          runs = Path("runs")
+          links = []
+          for report in sorted(runs.glob("*/report.html"), key=lambda p: p.parent.name, reverse=True):
+              run_id = report.parent.name
+              validation = (report.parent / "validation").is_dir()
+              badge = " · validation" if validation else ""
+              links.append(f'<li><a href="runs/{escape(run_id)}/report.html">{escape(run_id)}</a>{badge}</li>')
+          items = "\n".join(links) or "<li>No persisted reports found.</li>"
+          Path("_site/index.html").write_text(
+              "<!doctype html><html><head><meta charset='utf-8'>"
+              "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+              "<title>Portfolio research reports</title>"
+              "<style>body{font-family:system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 18px}"
+              "li{margin:10px 0}a{color:#185fa5}</style></head><body>"
+              "<h1>Portfolio research reports</h1>"
+              "<p>Persisted reports published from the repository. Validation runs are marked below.</p>"
+              f"<ul>{items}</ul></body></html>",
+              encoding="utf-8",
+          )
+          PY
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
