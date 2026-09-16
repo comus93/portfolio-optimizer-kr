@@ -751,7 +751,8 @@ Full Sample   31.06%
 
 - user-facing percentage / percentage-point / ratio는 원칙적으로 소수점 2자리
 - canonical/raw precision은 변경하지 않음
-- wide asset matrix는 horizontal scroll 허용
+- Asset-Year Influence는 normal desktop report width에서 `width: 100%` fixed layout을 사용해 horizontal scrollbar 없이 한 화면에 표시한다. Year는 compact fixed width, Metric은 현실적인 fixed width에서 한 줄을 유지하고, 나머지 폭은 asset columns가 균등 분배한다.
+- LOYO Summary / Allocation Changes처럼 내용 자체가 더 넓은 표는 horizontal scroll을 허용한다.
 - missing LOYO value는 `N/A`, 0으로 대체하지 않음
 
 

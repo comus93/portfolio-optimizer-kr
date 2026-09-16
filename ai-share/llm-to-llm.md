@@ -1,5 +1,15 @@
 # Session Handover
 
+<!-- latest-loyo-fixed-layout -->
+## Latest LOYO UI refinement — fixed Asset-Year Influence width
+
+- Asset-Year Influence now uses `width:100%` + `table-layout:fixed` at normal desktop width.
+- Year column is 56px, Metric column 176px and remains single-line; remaining width is evenly shared by asset columns.
+- Generic LOYO matrix natural-width behavior remains for LOYO Summary / Allocation Changes.
+- Existing Name/Ticker two-line identity, ellipsis, year zebra banding and numeric heatmap are preserved.
+- Run `20260914-0003` report is regenerated from persisted artifacts only; no optimization/LOYO recalculation.
+
+
 <!-- latest-loyo-readability:start -->
 ## Latest Update — 2026-09-16 LOYO readability refinement
 

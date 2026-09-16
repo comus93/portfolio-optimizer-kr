@@ -25,6 +25,15 @@ _LOYO_OVERLAY = r"""
 #loyo-robustness .loyo-asset-head { min-width: 112px; }
 #loyo-robustness .loyo-asset-name { display: block; max-width: 148px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 #loyo-robustness .loyo-asset-ticker { display: block; margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 700; }
+#loyo-robustness table.loyo-influence { width: 100%; min-width: 0; table-layout: fixed; }
+#loyo-robustness .loyo-influence thead th:first-child { width: 56px; }
+#loyo-robustness .loyo-influence thead th:nth-child(2) { width: 176px; }
+#loyo-robustness .loyo-influence .loyo-year,
+#loyo-robustness .loyo-influence .loyo-metric,
+#loyo-robustness .loyo-influence .loyo-asset-head,
+#loyo-robustness .loyo-influence .loyo-value { min-width: 0; }
+#loyo-robustness .loyo-influence .loyo-metric { white-space: nowrap; }
+#loyo-robustness .loyo-influence .loyo-asset-name { max-width: 100%; }
 #loyo-robustness .loyo-summary th:first-child,
 #loyo-robustness .loyo-summary td:first-child,
 #loyo-robustness .loyo-allocation th:first-child,

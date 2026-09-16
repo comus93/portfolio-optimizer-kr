@@ -1,0 +1,7 @@
+- [x] Add Asset-Year Influence-specific fixed 100% table layout without changing other LOYO tables.
+- [x] Keep Year compact and Metric single-line at a realistic fixed width; distribute remaining width evenly across asset columns.
+- [x] Preserve Name/Ticker two-line headers, ellipsis, zebra banding and numeric conditional backgrounds.
+- [x] Update canonical report UI specification and research-report baseline requirement.
+- [x] Regenerate run `20260914-0003` report without reoptimization.
+- [x] Run targeted LOYO regressions and validate fixed-layout report markers.
+- [x] Archive this OpenSpec change after successful validation.
