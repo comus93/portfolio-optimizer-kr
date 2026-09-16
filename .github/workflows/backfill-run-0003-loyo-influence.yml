@@ -46,17 +46,29 @@ jobs:
         run: |
           uv run python - <<'PY'
           from pathlib import Path
+          import json
           import pandas as pd
 
           run = Path("runs/20260914-0003")
+          result = json.loads((run / "result.json").read_text(encoding="utf-8"))
+          annual = pd.read_csv(run / "raw" / "annual_asset_returns.csv")
+          loyo = pd.read_csv(run / "raw" / "loyo_robustness.csv")
           raw = pd.read_csv(run / "raw" / "asset_year_influence.csv")
           review = pd.read_csv(run / "review" / "asset_year_influence.csv")
-          qqq = review[(review.year == 2022) & (review.ticker == "QQQ")].iloc[0]
-          assert abs(qqq.asset_annual_return_pct - (-27.823430456676035)) < 1e-8
-          assert abs(qqq.baseline_weight_pct - 31.06281732225847) < 1e-8
-          assert abs(qqq.excluded_year_weight_pct - 56.93414604204183) < 1e-8
-          assert abs(qqq.delta_weight_pct - 25.87132871978336) < 1e-8
-          assert raw.loc[(raw.year == 2022) & (raw.ticker == "QQQ"), "baseline_weight"].iloc[0] < 1.0
+
+          source_annual = annual[(annual.year == 2022) & (annual.ticker == "QQQ")].iloc[0]
+          source_loyo = loyo[loyo.excluded_year == 2022].iloc[0]
+          projected_raw = raw[(raw.year == 2022) & (raw.ticker == "QQQ")].iloc[0]
+          projected_review = review[(review.year == 2022) & (review.ticker == "QQQ")].iloc[0]
+
+          assert abs(projected_raw.asset_annual_return - source_annual["return"]) < 1e-12
+          assert abs(projected_raw.baseline_weight - result["optimization_result"]["weights"]["QQQ"]) < 1e-12
+          assert abs(projected_raw.excluded_year_weight - source_loyo.weight_QQQ) < 1e-12
+          assert abs(projected_raw.delta_weight - source_loyo.delta_weight_QQQ) < 1e-12
+          assert abs(projected_review.asset_annual_return_pct - projected_raw.asset_annual_return * 100) < 1e-10
+          assert abs(projected_review.baseline_weight_pct - projected_raw.baseline_weight * 100) < 1e-10
+          assert abs(projected_review.excluded_year_weight_pct - projected_raw.excluded_year_weight * 100) < 1e-10
+          assert abs(projected_review.delta_weight_pct - projected_raw.delta_weight * 100) < 1e-10
 
           html = (run / "report.html").read_text(encoding="utf-8")
           for marker in (
