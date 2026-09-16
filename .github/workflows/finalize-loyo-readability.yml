@@ -85,11 +85,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
-            site/report-template.html \
             docs/report-ui-specification.md \
             openspec/specs/research-report/spec.md \
             openspec/changes/archive/2026-09-16-loyo-readability-layout \
             ai-share/llm-to-llm.md \
             runs/20260914-0003/report.html
+          git add -f site/report-template.html
           git commit -m "feat: improve LOYO report readability"
           git push origin HEAD:main
