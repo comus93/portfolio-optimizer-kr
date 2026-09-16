@@ -23,7 +23,7 @@ aliases:
 
 - Report UI: [`../report-ui-specification.md`](../report-ui-specification.md)
 - Calculation / reporting conventions: [`../specification.md`](../specification.md)
-- OpenSpec: `openspec/specs/`
+- OpenSpec: [`../../openspec/specs/`](../../openspec/specs/)
 
 ---
 
@@ -611,7 +611,7 @@ Provided, Optimized, Benchmark를 같은 기간 기준으로 비교한다.
 | Beta | ratio | Benchmark return에 대한 민감도 통계 |
 | R-Squared | ratio | Benchmark와의 월수익률 correlation² |
 | Treynor Ratio | ratio | Excess return / Beta |
-| Calmar Ratio | ratio | 최근 36개월 CAGR / 최근 36개월 |MDD| |
+| Calmar Ratio | ratio | 최근 36개월 CAGR / 최근 36개월 최대낙폭 절대값 |
 | M² | %/year | Sharpe를 Benchmark 변동성 수준으로 환산한 수익률 |
 | Skewness | ratio | 월수익률 분포 비대칭도 |
 | Excess Kurtosis | ratio | 월수익률 분포의 excess kurtosis |
