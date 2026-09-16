@@ -7,6 +7,7 @@ from portfolio_optimizer_kr.report.public_links import try_apply_public_report_l
 from .builder import build_report_model, build_report_model_from_artifacts
 from .final_renderer import generate_report as _generate_report, render_report
 from .loader import RunArtifacts, load_run_artifacts
+from .loyo_overlay import apply_loyo_analysis_overlay
 from .pv_pagination import apply_monthly_returns_pagination
 from .report_model import ReportModel
 
@@ -14,6 +15,7 @@ from .report_model import ReportModel
 @wraps(_generate_report)
 def generate_report(*args, **kwargs):
     rendered = _generate_report(*args, **kwargs)
+    rendered = apply_loyo_analysis_overlay(rendered)
     rendered = apply_monthly_returns_pagination(rendered)
 
     run_dir_value = args[0] if args else kwargs.get("run_dir")
