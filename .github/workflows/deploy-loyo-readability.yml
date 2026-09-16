@@ -1,0 +1,67 @@
+name: Deploy LOYO readability report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-loyo-readability.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Assemble static report site
+        run: |
+          mkdir -p _site/runs
+          cp -R runs/. _site/runs/
+          touch _site/.nojekyll
+          python - <<'PY'
+          from html import escape
+          from pathlib import Path
+          runs = Path("runs")
+          links = []
+          for report in sorted(runs.glob("*/report.html"), key=lambda p: p.parent.name, reverse=True):
+              run_id = report.parent.name
+              validation = (report.parent / "validation").is_dir()
+              badge = " · validation" if validation else ""
+              links.append(f'<li><a href="runs/{escape(run_id)}/report.html">{escape(run_id)}</a>{badge}</li>')
+          items = "\n".join(links) or "<li>No persisted reports found.</li>"
+          Path("_site/index.html").write_text(
+              "<!doctype html><html><head><meta charset='utf-8'>"
+              "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+              "<title>Portfolio research reports</title>"
+              "<style>body{font-family:system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 18px}"
+              "li{margin:10px 0}a{color:#185fa5}</style></head><body>"
+              "<h1>Portfolio research reports</h1>"
+              "<p>Persisted reports published from the repository. Validation runs are marked below.</p>"
+              f"<ul>{items}</ul></body></html>",
+              encoding="utf-8",
+          )
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Remove temporary deployment workflow
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/deploy-loyo-readability.yml
+          git commit -m "ci: remove temporary LOYO deploy workflow"
+          git push origin HEAD:main
