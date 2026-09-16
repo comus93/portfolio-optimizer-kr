@@ -3,7 +3,7 @@
 - [x] Add two-line Name/Ticker headers to Asset-Year Influence and Allocation Changes.
 - [x] Keep LOYO Summary shift cells compact and add static wrapping asset legend.
 - [x] Avoid new hover/tooltip interaction.
-- [ ] Move the static report template LOYO section after Portfolio Metrics and before Monthly Returns.
-- [ ] Update the canonical report UI specification.
-- [ ] Regenerate and validate run 20260914-0003 without reoptimization.
-- [ ] Promote/archive the OpenSpec delta and remove temporary tooling.
+- [x] Move the static report template LOYO section after Portfolio Metrics and before Monthly Returns.
+- [x] Update the canonical report UI specification.
+- [x] Regenerate and validate run 20260914-0003 without reoptimization.
+- [x] Promote/archive the OpenSpec delta and remove temporary tooling.

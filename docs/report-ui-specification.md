@@ -753,3 +753,33 @@ Full Sample   31.06%
 - canonical/raw precision은 변경하지 않음
 - wide asset matrix는 horizontal scroll 허용
 - missing LOYO value는 `N/A`, 0으로 대체하지 않음
+
+
+### 26.5 Placement and asset identity
+
+LOYO section은 report reading flow에서 다음 위치를 사용한다.
+
+```text
+Portfolio Metrics
+Leave-One-Year-Out Robustness
+Monthly Returns
+```
+
+Asset-Year Influence의 Year와 Metric 영역은 4-row year group 단위로 alternating zebra background를 사용한다. Zebra background는 Year/Metric 두 column에만 적용하고 numeric asset cell의 metric-specific conditional background를 덮어쓰지 않는다.
+
+Asset-Year Influence와 Allocation Changes의 asset column header는 다음 2-line identity를 사용한다.
+
+```text
+<Name, single-line ellipsis within column width>
+<Ticker, full value>
+```
+
+모든 자산에 같은 identity convention을 적용한다. Name 전체를 보기 위한 추가 hover/tooltip interaction은 만들지 않는다.
+
+LOYO Summary의 Allocation Shift cell은 compact `Ticker + signed delta` 표현을 유지한다. Summary table 바로 아래에는 다음 mapping을 static wrapping legend로 표시한다.
+
+```text
+Ticker · Name
+```
+
+Legend는 한 줄에 가능한 여러 asset을 배치하고 viewport 폭이 부족하면 CSS wrapping한다. Asset identity를 위해 browser-side finance calculation 또는 추가 interactive JavaScript를 사용하지 않는다.

@@ -23,7 +23,6 @@
     <section id="results-overview"><h1>Portfolio Optimization</h1></section>
     <section id="provided-portfolio"><h2>Provided Portfolio</h2><div class="table-slot"></div></section>
     <section id="optimized-portfolio"><h2>Optimized Portfolio</h2><div class="table-slot"></div></section>
-    <section id="loyo-robustness"><h2>Leave-One-Year-Out Robustness</h2><div class="table-slot"></div></section>
     <section id="performance-summary"><h2>Performance Summary</h2><div class="table-slot"></div></section>
     <section id="portfolio-growth"><h2>Portfolio Growth</h2><div class="chart"></div></section>
     <section id="annual-returns"><h2>Annual Returns</h2><div class="chart"></div></section>
@@ -38,6 +37,7 @@
     <section id="rolling-active-return"><h2>Rolling Active Return / Tracking Error</h2><div class="chart"></div></section>
     <section id="up-down-market"><h2>Up vs. Down Market Performance</h2><div class="chart"></div><div class="table-slot"></div></section>
     <section id="portfolio-metrics"><h2>Portfolio Metrics</h2><div class="table-slot"></div></section>
+    <section id="loyo-robustness"><h2>Leave-One-Year-Out Robustness</h2><div class="table-slot"></div></section>
     <section id="monthly-returns"><h2>Monthly Returns</h2><div class="table-slot"></div></section>
     <section id="drawdown-chart"><h2>Drawdowns</h2><div class="chart"></div></section>
     <section id="stress-periods"><h2>Historical Market Stress Periods</h2><div class="table-slot"></div></section>
@@ -2140,13 +2140,18 @@
 #loyo-robustness table.loyo-matrix { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12px; }
 #loyo-robustness .loyo-matrix th,
 #loyo-robustness .loyo-matrix td { border: 1px solid #e4eaf3; padding: 7px 9px; white-space: nowrap; }
-#loyo-robustness .loyo-matrix thead th { background: #f1f5fb; color: #334155; text-align: center; }
+#loyo-robustness .loyo-matrix thead th { background: #f1f5fb; color: #334155; text-align: center; vertical-align: bottom; }
 #loyo-robustness .loyo-year { background: #f8fafc; color: #1e365d; font-weight: 700; text-align: center; vertical-align: middle; min-width: 54px; }
 #loyo-robustness .loyo-metric { background: #fbfcfe; color: #475569; font-weight: 600; text-align: left; min-width: 172px; }
+#loyo-robustness .loyo-year-band-alt .loyo-year { background: #edf2f7; }
+#loyo-robustness .loyo-year-band-alt .loyo-metric { background: #f1f5f9; }
 #loyo-robustness .loyo-value { text-align: right; min-width: 86px; font-variant-numeric: tabular-nums; }
 #loyo-robustness .loyo-delta-row .loyo-metric,
 #loyo-robustness .loyo-delta-row .loyo-value { font-weight: 700; }
 #loyo-robustness .loyo-year-start > * { border-top-width: 2px; border-top-color: #cbd5e1; }
+#loyo-robustness .loyo-asset-head { min-width: 112px; }
+#loyo-robustness .loyo-asset-name { display: block; max-width: 148px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+#loyo-robustness .loyo-asset-ticker { display: block; margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 700; }
 #loyo-robustness .loyo-summary th:first-child,
 #loyo-robustness .loyo-summary td:first-child,
 #loyo-robustness .loyo-allocation th:first-child,
@@ -2154,6 +2159,9 @@
 #loyo-robustness .loyo-summary td,
 #loyo-robustness .loyo-allocation td { text-align: right; font-variant-numeric: tabular-nums; }
 #loyo-robustness .loyo-baseline-row td { background: #f8fafc; font-weight: 700; }
+#loyo-robustness .loyo-asset-legend { display: flex; flex-wrap: wrap; gap: 5px 18px; margin-top: 10px; color: #64748b; font-size: 11px; line-height: 1.4; }
+#loyo-robustness .loyo-asset-legend span { white-space: nowrap; }
+#loyo-robustness .loyo-asset-legend strong { color: #475569; }
 </style>
 <script id="loyo-analysis-overlay">
 (() => {
@@ -2206,12 +2214,28 @@
     const host = document.getElementById('loyo-robustness');
     if (!host || !influence.length || !loyo.length) return;
 
+    const portfolioMetrics = document.getElementById('portfolio-metrics');
+    const monthlyReturns = document.getElementById('monthly-returns');
+    if (portfolioMetrics && monthlyReturns && host.parentNode === monthlyReturns.parentNode) {
+      monthlyReturns.parentNode.insertBefore(host, monthlyReturns);
+    }
+
     const optimizationRows = tables.optimization_results || [];
+    const assetNames = new Map(
+      optimizationRows
+        .map(row => [String(row.ticker || ''), String(row.name || '')])
+        .filter(([ticker]) => ticker)
+    );
     const assets = optimizationRows.map(row => String(row.ticker || '')).filter(Boolean);
     influence.forEach(row => {
       const ticker = String(row.ticker || '');
       if (ticker && !assets.includes(ticker)) assets.push(ticker);
     });
+    const assetHeader = ticker => {
+      const name = assetNames.get(ticker) || ticker;
+      return `<th class="loyo-asset-head"><span class="loyo-asset-name">${esc(name)}</span>`
+        + `<span class="loyo-asset-ticker">${esc(ticker)}</span></th>`;
+    };
     const years = [...new Set(influence.map(row => Number(row.year)).filter(Number.isFinite))]
       .sort((a,b) => a - b);
     const influenceByKey = new Map(
@@ -2230,14 +2254,15 @@
       ['비중 변화', 'delta_weight_pct', 'delta', deltaScale, signedPp],
     ];
 
-    const influenceBody = years.map(year => metrics.map((metric, index) => {
+    const influenceBody = years.map((year, yearIndex) => metrics.map((metric, index) => {
       const [label, key, kind, scale, formatter] = metric;
       const cells = assets.map(asset => {
         const row = influenceByKey.get(`${year}|${asset}`) || {};
         const value = row[key];
         return `<td class="loyo-value" style="${background(value, kind, scale)}">${esc(formatter(value))}</td>`;
       }).join('');
-      return `<tr class="${index === 0 ? 'loyo-year-start ' : ''}${kind === 'delta' ? 'loyo-delta-row' : ''}">`
+      const bandClass = yearIndex % 2 === 1 ? 'loyo-year-band-alt ' : '';
+      return `<tr class="${bandClass}${index === 0 ? 'loyo-year-start ' : ''}${kind === 'delta' ? 'loyo-delta-row' : ''}">`
         + (index === 0 ? `<th class="loyo-year" rowspan="4">${year}</th>` : '')
         + `<th class="loyo-metric">${esc(label)}</th>${cells}</tr>`;
     }).join('')).join('');
@@ -2247,7 +2272,7 @@
         <h3>Asset-Year Influence</h3>
         <p class="loyo-help">특정 연도의 구성자산 성과와, 그 연도를 제외했을 때 같은 자산의 최적비중 변화를 함께 본다. 배경 농도는 각 metric 안에서 값의 크기를 비교하기 위한 보조 표시이며 인과관계 판정은 아니다.</p>
         <div class="loyo-scroll"><table class="loyo-matrix loyo-influence">
-          <thead><tr><th>Year</th><th>Metric</th>${assets.map(asset => `<th>${esc(asset)}</th>`).join('')}</tr></thead>
+          <thead><tr><th>Year</th><th>Metric</th>${assets.map(assetHeader).join('')}</tr></thead>
           <tbody>${influenceBody}</tbody>
         </table></div>
       </div>`;
@@ -2289,6 +2314,10 @@
           + `<td>${esc(signedNumber(row.delta_sharpe))}</td>`
           + `<td>${esc(reallocation)}</td>${shiftCells}${extra}</tr>`;
       }).join('');
+    const assetLegend = `<div class="loyo-asset-legend" aria-label="Asset legend">${assets.map(asset => {
+      const name = assetNames.get(asset) || asset;
+      return `<span><strong>${esc(asset)}</strong> · ${esc(name)}</span>`;
+    }).join('')}</div>`;
     const summaryTable = `
       <div class="loyo-block">
         <h3>LOYO Summary</h3>
@@ -2297,6 +2326,7 @@
           <thead><tr>${summaryHead.map(label => `<th>${esc(label)}</th>`).join('')}</tr></thead>
           <tbody>${summaryBody}</tbody>
         </table></div>
+        ${assetLegend}
       </div>`;
 
     const firstYear = years[0];
@@ -2317,7 +2347,7 @@
         <h3>Allocation Changes</h3>
         <p class="loyo-help">괄호 안은 전체기간 최적비중 대비 변화폭이다.</p>
         <div class="loyo-scroll"><table class="loyo-matrix loyo-allocation">
-          <thead><tr><th>Excluded Year</th>${assets.map(asset => `<th>${esc(asset)}</th>`).join('')}</tr></thead>
+          <thead><tr><th>Excluded Year</th>${assets.map(assetHeader).join('')}</tr></thead>
           <tbody><tr class="loyo-baseline-row"><td>Full Sample</td>${baselineCells}</tr>${allocationRows}</tbody>
         </table></div>
       </div>`;

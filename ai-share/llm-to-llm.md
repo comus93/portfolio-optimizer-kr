@@ -1,5 +1,16 @@
 # Session Handover
 
+<!-- latest-loyo-readability:start -->
+## Latest Update — 2026-09-16 LOYO readability refinement
+
+- LOYO section placement: Portfolio Metrics → Leave-One-Year-Out Robustness → Monthly Returns.
+- Asset-Year Influence uses four-row year-group zebra banding on Year/Metric columns only; numeric conditional backgrounds remain unchanged.
+- Asset-Year Influence and Allocation Changes use two-line asset headers: Name with CSS ellipsis, then full Ticker. No new hover/tooltip interaction was added.
+- LOYO Summary keeps compact ticker + signed delta shift cells and adds a static wrapping `Ticker · Name` legend below the table.
+- This change is presentation-only. LOYO/annual-return/optimization calculations and persisted finance artifacts are unchanged.
+<!-- latest-loyo-readability:end -->
+
+
 <!-- latest-loyo-asset-year:start -->
 ## Latest Update — 2026-09-16 LOYO Asset-Year Influence
 
