@@ -34,6 +34,76 @@ def _baseline_metrics(result: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def build_asset_year_influence_table(
+    baseline_result: Mapping[str, Any],
+    annual_asset_returns: pd.DataFrame,
+    loyo_table: pd.DataFrame,
+) -> pd.DataFrame:
+    """Project existing annual-return and LOYO evidence into one long table.
+
+    This function intentionally performs no finance calculation. Annual returns,
+    baseline weights and LOYO weights/deltas must already exist upstream.
+    """
+    columns = [
+        "year",
+        "ticker",
+        "asset_annual_return",
+        "baseline_weight",
+        "excluded_year_weight",
+        "delta_weight",
+        "status",
+    ]
+    if annual_asset_returns.empty or loyo_table.empty:
+        return pd.DataFrame(columns=columns)
+
+    required_annual = {"year", "ticker", "return"}
+    required_loyo = {"excluded_year", "status"}
+    if not required_annual.issubset(annual_asset_returns.columns):
+        missing = sorted(required_annual.difference(annual_asset_returns.columns))
+        raise ValueError(f"annual_asset_returns missing required columns: {missing}")
+    if not required_loyo.issubset(loyo_table.columns):
+        missing = sorted(required_loyo.difference(loyo_table.columns))
+        raise ValueError(f"loyo_robustness missing required columns: {missing}")
+
+    payload = baseline_result.get("optimization_result")
+    if not isinstance(payload, Mapping):
+        raise ValueError("optimization_result is required for Asset-Year Influence")
+    weights = payload.get("weights")
+    if not isinstance(weights, Mapping):
+        raise ValueError("optimization_result.weights is required for Asset-Year Influence")
+    symbols = [str(symbol) for symbol in weights]
+
+    annual_lookup = {
+        (int(row.year), str(row.ticker)): float(row.return_value)
+        for row in annual_asset_returns.rename(columns={"return": "return_value"}).itertuples(index=False)
+        if not pd.isna(row.return_value)
+    }
+
+    rows: list[dict[str, Any]] = []
+    for scenario in loyo_table.to_dict(orient="records"):
+        year = int(scenario["excluded_year"])
+        status = str(scenario.get("status") or "")
+        for symbol in symbols:
+            loyo_weight = scenario.get(f"weight_{symbol}")
+            delta_weight = scenario.get(f"delta_weight_{symbol}")
+            rows.append(
+                {
+                    "year": year,
+                    "ticker": symbol,
+                    "asset_annual_return": annual_lookup.get((year, symbol)),
+                    "baseline_weight": float(weights[symbol]),
+                    "excluded_year_weight": (
+                        None if pd.isna(loyo_weight) else float(loyo_weight)
+                    ),
+                    "delta_weight": (
+                        None if pd.isna(delta_weight) else float(delta_weight)
+                    ),
+                    "status": status,
+                }
+            )
+    return pd.DataFrame(rows, columns=columns)
+
+
 def analyze_loyo_robustness(
     request: OptimizationRequest,
     monthly_returns: pd.DataFrame,
@@ -204,7 +274,7 @@ def attach_loyo_robustness(
     *,
     annual_rf: float,
 ) -> dict[str, Any]:
-    """Attach canonical LOYO JSON and its persisted table to an Optimization result."""
+    """Attach canonical LOYO JSON and its persisted tables to an Optimization result."""
     robustness, table = analyze_loyo_robustness(
         request,
         monthly_returns,
@@ -216,4 +286,12 @@ def attach_loyo_robustness(
     if not isinstance(tables, dict):
         raise ValueError("result._tables must be a mapping")
     tables["loyo_robustness"] = table
+
+    annual_asset_returns = tables.get("annual_asset_returns")
+    if isinstance(annual_asset_returns, pd.DataFrame) and not annual_asset_returns.empty:
+        tables["asset_year_influence"] = build_asset_year_influence_table(
+            result,
+            annual_asset_returns,
+            table,
+        )
     return result
