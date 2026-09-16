@@ -1,5 +1,20 @@
 # Session Handover
 
+<!-- latest-loyo-asset-year:start -->
+## Latest Update — 2026-09-16 LOYO Asset-Year Influence
+
+- LOYO user-facing report hierarchy is now Asset-Year Influence → LOYO Summary → Allocation Changes.
+- New `asset_year_influence` is a projection only: existing annual asset returns + full-sample optimized weights + existing LOYO weights/deltas. It does not rerun annual-return calculations, baseline optimization, or LOYO optimization.
+- Raw/review artifacts are persisted as `asset_year_influence.csv`; review units are `%/%p`.
+- Asset-Year Influence matrix uses year groups with four metric rows: 구성자산 해당년도 수익률, 전체기간 최적비중, 해당년도 제외 최적비중, 비중 변화. Numeric cells retain values with metric-specific conditional backgrounds.
+- LOYO Summary uses `Reallocation` and top 3 signed Allocation Shifts; Removed Start/End, observation counts, Solver are not primary user-facing columns; Status/Reason is conditional on abnormal scenarios.
+- Allocation Changes shows full-sample baseline then excluded-year weights as `weight (delta)`.
+- Run `20260914-0003` was backfilled from persisted artifacts without reoptimization and its report regenerated/deployed.
+- Targeted LOYO regression passed in GitHub Actions run `35046139206`; backfill/source-equality/report/deploy validation passed in run `35046290432`.
+- Implementation commits include `f1f479b2` projection, `e59948d6` review persistence, `4b50b3ae` UI matrix renderer, `595d31d3` viewer integration, and `aec22756` run-0003 regenerated artifacts.
+<!-- latest-loyo-asset-year:end -->
+
+
 created_at: 2026-09-16T06:18:00+09:00
 project: `comus93/portfolio-optimizer-kr`
 branch: `main`

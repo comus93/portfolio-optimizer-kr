@@ -666,26 +666,90 @@ Mobile:
 4. 새로운 외부 reference가 더 좋은 UX 아이디어를 제공하면 별도 개선 제안으로 검토한다.
 5. 구현 완료 판정은 `docs/visual-acceptance-contract.md`의 validation procedure를 따른다.
 
-
 ---
 
-## 24. Leave-One-Year-Out Robustness
+## 26. Leave-One-Year-Out Robustness
 
-Optimization report는 canonical `optimization_robustness.loyo` / persisted `loyo_robustness.csv`가 존재하면 기본 report section으로 표시한다.
+Optimization report는 persisted LOYO evidence가 존재하면 다음 순서로 기본 section을 표시한다.
 
-최소 다음 evidence를 사용자가 report에서 바로 inspect할 수 있어야 한다.
+```text
+1. Asset-Year Influence
+2. LOYO Summary
+3. Allocation Changes
+```
+
+Browser는 persisted review artifact를 pivot/group/order/formatting/conditional-background에 사용할 수 있지만 annual return, optimization 또는 LOYO를 다시 계산하지 않는다.
+
+### 26.1 Asset-Year Influence
+
+Year를 row group, Optimization asset을 column으로 사용한다. 각 year는 다음 4개 metric row를 가진다.
+
+```text
+구성자산 해당년도 수익률
+전체기간 최적비중
+해당년도 제외 최적비중
+비중 변화
+```
+
+Year label은 4개 metric row를 묶어 표시한다. 하나의 `year × asset` cell을 내부에서 4분할하지 않는다.
+
+Numeric cell은 metric별 conditional background를 사용한다.
+
+- 구성자산 해당년도 수익률: 0 중심 diverging scale
+- 전체기간 최적비중: low-intensity sequential scale
+- 해당년도 제외 최적비중: low-intensity sequential scale
+- 비중 변화: 0 중심 diverging scale, 가장 강한 emphasis
+
+색은 보조 정보이며 숫자를 항상 함께 표시한다. 이 matrix는 influence candidate를 찾는 진단 evidence이며 causal attribution 또는 corner-solution 자동 판정이 아니다.
+
+### 26.2 LOYO Summary
+
+정상 feasible scenario의 primary columns:
 
 ```text
 Excluded Year
-Removed Observations
-Expected Return
-Volatility
-Sharpe
-Delta Sharpe
-Allocation Turnover
-Most Changed Asset
-Maximum Absolute Weight Change
-Per-asset optimized weights / weight deltas
+Δ Return
+Δ Sharpe
+Reallocation
+1st Allocation Shift
+2nd Allocation Shift
+3rd Allocation Shift
 ```
 
-LOYO report는 persisted canonical/review 값을 표시하는 presentation layer이며 browser에서 optimization을 다시 계산하지 않는다.
+`Reallocation`은 canonical `allocation_turnover`의 user-facing label이다. Allocation Shift는 per-asset signed weight delta를 absolute magnitude 순으로 상위 3개 표시한다.
+
+다음 technical/debug field는 primary summary에서 표시하지 않는다.
+
+```text
+Removed Start
+Removed End
+Removed Observations
+Remaining Observations
+Solver
+```
+
+`Message`는 정상 scenario에서 빈 column으로 표시하지 않는다. Infeasible/insufficient-data scenario가 있을 때만 `Status / Reason`을 조건부 표시한다.
+
+### 26.3 Allocation Changes
+
+첫 row는 full-sample baseline optimized weights다. 이후 row는 excluded year별 LOYO optimized weights다.
+
+각 asset cell은 다음 의미를 함께 표시한다.
+
+```text
+LOYO optimized weight (signed delta vs full-sample baseline)
+```
+
+예:
+
+```text
+Full Sample   31.06%
+2022          56.93% (+25.87%p)
+```
+
+### 26.4 Precision and overflow
+
+- user-facing percentage / percentage-point / ratio는 원칙적으로 소수점 2자리
+- canonical/raw precision은 변경하지 않음
+- wide asset matrix는 horizontal scroll 허용
+- missing LOYO value는 `N/A`, 0으로 대체하지 않음
