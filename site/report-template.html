@@ -129,6 +129,7 @@
     style.textContent = `
       .purpose-table th,.purpose-table td{font-variant-numeric:tabular-nums}
       .purpose-table td:first-child,.purpose-table th:first-child{text-align:left}
+      .purpose-table tr.total-row td{font-weight:700;border-top:2px solid #cbd5e1;background:#f8fafc}
       .subtable-grid{display:grid;grid-template-columns:1fr;gap:14px}
       .subtable-card{border:1px solid #e4eaf3;border-radius:8px;padding:10px;background:#fff}
       .subtable-card h3{margin:0 0 8px}
@@ -147,7 +148,7 @@
       slot.style.display = '';
       slot.innerHTML = `${note ? `<div class="section-note">${esc(note)}</div>` : ''}<table class="purpose-table"><thead><tr>${
         columns.map(col => `<th>${esc(col.label)}</th>`).join('')
-      }</tr></thead><tbody>${rows.map(row => `<tr>${columns.map(col => {
+      }</tr></thead><tbody>${rows.map(row => `<tr${row._total ? ' class="total-row"' : ''}>${columns.map(col => {
         const raw = typeof col.value === 'function' ? col.value(row) : row[col.key];
         const shown = col.format ? col.format(raw,row) : esc(raw ?? '');
         return `<td>${shown}</td>`;
@@ -638,7 +639,18 @@
     // 14-16. Asset performance and decomposition tables share asset identity.
     const assetStats=records('asset_statistics').map(r=>({...r,name:assetName(r.ticker)}));
     renderTable('asset-performance',assetStats,[{key:'ticker',label:'Ticker'},{key:'name',label:'Name'},{key:'cagr_pct',label:'CAGR',format:pct},{key:'annualized_volatility_pct',label:'Stdev',format:pct},{key:'best_year',label:'Best Year',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'worst_year',label:'Worst Year',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'max_drawdown_pct',label:'Max Drawdown',format:pct},{key:'sharpe_ex_post',label:'Sharpe Ratio',format:ratio},{key:'sortino',label:'Sortino Ratio',format:ratio}]);
-    renderTable('return-decomposition',records('return_decomposition').map(r=>({...r,name:assetName(r.ticker)})),[{key:'name',label:'Name'},{key:'ticker',label:'Ticker'},{key:'provided_contribution',label:'Provided Return Contribution',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'optimized_contribution',label:`${optimizedLabel} Return Contribution`,format:v=>finite(v)?pct(Number(v)*100):'N/A'}],'Return contribution is shown as a percentage of initial portfolio value.');
+    const returnDecompositionRows=records('return_decomposition').map(r=>({...r,name:assetName(r.ticker)}));
+    if(returnDecompositionRows.length){
+      const sumContribution=key=>returnDecompositionRows.reduce((sum,row)=>finite(row[key])?sum+Number(row[key]):sum,0);
+      returnDecompositionRows.push({
+        name:'Total Cumulative P&L',
+        ticker:'',
+        provided_contribution:sumContribution('provided_contribution'),
+        optimized_contribution:sumContribution('optimized_contribution'),
+        _total:true,
+      });
+    }
+    renderTable('return-decomposition',returnDecompositionRows,[{key:'name',label:'Name'},{key:'ticker',label:'Ticker'},{key:'provided_contribution',label:'Provided Portfolio',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'optimized_contribution',label:optimizedLabel,format:v=>finite(v)?pct(Number(v)*100):'N/A'}],'Cumulative P&L Contribution (% of Initial Portfolio Value). Total equals the portfolio final cumulative P&L.');
     renderTable('risk-decomposition',records('risk_decomposition').map(r=>({...r,name:assetName(r.ticker)})),[{key:'name',label:'Name'},{key:'ticker',label:'Ticker'},{key:'provided_risk_contribution_pct',label:'Provided Risk Contribution',format:pct},{key:'optimized_risk_contribution_pct',label:`${optimizedLabel} Risk Contribution`,format:pct}]);
   };
   if(document.readyState==='complete') setTimeout(run,0); else window.addEventListener('load',()=>setTimeout(run,0),{once:true});
