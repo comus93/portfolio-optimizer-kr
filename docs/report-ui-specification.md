@@ -434,9 +434,16 @@ Optimization universe의 canonical monthly asset returns로 계산한 **asset-on
 
 Provided / Optimized를 구분해 asset별 realized contribution을 표시한다.
 
-Asset identity는 최소 Ticker, 가능하면 Name + Ticker를 제공한다.
+Required identity:
 
-Contribution unit/convention은 `docs/specification.md`를 따른다.
+```text
+Name
+Ticker
+Provided Return Contribution
+Optimized Return Contribution
+```
+
+Optimization 사용자-facing report에서는 canonical `initial_value = 1` return-contribution 값을 **초기 포트폴리오 가치 대비 %**로 표시한다. 예를 들어 canonical contribution `1.03`은 report에서 `103.00%`로 표시한다. 이 변환은 presentation-only이며 canonical/raw value를 변경하지 않는다.
 
 ---
 
