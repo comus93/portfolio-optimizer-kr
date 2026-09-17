@@ -140,6 +140,21 @@ jobs:
         run: |
           set -euo pipefail
           RUN_PATH="${{ steps.execute.outputs.run_path }}"
+          PRODUCT_MODE="$(python - "$RUN_PATH/input.yaml" <<'PY'
+          from pathlib import Path
+          import sys
+          import yaml
+
+          payload = yaml.safe_load(Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
+          print(str(payload.get('product_mode') or '').strip())
+          PY
+          )"
+
+          if [[ "$PRODUCT_MODE" != "optimization" ]]; then
+            echo "Skipping Optimization-only frontier risk trade-off for product_mode=$PRODUCT_MODE"
+            exit 0
+          fi
+
           python scripts/analyze_frontier_risk_tradeoff.py "$RUN_PATH"
           test -f "$RUN_PATH/review/frontier_risk_tradeoff.csv"
 
