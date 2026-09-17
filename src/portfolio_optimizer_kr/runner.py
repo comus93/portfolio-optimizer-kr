@@ -21,6 +21,7 @@ from portfolio_optimizer_kr.models import AssetSpec, ProductMode, RiskFreeMode
 from portfolio_optimizer_kr.pipeline import analyze_prices
 from portfolio_optimizer_kr.optimize.robustness import attach_loyo_robustness
 from portfolio_optimizer_kr.report import write_analysis_run
+from portfolio_optimizer_kr.run_manifest import write_run_manifest
 
 
 US_3M_TBILL_SERIES = "FRED:TB3MS"
@@ -286,4 +287,5 @@ def run_yaml(
         from portfolio_optimizer_kr.viewer import generate_report
 
         generate_report(output_dir)
+    write_run_manifest(output_dir, product_mode=spec.product_mode)
     return output_dir
