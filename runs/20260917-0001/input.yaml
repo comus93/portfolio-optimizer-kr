@@ -1,0 +1,72 @@
+title: Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11
+purpose: Evaluate the same eight-asset TOBE portfolio and provided weights as experiment
+  008 from 2015-11 through 2026-08, optimizing for maximum Sharpe ratio with the same
+  asset bounds and monthly rebalancing.
+product_mode: optimization
+analysis_period:
+  start: 2015-11-01
+  end: 2026-08-31
+assets:
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+  provided_weight_pct: 20
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: SPMO
+  name: Invesco S&P 500 Momentum ETF
+  currency: USD
+  provided_weight_pct: 20
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: AIA
+  name: iShares Asia 50 ETF
+  currency: USD
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: XLE
+  name: State Street Energy Select Sector SPDR ETF
+  currency: USD
+  provided_weight_pct: 15
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: '144600'
+  name: KODEX 은선물(H)
+  currency: KRW
+  provided_weight_pct: 5
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: SCHD
+  name: Schwab U.S. Dividend Equity ETF
+  currency: USD
+  provided_weight_pct: 5
+  min_weight_pct: 0
+  max_weight_pct: 100
+- symbol: '138920'
+  name: KODEX 콩선물(H)
+  currency: KRW
+  provided_weight_pct: 5
+  min_weight_pct: 0
+  max_weight_pct: 100
+optimization:
+  objective: max_sharpe
+  frontier_points: 100
+portfolio:
+  rebalancing_period: monthly
+fx:
+  usdkrw_symbol: USD/KRW
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+run_id: 20260917-0001

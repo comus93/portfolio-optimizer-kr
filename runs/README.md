@@ -9,6 +9,7 @@ Use this first to understand the current research surface without opening indivi
 | Product | Study / Experiment | Latest Run | Runs | Period | Summary |
 |---|---|---|---:|---|---|
 | Optimization | N/A | [example-max-sharpe](example-max-sharpe/) | 11 | 2019-01-01 ~ 2025-12-31 | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| Optimization | provided-portfolio-v1-optimization / 009-aia-schd-soybean-max-sharpe-2015_11 | [20260917-0001](20260917-0001/) | 1 | 2015-11-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | Optimization | provided-portfolio-v1-optimization / 008-aia-schd-soybean-max-return-vol11_5-2015_11 | [20260914-0003](20260914-0003/) | 2 | 2015-11-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Return Vol 11.5 2015-11 |
 | Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | [20260914-0001](20260914-0001/) | 1 | 2015-11-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | Optimization | provided-portfolio-v1-optimization / 006-aia-schd-max-return-vol11_5-same-period | [20260911-0007](20260911-0007/) | 9 | 2017-09-01 ~ 2026-08-31 | Provided Portfolio v1 - AIA + SCHD Maximum Return Vol 11.5 Same Period |
@@ -48,6 +49,7 @@ Use this first to understand the current research surface without opening indivi
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260917-0001](20260917-0001/) | Optimization | provided-portfolio-v1-optimization / 009-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr//home/runner/work/portfolio-optimizer-kr/portfolio-optimizer-kr/runs/20260917-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | [20260914-0003](20260914-0003/) | Optimization | provided-portfolio-v1-optimization / 008-aia-schd-soybean-max-return-vol11_5-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0003/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Return Vol 11.5 2015-11 |
 | [20260914-0002](20260914-0002/) | Optimization | provided-portfolio-v1-optimization / 008-aia-schd-soybean-max-return-vol11_5-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0002/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Return Vol 11.5 2015-11 |
 | [20260914-0001](20260914-0001/) | Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
@@ -66,14 +68,14 @@ Use this first to understand the current research surface without opening indivi
 | [20260910-0012](20260910-0012/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0012/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
 | [20260910-0011](20260910-0011/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0011/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
 | [20260910-0010](20260910-0010/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0010/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
-| [20260910-0009](20260910-0009/) | Optimization | provided-portfolio-v1-optimization / 005-aia-schd-max-sharpe-same-period | 2017-09-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260910-0009/report.html) | Provided Portfolio v1 - AIA + SCHD Maximum Sharpe Same Period |
 
 <details>
-<summary>Full Run History (85 runs)</summary>
+<summary>Full Run History (86 runs)</summary>
 
 | Run | Product | Study / Experiment | Period | Benchmark | Report | Summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | [example-max-sharpe](example-max-sharpe/) | Optimization | N/A | 2019-01-01 ~ 2025-12-31 | SPY | N/A | Optimization run: Provided Portfolio vs Optimized Portfolio |
+| [20260917-0001](20260917-0001/) | Optimization | provided-portfolio-v1-optimization / 009-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr//home/runner/work/portfolio-optimizer-kr/portfolio-optimizer-kr/runs/20260917-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
 | [20260914-0003](20260914-0003/) | Optimization | provided-portfolio-v1-optimization / 008-aia-schd-soybean-max-return-vol11_5-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0003/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Return Vol 11.5 2015-11 |
 | [20260914-0002](20260914-0002/) | Optimization | provided-portfolio-v1-optimization / 008-aia-schd-soybean-max-return-vol11_5-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0002/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Return Vol 11.5 2015-11 |
 | [20260914-0001](20260914-0001/) | Optimization | provided-portfolio-v1-optimization / 007-aia-schd-soybean-max-sharpe-2015_11 | 2015-11-01 ~ 2026-08-31 | SPDR S&P 500 ETF Trust (SPY) | [Open](https://comus93.github.io/portfolio-optimizer-kr/runs/20260914-0001/report.html) | Provided Portfolio v1 - AIA + SCHD + Soybean Maximum Sharpe 2015-11 |
