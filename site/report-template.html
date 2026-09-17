@@ -635,9 +635,10 @@
     advanced.forEach(r=>metricRows.push({metric:String(r.metric).replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase()),unit:r.unit,provided:r.provided,optimized:r.optimized,benchmark:r.benchmark}));
     const metricFormat=(v,r)=>r.unit==='balance'?money(v):r.unit==='pct'||r.unit==='percent'?pct(v):ratio(v);renderTable('portfolio-metrics',metricRows,[{key:'metric',label:'Metric'},{key:'provided',label:'Provided',format:metricFormat},{key:'optimized',label:optimizedLabel,format:metricFormat},{key:'benchmark',label:benchmarkLabel,format:metricFormat}]);
 
-    // 14/16. Asset performance and risk decomposition include asset names.
+    // 14-16. Asset performance and decomposition tables share asset identity.
     const assetStats=records('asset_statistics').map(r=>({...r,name:assetName(r.ticker)}));
     renderTable('asset-performance',assetStats,[{key:'ticker',label:'Ticker'},{key:'name',label:'Name'},{key:'cagr_pct',label:'CAGR',format:pct},{key:'annualized_volatility_pct',label:'Stdev',format:pct},{key:'best_year',label:'Best Year',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'worst_year',label:'Worst Year',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'max_drawdown_pct',label:'Max Drawdown',format:pct},{key:'sharpe_ex_post',label:'Sharpe Ratio',format:ratio},{key:'sortino',label:'Sortino Ratio',format:ratio}]);
+    renderTable('return-decomposition',records('return_decomposition').map(r=>({...r,name:assetName(r.ticker)})),[{key:'name',label:'Name'},{key:'ticker',label:'Ticker'},{key:'provided_contribution',label:'Provided Return Contribution',format:v=>finite(v)?pct(Number(v)*100):'N/A'},{key:'optimized_contribution',label:`${optimizedLabel} Return Contribution`,format:v=>finite(v)?pct(Number(v)*100):'N/A'}],'Return contribution is shown as a percentage of initial portfolio value.');
     renderTable('risk-decomposition',records('risk_decomposition').map(r=>({...r,name:assetName(r.ticker)})),[{key:'name',label:'Name'},{key:'ticker',label:'Ticker'},{key:'provided_risk_contribution_pct',label:'Provided Risk Contribution',format:pct},{key:'optimized_risk_contribution_pct',label:`${optimizedLabel} Risk Contribution`,format:pct}]);
   };
   if(document.readyState==='complete') setTimeout(run,0); else window.addEventListener('load',()=>setTimeout(run,0),{once:true});
