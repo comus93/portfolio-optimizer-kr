@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/023-current-portfolio-vs-kaw-native-vs-qqq.yaml
-run: false
+target: studies/kaw-target-reconstruction/experiments/024-current-portfolio-vs-kaw-core-vs-qqq-long.yaml
+run: true
