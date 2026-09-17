@@ -1,0 +1,91 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2021
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+- symbol: SPMO
+  name: Invesco S&P 500 Momentum ETF
+  currency: USD
+- symbol: AIA
+  name: iShares Asia 50 ETF
+  currency: USD
+- symbol: XLE
+  name: State Street Energy Select Sector SPDR ETF
+  currency: USD
+- symbol: SCHD
+  name: Schwab U.S. Dividend Equity ETF
+  currency: USD
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+- symbol: '138920'
+  name: KODEX 콩선물(H)
+  currency: KRW
+- symbol: '133690'
+  name: TIGER 미국나스닥100
+  currency: KRW
+- symbol: '402970'
+  name: ACE 미국배당다우존스
+  currency: KRW
+- symbol: 069500
+  name: KODEX 200
+  currency: KRW
+- symbol: '192090'
+  name: TIGER 차이나CSI300
+  currency: KRW
+- symbol: '200250'
+  name: KIWOOM 인도Nifty50(합성)
+  currency: KRW
+- symbol: '101280'
+  name: KODEX 일본TOPIX100
+  currency: KRW
+- symbol: '267440'
+  name: RISE 미국장기국채선물(H)
+  currency: KRW
+- symbol: '385560'
+  name: RISE KIS국고채30년Enhanced
+  currency: KRW
+portfolios:
+- name: Current Portfolio
+  weights_pct:
+    QQQ: 35
+    SPMO: 15
+    AIA: 5
+    XLE: 5
+    SCHD: 5
+    GLD: 30
+    '138920': 5
+- name: KAW Native Proxy
+  weights_pct:
+    '133690': 10
+    '402970': 10
+    069500: 8
+    '192090': 8.5
+    '200250': 8.5
+    '101280': 5
+    '267440': 15
+    '385560': 15
+    GLD: 20
+- name: QQQ 100%
+  weights_pct:
+    QQQ: 100
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+fx:
+  usdkrw_symbol: USD/KRW
+run_id: 20260917-0002

@@ -1,0 +1,46 @@
+portfolio,ticker,name,target_weight_pct
+Current Portfolio,QQQ,Invesco QQQ Trust,35.0
+Current Portfolio,SPMO,Invesco S&P 500 Momentum ETF,15.0
+Current Portfolio,AIA,iShares Asia 50 ETF,5.0
+Current Portfolio,XLE,State Street Energy Select Sector SPDR ETF,5.0
+Current Portfolio,SCHD,Schwab U.S. Dividend Equity ETF,5.0
+Current Portfolio,GLD,SPDR Gold Shares,30.0
+Current Portfolio,138920,KODEX 콩선물(H),5.0
+Current Portfolio,133690,TIGER 미국나스닥100,0.0
+Current Portfolio,402970,ACE 미국배당다우존스,0.0
+Current Portfolio,069500,KODEX 200,0.0
+Current Portfolio,192090,TIGER 차이나CSI300,0.0
+Current Portfolio,200250,KIWOOM 인도Nifty50(합성),0.0
+Current Portfolio,101280,KODEX 일본TOPIX100,0.0
+Current Portfolio,267440,RISE 미국장기국채선물(H),0.0
+Current Portfolio,385560,RISE KIS국고채30년Enhanced,0.0
+KAW Native Proxy,QQQ,Invesco QQQ Trust,0.0
+KAW Native Proxy,SPMO,Invesco S&P 500 Momentum ETF,0.0
+KAW Native Proxy,AIA,iShares Asia 50 ETF,0.0
+KAW Native Proxy,XLE,State Street Energy Select Sector SPDR ETF,0.0
+KAW Native Proxy,SCHD,Schwab U.S. Dividend Equity ETF,0.0
+KAW Native Proxy,GLD,SPDR Gold Shares,20.0
+KAW Native Proxy,138920,KODEX 콩선물(H),0.0
+KAW Native Proxy,133690,TIGER 미국나스닥100,10.0
+KAW Native Proxy,402970,ACE 미국배당다우존스,10.0
+KAW Native Proxy,069500,KODEX 200,8.0
+KAW Native Proxy,192090,TIGER 차이나CSI300,8.5
+KAW Native Proxy,200250,KIWOOM 인도Nifty50(합성),8.5
+KAW Native Proxy,101280,KODEX 일본TOPIX100,5.0
+KAW Native Proxy,267440,RISE 미국장기국채선물(H),15.0
+KAW Native Proxy,385560,RISE KIS국고채30년Enhanced,15.0
+QQQ 100%,QQQ,Invesco QQQ Trust,100.0
+QQQ 100%,SPMO,Invesco S&P 500 Momentum ETF,0.0
+QQQ 100%,AIA,iShares Asia 50 ETF,0.0
+QQQ 100%,XLE,State Street Energy Select Sector SPDR ETF,0.0
+QQQ 100%,SCHD,Schwab U.S. Dividend Equity ETF,0.0
+QQQ 100%,GLD,SPDR Gold Shares,0.0
+QQQ 100%,138920,KODEX 콩선물(H),0.0
+QQQ 100%,133690,TIGER 미국나스닥100,0.0
+QQQ 100%,402970,ACE 미국배당다우존스,0.0
+QQQ 100%,069500,KODEX 200,0.0
+QQQ 100%,192090,TIGER 차이나CSI300,0.0
+QQQ 100%,200250,KIWOOM 인도Nifty50(합성),0.0
+QQQ 100%,101280,KODEX 일본TOPIX100,0.0
+QQQ 100%,267440,RISE 미국장기국채선물(H),0.0
+QQQ 100%,385560,RISE KIS국고채30년Enhanced,0.0
