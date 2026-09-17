@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -113,6 +114,16 @@ def test_optimizer_overlay_does_not_replace_sections_without_shared_artifacts(tm
         objective_name="Maximum Sharpe Ratio",
         benchmark_label="SPDR S&P 500 ETF Trust",
     ) == {}
+
+
+def test_optimizer_overlay_tooltip_flips_inside_visible_chart_area():
+    source = (
+        Path(shared_historical_overlay.__file__)
+        .read_text(encoding="utf-8")
+    )
+    assert "if (left + tipWidth > visibleRight) left = pointerX - tipWidth - 12;" in source
+    assert "visibleRight - tipWidth" in source
+    assert "visibleBottom" in source
 
 
 def test_shared_up_down_observations_are_product_neutral():
