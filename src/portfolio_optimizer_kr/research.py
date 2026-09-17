@@ -12,6 +12,7 @@ from portfolio_optimizer_kr.benchmark_presets import materialize_benchmark_prese
 from portfolio_optimizer_kr.config import request_from_config
 from portfolio_optimizer_kr.data import FDRLoader
 from portfolio_optimizer_kr.models import ProductMode
+from portfolio_optimizer_kr.run_manifest import write_run_manifest
 from portfolio_optimizer_kr.runner import execute_run
 
 
@@ -213,4 +214,5 @@ def execute_controlled_experiment(
         from portfolio_optimizer_kr.viewer import generate_report
 
         generate_report(output_dir)
+    write_run_manifest(output_dir, product_mode=spec.product_mode)
     return output_dir
