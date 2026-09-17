@@ -445,6 +445,8 @@ Optimized Return Contribution
 
 Optimization 사용자-facing report에서는 canonical `initial_value = 1` return-contribution 값을 **초기 포트폴리오 가치 대비 %**로 표시한다. 예를 들어 canonical contribution `1.03`은 report에서 `103.00%`로 표시한다. 이 변환은 presentation-only이며 canonical/raw value를 변경하지 않는다.
 
+Table 마지막 row는 **Total Cumulative P&L**이어야 한다(MUST). 각 portfolio column의 total은 asset별 cumulative contribution의 합이며, 100%로 정규화하지 않는다. 이 값은 해당 portfolio의 최종 누적 손익을 초기 portfolio value 대비 %로 나타낸다.
+
 ---
 
 ## 16. Risk Decomposition
