@@ -1,0 +1,80 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2015
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: QQQ
+  name: Invesco QQQ Trust
+  currency: USD
+- symbol: SPMO
+  name: Invesco S&P 500 Momentum ETF
+  currency: USD
+- symbol: AIA
+  name: iShares Asia 50 ETF
+  currency: USD
+- symbol: XLE
+  name: State Street Energy Select Sector SPDR ETF
+  currency: USD
+- symbol: SCHD
+  name: Schwab U.S. Dividend Equity ETF
+  currency: USD
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+- symbol: '138920'
+  name: KODEX 콩선물(H)
+  currency: KRW
+- symbol: EWY
+  name: Ishares Msci South Korea ETF
+  currency: USD
+- symbol: '192090'
+  name: TIGER 차이나CSI300
+  currency: KRW
+- symbol: '200250'
+  name: KIWOOM 인도Nifty50(합성)
+  currency: KRW
+- symbol: EWJ
+  name: iShares MSCI Japan ETF
+  currency: USD
+- symbol: TLT
+  name: iShares 20+ Year Treasury Bond ETF
+  currency: USD
+portfolios:
+- name: Current Portfolio
+  weights_pct:
+    QQQ: 35
+    SPMO: 15
+    AIA: 5
+    XLE: 5
+    SCHD: 5
+    GLD: 30
+    '138920': 5
+- name: KAW Core Revised Internal
+  weights_pct:
+    QQQ: 10
+    SCHD: 10
+    EWY: 8
+    '192090': 8.5
+    '200250': 8.5
+    EWJ: 5
+    TLT: 30
+    GLD: 20
+- name: QQQ 100%
+  weights_pct:
+    QQQ: 100
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+fx:
+  usdkrw_symbol: USD/KRW
