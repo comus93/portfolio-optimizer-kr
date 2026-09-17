@@ -1,0 +1,37 @@
+portfolio,ticker,name,target_weight,target_weight_pct
+Current Portfolio,QQQ,Invesco QQQ Trust,0.35,35.0
+Current Portfolio,SPMO,Invesco S&P 500 Momentum ETF,0.15,15.0
+Current Portfolio,AIA,iShares Asia 50 ETF,0.05,5.0
+Current Portfolio,XLE,State Street Energy Select Sector SPDR ETF,0.05,5.0
+Current Portfolio,SCHD,Schwab U.S. Dividend Equity ETF,0.05,5.0
+Current Portfolio,GLD,SPDR Gold Shares,0.3,30.0
+Current Portfolio,138920,KODEX 콩선물(H),0.05,5.0
+Current Portfolio,EWY,Ishares Msci South Korea ETF,0.0,0.0
+Current Portfolio,192090,TIGER 차이나CSI300,0.0,0.0
+Current Portfolio,200250,KIWOOM 인도Nifty50(합성),0.0,0.0
+Current Portfolio,EWJ,iShares MSCI Japan ETF,0.0,0.0
+Current Portfolio,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
+KAW Core Revised Internal,QQQ,Invesco QQQ Trust,0.1,10.0
+KAW Core Revised Internal,SPMO,Invesco S&P 500 Momentum ETF,0.0,0.0
+KAW Core Revised Internal,AIA,iShares Asia 50 ETF,0.0,0.0
+KAW Core Revised Internal,XLE,State Street Energy Select Sector SPDR ETF,0.0,0.0
+KAW Core Revised Internal,SCHD,Schwab U.S. Dividend Equity ETF,0.1,10.0
+KAW Core Revised Internal,GLD,SPDR Gold Shares,0.2,20.0
+KAW Core Revised Internal,138920,KODEX 콩선물(H),0.0,0.0
+KAW Core Revised Internal,EWY,Ishares Msci South Korea ETF,0.08,8.0
+KAW Core Revised Internal,192090,TIGER 차이나CSI300,0.085,8.5
+KAW Core Revised Internal,200250,KIWOOM 인도Nifty50(합성),0.085,8.5
+KAW Core Revised Internal,EWJ,iShares MSCI Japan ETF,0.05,5.0
+KAW Core Revised Internal,TLT,iShares 20+ Year Treasury Bond ETF,0.3,30.0
+QQQ 100%,QQQ,Invesco QQQ Trust,1.0,100.0
+QQQ 100%,SPMO,Invesco S&P 500 Momentum ETF,0.0,0.0
+QQQ 100%,AIA,iShares Asia 50 ETF,0.0,0.0
+QQQ 100%,XLE,State Street Energy Select Sector SPDR ETF,0.0,0.0
+QQQ 100%,SCHD,Schwab U.S. Dividend Equity ETF,0.0,0.0
+QQQ 100%,GLD,SPDR Gold Shares,0.0,0.0
+QQQ 100%,138920,KODEX 콩선물(H),0.0,0.0
+QQQ 100%,EWY,Ishares Msci South Korea ETF,0.0,0.0
+QQQ 100%,192090,TIGER 차이나CSI300,0.0,0.0
+QQQ 100%,200250,KIWOOM 인도Nifty50(합성),0.0,0.0
+QQQ 100%,EWJ,iShares MSCI Japan ETF,0.0,0.0
+QQQ 100%,TLT,iShares 20+ Year Treasury Bond ETF,0.0,0.0
