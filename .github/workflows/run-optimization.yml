@@ -132,6 +132,7 @@ jobs:
           test -f "$RUN_PATH/context.yaml"
           test -f "$RUN_PATH/result.json"
           test -f "$RUN_PATH/report.html"
+          test -f "$RUN_PATH/run_manifest.json"
           test -d "$RUN_PATH/review"
 
       - name: Analyze frontier risk trade-off
@@ -140,18 +141,21 @@ jobs:
         run: |
           set -euo pipefail
           RUN_PATH="${{ steps.execute.outputs.run_path }}"
-          PRODUCT_MODE="$(python - "$RUN_PATH/input.yaml" <<'PY'
+          CAPABILITY="$(python - "$RUN_PATH/run_manifest.json" <<'PY'
+          import json
           from pathlib import Path
           import sys
-          import yaml
 
-          payload = yaml.safe_load(Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
-          print(str(payload.get('product_mode') or '').strip())
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          enabled = bool(
+              (payload.get("capabilities") or {}).get("frontier_risk_tradeoff")
+          )
+          print("true" if enabled else "false")
           PY
           )"
 
-          if [[ "$PRODUCT_MODE" != "optimization" ]]; then
-            echo "Skipping Optimization-only frontier risk trade-off for product_mode=$PRODUCT_MODE"
+          if [[ "$CAPABILITY" != "true" ]]; then
+            echo "Skipping frontier risk trade-off: run capability is unavailable"
             exit 0
           fi
 
