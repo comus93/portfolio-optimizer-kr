@@ -30,6 +30,9 @@ def test_user_feedback_report_layer_contains_requested_interactions_and_layouts(
     assert "Sharpe Ratio (ex-ante)" in html
     assert "Annualized Return %" in html
     assert "Month / Year" in html
+    assert "Provided Return Contribution" in html
+    assert "Return contribution is shown as a percentage of initial portfolio value." in html
+    assert "records('return_decomposition').map(r=>({...r,name:assetName(r.ticker)}))" in html
 
 
 def test_user_feedback_report_uses_dynamic_period_and_risk_free_notes():
