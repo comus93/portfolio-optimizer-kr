@@ -1,6 +1,6 @@
 # LLM Research Frontend Bootstrap
 
-이 파일은 새 ChatGPT 대화에서 `portfolio-optimizer-kr` 연구 환경을 복원하기 위한 **짧은 bootstrap/router**다.
+이 파일은 새 ChatGPT 대화에서 `portfolio-optimizer-kr`의 **연구와 시스템 개발 환경을 함께 복원하는 짧은 bootstrap/router**다.
 
 사용자는 새 대화에서 다음 한 줄로 시작할 수 있다.
 
@@ -14,21 +14,32 @@ comus93/portfolio-optimizer-kr의 LLM-README.md 읽고 이어가자
 
 ## 1. 시작할 때 읽을 것
 
-Research Frontend 역할을 수행하기 전에 실제 repository에서 다음을 읽는다.
+작업 종류를 판단하기 전에 먼저 실제 repository의 OpenSpec baseline과 현재 change 상태를 확인한다. Research run/해석뿐 아니라 계산 엔진, report, workflow, source 수정도 이 bootstrap 범위에 포함된다.
+
+그 다음 작업에 필요한 canonical 문서를 읽는다.
 
 ```text
-MUST
+ALWAYS
 1. openspec/config.yaml
 2. 관련 openspec/specs/<capability>/spec.md
-3. active change가 있으면 해당 openspec/changes/<change>/
+3. 관련 active change가 있으면 openspec/changes/<change>/
+
+RESEARCH
 4. docs/research-operation-pipeline.md
 5. docs/llm-analysis-framework.md
 6. docs/llm-research-input-contract.md
 7. docs/architecture.md
 
+DEVELOPMENT
+4. AGENTS.md
+5. docs/architecture.md
+6. 관련 OpenSpec spec / active change
+7. 필요한 migration-baseline docs
+
 CONDITIONAL
-8. docs/report-ui-specification.md   # report/UI 작업
-9. AGENTS.md                         # 시스템 개발/수정
+- docs/report-ui-specification.md   # report/UI
+- docs/input-ui-contract.md         # input/YAML/runner/viewer
+- docs/visual-acceptance-contract.md # browser/visual validation
 ```
 
 역할:
@@ -47,9 +58,19 @@ Report UI                    -> docs/report-ui-specification.md
 
 ---
 
-## 2. LLM의 역할
+## 2. 작업 모드
 
-ChatGPT는 repository와 사용자 사이의 **Research Frontend**다.
+OpenSpec을 먼저 확인한 뒤 현재 요청을 두 모드 중 하나로 라우팅한다.
+
+```text
+Research
+= Study / Experiment / Run / 결과 해석 / 후속 실험
+
+System Development
+= 계산 엔진 / analytics / report / UI / workflow / source / tests 수정
+```
+
+Research에서는 ChatGPT가 repository와 사용자 사이의 **Research Frontend** 역할을 한다.
 
 ```text
 User
@@ -161,6 +182,10 @@ System Development에서는 `AGENTS.md`와 관련 OpenSpec을 따른다.
 ## 핵심 한 줄
 
 ```text
-이 파일은 규칙을 담는 곳이 아니라,
-새 대화의 GPT를 올바른 canonical 문서로 보내는 router다.
+새 대화 시작
+-> OpenSpec baseline / active change 확인
+-> Research 또는 System Development로 라우팅
+-> 해당 canonical 문서에 따라 작업
 ```
+
+이 파일은 세부 규칙을 중복하는 곳이 아니라, 새 대화의 GPT가 **OpenSpec부터 읽고 올바른 작업 경로로 들어가게 하는 bootstrap/router**다.
