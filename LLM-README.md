@@ -353,6 +353,8 @@ product_mode: backtest
 
 Optimization은 Efficient Frontier / optimizer structure / allocation range를 해석한다.
 
+특정 자산의 portfolio 내 가치 질문이면 `docs/llm-analysis-framework.md`의 **Asset Role Audit**을 기본 경로로 사용한다. Report 전체를 다시 요약하지 않는다.
+
 Backtest는 historical realized comparison을 해석하며 기본 흐름은 다음과 같다.
 
 ```text
