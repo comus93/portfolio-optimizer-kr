@@ -1,2 +1,2 @@
-target: studies/kaw-target-reconstruction/experiments/024-current-portfolio-vs-kaw-core-vs-qqq-long.yaml
-run: false
+target: studies/qld-psq-hedge-comparison/experiments/001-qld-psq-hedge.yaml
+run: true
