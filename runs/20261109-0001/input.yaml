@@ -1,0 +1,66 @@
+product_mode: backtest
+time_period:
+  mode: month_to_month
+  start_year: 2015
+  first_month: Nov
+  end_year: 2026
+  last_month: Aug
+assets:
+- symbol: QLD
+  name: ProShares Ultra QQQ
+  currency: USD
+- symbol: SPMO
+  name: Invesco S&P 500 Momentum ETF
+  currency: USD
+- symbol: AIA
+  name: iShares Asia 50 ETF
+  currency: USD
+- symbol: XLE
+  name: State Street Energy Select Sector SPDR ETF
+  currency: USD
+- symbol: SCHD
+  name: Schwab U.S. Dividend Equity ETF
+  currency: USD
+- symbol: GLD
+  name: SPDR Gold Shares
+  currency: USD
+- symbol: PSQ
+  name: ProShares Short QQQ
+  currency: USD
+- symbol: '138920'
+  name: KODEX 콩선물(H)
+  currency: KRW
+portfolios:
+- name: A - QLD Core
+  weights_pct:
+    QLD: 35
+    SPMO: 15
+    AIA: 5
+    XLE: 5
+    SCHD: 5
+    GLD: 30
+    '138920': 5
+- name: B - QLD PSQ 3%
+  weights_pct:
+    QLD: 35
+    SPMO: 15
+    AIA: 5
+    XLE: 5
+    SCHD: 5
+    GLD: 27
+    PSQ: 3
+    '138920': 5
+benchmark:
+  symbol: SPY
+  name: SPDR S&P 500 ETF Trust
+  currency: USD
+initial_balance: 10000
+rebalancing:
+  period: monthly
+  calendar_aligned: true
+risk_free:
+  mode: fixed
+  annual_rate_pct: 3.8394827586206897
+fx:
+  usdkrw_symbol: USD/KRW
+run_id: 20261109-0001

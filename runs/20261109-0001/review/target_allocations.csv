@@ -1,0 +1,17 @@
+portfolio,ticker,name,target_weight_pct
+A - QLD Core,QLD,ProShares Ultra QQQ,35.0
+A - QLD Core,SPMO,Invesco S&P 500 Momentum ETF,15.0
+A - QLD Core,AIA,iShares Asia 50 ETF,5.0
+A - QLD Core,XLE,State Street Energy Select Sector SPDR ETF,5.0
+A - QLD Core,SCHD,Schwab U.S. Dividend Equity ETF,5.0
+A - QLD Core,GLD,SPDR Gold Shares,30.0
+A - QLD Core,PSQ,ProShares Short QQQ,0.0
+A - QLD Core,138920,KODEX 콩선물(H),5.0
+B - QLD PSQ 3%,QLD,ProShares Ultra QQQ,35.0
+B - QLD PSQ 3%,SPMO,Invesco S&P 500 Momentum ETF,15.0
+B - QLD PSQ 3%,AIA,iShares Asia 50 ETF,5.0
+B - QLD PSQ 3%,XLE,State Street Energy Select Sector SPDR ETF,5.0
+B - QLD PSQ 3%,SCHD,Schwab U.S. Dividend Equity ETF,5.0
+B - QLD PSQ 3%,GLD,SPDR Gold Shares,27.0
+B - QLD PSQ 3%,PSQ,ProShares Short QQQ,3.0
+B - QLD PSQ 3%,138920,KODEX 콩선물(H),5.0

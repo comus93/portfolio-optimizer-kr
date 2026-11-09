@@ -1,0 +1,4 @@
+run_id: 20261109-0001
+study: studies/qld-psq-hedge-comparison/study.md
+experiment: studies/qld-psq-hedge-comparison/experiments/001-qld-psq-hedge.yaml
+product_mode: backtest

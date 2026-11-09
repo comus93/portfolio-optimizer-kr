@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "product_mode": "backtest",
+  "artifacts": {
+    "input_yaml": true,
+    "context_yaml": true,
+    "result_json": true,
+    "report_html": true,
+    "monthly_return_series": true,
+    "efficient_frontier": false
+  },
+  "capabilities": {
+    "frontier_risk_tradeoff": false
+  }
+}

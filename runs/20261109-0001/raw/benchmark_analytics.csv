@@ -1,0 +1,4 @@
+portfolio,active_return,tracking_error,information_ratio,start,end,observations
+A - QLD Core,0.0600816616508843,0.07406942565760284,0.8111533350970062,,,
+B - QLD PSQ 3%,0.051082840152369,0.06822889910898507,0.7486979977615071,,,
+coverage,,,,2015-11-30,2026-08-31,130
